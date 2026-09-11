@@ -12,14 +12,6 @@ load_dotenv()
 
 app = FastAPI(title="Agent 35 Backlog Monitoring Orchestrator")
 
-@app.get("/")
-def read_root():
-    return {
-        "status": "online",
-        "service": "Agent 35: Backlog Monitoring Orchestrator",
-        "message": "Backend is running successfully."
-    }
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,6 +25,14 @@ key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 app.include_router(integrations_router)
+
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "service": "Agent 35: Backlog Monitoring Orchestrator",
+        "message": "Backend is running successfully. API endpoints are available at /api/"
+    }
 
 @app.get("/api/test-db")
 def test_database():
@@ -61,7 +61,6 @@ def approve_intervention(student_id: str, background_tasks: BackgroundTasks, men
             }).execute()
             
             # 2. Close the Feedback Loop: Update backlogs so they aren't flagged again
-            # In a real app, you would check RLS for this table as well!
             supabase.table("backlogs").update({
                 "status": "INTERVENTION_ACTIVE"
             }).eq("student_id", student_id).eq("status", "PENDING").execute()
