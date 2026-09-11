@@ -1,5 +1,6 @@
 import { ArrowLeft, Compass, Home } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import Brand from "../components/Brand";
 import "../styles/not-found.css";
 
 export default function NotFoundPage() {
@@ -11,8 +12,7 @@ export default function NotFoundPage() {
       <div className="not-found-orbit orbit-two" />
       <nav className="not-found-nav">
         <Link className="brand" to="/">
-          <span className="brand-mark">ER</span>
-          <span>EduRecover</span>
+          <Brand />
         </Link>
         <span>Academic recovery, made actionable.</span>
       </nav>

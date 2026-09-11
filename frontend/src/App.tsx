@@ -39,7 +39,7 @@ function LandingRoute() {
 
 function PrototypeRoute() {
   const navigate = useNavigate();
-  return <PrototypePage role="hod" onBack={() => navigate("/")} />;
+  return <PrototypePage mode="prototype" onBack={() => navigate("/")} />;
 }
 
 function ProtectedDashboard() {
@@ -52,7 +52,13 @@ function ProtectedDashboard() {
   if (!role || !roleIds.has(role as UserRole)) return <NotFoundPage />;
   if (sessionRole !== role)
     return <Navigate replace to={`/auth?requiredRole=${role}`} />;
-  return <PrototypePage role={role as UserRole} onBack={() => navigate("/")} />;
+  return (
+    <PrototypePage
+      mode="dashboard"
+      role={role as UserRole}
+      onBack={() => navigate("/")}
+    />
+  );
 }
 
 export default function App() {

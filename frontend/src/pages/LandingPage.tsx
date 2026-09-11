@@ -23,6 +23,7 @@ import {
   UserCheck,
   WandSparkles,
 } from "lucide-react";
+import Brand from "../components/Brand";
 
 const workflowSteps = [
   ["01", "Detect", "Spot a change in a student's academic signal."],
@@ -140,8 +141,7 @@ export default function LandingPage({
     <main className="landing-page">
       <nav className="site-nav">
         <a className="brand" href="#top" aria-label="EduRecover home">
-          <span className="brand-mark">ER</span>
-          <span>EduRecover</span>
+          <Brand />
         </a>
         <div className="nav-links">
           <a href="#platform">Platform</a>
@@ -204,7 +204,7 @@ export default function LandingPage({
           <div className="dashboard-preview">
             <div className="preview-top">
               <div className="mini-brand">
-                <span className="brand-mark">ER</span> Academic Health
+                <Brand compact /> Academic Health
               </div>
               <span className="live-pill">
                 <i /> Live
@@ -487,8 +487,7 @@ export default function LandingPage({
         <div className="footer-main">
           <div className="footer-brand">
             <a className="brand" href="#top">
-              <span className="brand-mark">ER</span>
-              <span>EduRecover</span>
+              <Brand />
             </a>
             <p>Academic recovery, made actionable.</p>
             <span className="footer-live">

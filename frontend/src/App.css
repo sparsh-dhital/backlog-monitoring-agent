@@ -46,6 +46,32 @@
   background: linear-gradient(145deg, #5f70ff, #293bc4);
   box-shadow: 0 5px 12px #5669ed42;
 }
+.product-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  font: inherit;
+}
+.product-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: white;
+  background: linear-gradient(145deg, #6575ff, #3044d4);
+  box-shadow: 0 7px 16px #4e5ef52e;
+}
+.product-brand.compact .product-brand-mark {
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+}
+.product-brand.compact .product-brand-mark svg {
+  width: 13px;
+  height: 13px;
+}
 .nav-links {
   display: flex;
   align-items: center;
@@ -1416,6 +1442,25 @@ h2 em {
   align-items: flex-start;
   gap: 16px;
 }
+.workspace-product-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  color: #536487;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.workspace-product-lockup .product-brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+.workspace-product-lockup .product-brand-mark svg {
+  width: 13px;
+  height: 13px;
+}
 .workspace-brand h1 {
   margin: 8px 0 8px;
   color: #f8faff;
@@ -1547,6 +1592,108 @@ h2 em {
   align-items: center;
   gap: 20px;
   padding: 22px 2px;
+}
+.dashboard-overview {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  width: min(1440px, 100%);
+  margin: 8px auto 0;
+  padding: 25px 27px 22px;
+  overflow: hidden;
+  border: 1px solid #dfe5f4;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #ffffff, #f1f4ff);
+  box-shadow: 0 14px 35px #5668a510;
+  animation: reveal-up 0.65s 0.1s both;
+}
+.dashboard-overview::after {
+  position: absolute;
+  right: -60px;
+  bottom: -105px;
+  width: 260px;
+  height: 180px;
+  content: "";
+  border-radius: 50%;
+  background: #dce3ff88;
+}
+.dashboard-overview-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+}
+.dashboard-overview-copy h2 {
+  margin: 8px 0 7px;
+  color: #102754;
+  font-size: clamp(27px, 3vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+.dashboard-overview-copy p {
+  max-width: 600px;
+  margin: 0;
+  color: #7281a1;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.dashboard-overview-status {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
+  color: #268665;
+  font-size: 12px;
+  font-weight: 800;
+}
+.dashboard-overview-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dashboard-overview-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3bbd8f;
+  box-shadow: 0 0 0 4px #3bbd8f1f;
+}
+.dashboard-overview-status small {
+  color: #8b98b1;
+  font-size: 11px;
+  font-weight: 500;
+}
+.dashboard-metrics {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-column: 1 / -1;
+  gap: 9px;
+}
+.dashboard-metric {
+  padding: 13px 14px;
+  border: 1px solid #e1e6f3;
+  border-radius: 10px;
+  background: #ffffffb8;
+}
+.dashboard-metric span,
+.dashboard-metric small {
+  display: block;
+  color: #7d8baa;
+  font-size: 11px;
+}
+.dashboard-metric strong {
+  display: block;
+  margin: 5px 0 3px;
+  color: #102754;
+  font-size: 24px;
+  letter-spacing: -0.05em;
+}
+.dashboard-metric small {
+  color: #54a789;
 }
 .profile-label {
   min-width: 176px;
@@ -2162,6 +2309,27 @@ h2 em {
   .workspace-header {
     padding: 18px;
     border-radius: 18px;
+  }
+  .dashboard-overview {
+    grid-template-columns: 1fr;
+    gap: 13px;
+    margin-top: 5px;
+    padding: 20px 17px;
+  }
+  .dashboard-overview-copy h2 {
+    font-size: 27px;
+  }
+  .dashboard-overview-copy p {
+    font-size: 14px;
+  }
+  .dashboard-overview-status {
+    align-items: flex-start;
+  }
+  .dashboard-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-metric strong {
+    font-size: 21px;
   }
   .workspace-brand {
     gap: 11px;

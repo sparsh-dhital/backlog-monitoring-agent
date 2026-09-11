@@ -19,17 +19,83 @@ import {
   X,
 } from "lucide-react";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
+import Brand from "../components/Brand";
 import type { OrchestrationData } from "../types/agent";
 import type { UserRole } from "../types/roles";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const STUDENTS = ["STU001", "STU002", "STU003", "STU004"];
 
+const dashboardByRole = {
+  student: {
+    title: "My Academic Recovery",
+    greeting: "Good morning, Rahul.",
+    description:
+      "Here is what needs your attention, and the next step that keeps your degree on track.",
+    metrics: [
+      ["Active backlogs", "3", "Across two semesters"],
+      ["Attempts remaining", "2", "Regulation checked"],
+      ["At risk", "1", "Needs a decision"],
+      ["Recovery progress", "78%", "Up 12% this term"],
+    ],
+  },
+  mentor: {
+    title: "My Students",
+    greeting: "Good morning, mentor.",
+    description:
+      "A focused queue of students who need a conversation, an intervention, or a little more context.",
+    metrics: [
+      ["Students", "42", "Your current group"],
+      ["Need attention", "8", "Priority queue"],
+      ["Repeated failures", "5", "Patterns detected"],
+      ["Backlogs cleared", "12", "This term"],
+    ],
+  },
+  hod: {
+    title: "Academic Command Center",
+    greeting: "Good morning, HOD.",
+    description:
+      "See the department-wide picture, then open the cases behind the trend before they become harder to recover.",
+    metrics: [
+      ["Active backlogs", "214", "12% less last term"],
+      ["Students affected", "87", "8% less last term"],
+      ["Duration risk", "13", "Needs attention"],
+      ["Critical cases", "9", "Review required"],
+    ],
+  },
+  exam: {
+    title: "Examination Operations",
+    greeting: "Good morning, examination cell.",
+    description:
+      "Keep supplementary registration, eligibility, fee clearance and attempts together in one operational view.",
+    metrics: [
+      ["Eligible", "84", "Ready to register"],
+      ["Pending fee", "13", "Needs follow-up"],
+      ["Condonation", "4", "Under review"],
+      ["Detained", "2", "Requires action"],
+    ],
+  },
+  placement: {
+    title: "Placement Readiness",
+    greeting: "Good morning, placement cell.",
+    description:
+      "See which students are ready, which are recovering, and which backlog is blocking the next opportunity.",
+    metrics: [
+      ["Placement eligible", "438", "Current cohort"],
+      ["Backlog constrained", "31", "Needs recovery"],
+      ["Recovering", "18", "Intervention active"],
+      ["Ready after clearance", "12", "Near-term wins"],
+    ],
+  },
+} as const;
+
 export default function PrototypePage({
   role = "hod",
+  mode = "dashboard",
   onBack,
 }: {
   role?: UserRole;
+  mode?: "prototype" | "dashboard";
   onBack: () => void;
 }) {
   const [studentId, setStudentId] = useState(STUDENTS[0]);
@@ -169,9 +235,12 @@ export default function PrototypePage({
     evaluation?.attempt_pressure === "CRITICAL"
       ? "HIGH"
       : "LOW";
+  const dashboard = dashboardByRole[role];
 
   return (
-    <main className="workspace-page">
+    <main
+      className={`workspace-page ${mode === "prototype" ? "prototype-console" : "role-dashboard"}`}
+    >
       <header className="workspace-header">
         <div className="workspace-brand">
           <button
@@ -182,22 +251,33 @@ export default function PrototypePage({
             <ArrowLeft size={18} />
           </button>
           <div>
+            <div className="workspace-product-lockup">
+              <Brand compact />
+              <span>EduRecover</span>
+            </div>
             <span className="workspace-kicker">
               <i />{" "}
-              {role === "hod"
-                ? "HOD command center"
-                : role === "mentor"
-                  ? "Faculty workspace"
-                  : role === "student"
-                    ? "Student recovery"
-                    : role === "exam"
-                      ? "Examination operations"
-                      : "Placement readiness"}
+              {mode === "prototype"
+                ? "Agent 35 prototype console"
+                : role === "hod"
+                  ? "HOD command center"
+                  : role === "mentor"
+                    ? "Faculty workspace"
+                    : role === "student"
+                      ? "Student recovery"
+                      : role === "exam"
+                        ? "Examination operations"
+                        : "Placement readiness"}
             </span>
-            <h1>Academic Recovery Workspace</h1>
+            <h1>
+              {mode === "prototype"
+                ? "Backlog Monitoring Agent"
+                : dashboard.title}
+            </h1>
             <p>
-              Deterministic rules, visible reasoning, human-approved
-              intervention.
+              {mode === "prototype"
+                ? "Run the complete Agent 35 flow against a student record, inspect the reasoning, and deploy an approved intervention."
+                : "A role-specific view of academic health, with Agent 35 available when a case needs deeper review."}
             </p>
           </div>
         </div>
@@ -235,10 +315,41 @@ export default function PrototypePage({
         </div>
       </header>
 
+      {mode === "dashboard" && (
+        <section className="dashboard-overview">
+          <div className="dashboard-overview-copy">
+            <span className="workspace-kicker">{dashboard.greeting}</span>
+            <h2>{dashboard.title}</h2>
+            <p>{dashboard.description}</p>
+          </div>
+          <div className="dashboard-overview-status">
+            <span>
+              <i /> Data synced
+            </span>
+            <small>Last updated just now</small>
+          </div>
+          <div className="dashboard-metrics">
+            {dashboard.metrics.map(([label, value, detail]) => (
+              <div className="dashboard-metric" key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+                <small>{detail}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="workspace-toolbar">
         <div className="profile-label">
-          <span>Quick profiles</span>
-          <small>Use a demo record to explore the workflow</small>
+          <span>
+            {mode === "prototype" ? "Agent 35 test profiles" : "Quick profiles"}
+          </span>
+          <small>
+            {mode === "prototype"
+              ? "Pick a record to exercise the orchestration flow"
+              : "Use a demo record to explore the workflow"}
+          </small>
         </div>
         <div className="profile-pills">
           {STUDENTS.map((id) => (

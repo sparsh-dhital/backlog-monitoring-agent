@@ -16,6 +16,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { userRoles, type UserRole } from "../types/roles";
+import Brand from "../components/Brand";
 import "../styles/auth.css";
 
 const roleIcons = {
@@ -50,8 +51,7 @@ export default function AuthPage({
           <ArrowLeft size={17} /> Back to website
         </button>
         <a className="brand" href="#auth-top">
-          <span className="brand-mark">ER</span>
-          <span>EduRecover</span>
+          <Brand />
         </a>
         <span className="auth-secure">
           <ShieldCheck size={15} /> Secure institution access
