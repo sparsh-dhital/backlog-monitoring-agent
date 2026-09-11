@@ -36,6 +36,7 @@ export default function AuthPage({
 }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [selectedRole, setSelectedRole] = useState<UserRole>("hod");
+  const [authMessage, setAuthMessage] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -167,7 +168,16 @@ export default function AuthPage({
               <label className="remember">
                 <input type="checkbox" /> <span>Remember me</span>
               </label>
-              <button type="button">Forgot password?</button>
+              <button
+                type="button"
+                onClick={() =>
+                  setAuthMessage(
+                    "Password recovery will be handled by your institution administrator.",
+                  )
+                }
+              >
+                Forgot password?
+              </button>
             </div>
             <button className="auth-submit" type="submit">
               {mode === "signin" ? "Sign in to workspace" : "Create account"}
@@ -178,13 +188,32 @@ export default function AuthPage({
             <span>or continue with</span>
           </div>
           <div className="auth-providers">
-            <button type="button">
+            <button
+              type="button"
+              onClick={() =>
+                setAuthMessage(
+                  "Google sign-in is available in the institution deployment.",
+                )
+              }
+            >
               <span className="provider-google">G</span> Google
             </button>
-            <button type="button">
+            <button
+              type="button"
+              onClick={() =>
+                setAuthMessage(
+                  "Microsoft sign-in is available in the institution deployment.",
+                )
+              }
+            >
               <span className="provider-ms">▦</span> Microsoft
             </button>
           </div>
+          {authMessage && (
+            <p className="auth-feedback" role="status">
+              {authMessage}
+            </p>
+          )}
           <div className="demo-heading">
             <div>
               <span>Demo mode</span>
@@ -216,6 +245,15 @@ export default function AuthPage({
               );
             })}
           </div>
+          <button
+            className="demo-submit"
+            type="button"
+            onClick={() => onContinue(selectedRole)}
+          >
+            Enter {userRoles.find((role) => role.id === selectedRole)?.label}{" "}
+            demo
+            <ArrowRight size={16} />
+          </button>
           <p className="auth-note">
             By continuing, you agree to EduRecover's responsible AI and human
             oversight principles.

@@ -5,26 +5,78 @@ import {
   AlertTriangle,
   Archive,
   ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  Bell,
+  BriefcaseBusiness,
   Check,
+  CircleAlert,
+  CircleUserRound,
+  ClipboardCheck,
   Download,
   FileJson,
   FileSpreadsheet,
   FileText,
   Gauge,
+  Home,
+  LineChart,
   QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
+  Settings,
   Sparkles,
+  Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import Brand from "../components/Brand";
 import type { OrchestrationData } from "../types/agent";
-import type { UserRole } from "../types/roles";
+import { userRoles, type UserRole } from "../types/roles";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const STUDENTS = ["STU001", "STU002", "STU003", "STU004"];
+const studentProfiles: Record<
+  string,
+  {
+    name: string;
+    program: string;
+    batch: string;
+    semester: string;
+    mentor: string;
+  }
+> = {
+  STU001: {
+    name: "Rahul Sharma",
+    program: "Computer Science",
+    batch: "2026 batch",
+    semester: "Semester 5",
+    mentor: "Prof. S. Dhital",
+  },
+  STU002: {
+    name: "Priya Rao",
+    program: "Computer Science",
+    batch: "2026 batch",
+    semester: "Semester 5",
+    mentor: "Dr. A. Sharma",
+  },
+  STU003: {
+    name: "Kiran Das",
+    program: "Information Technology",
+    batch: "2026 batch",
+    semester: "Semester 5",
+    mentor: "Prof. S. Dhital",
+  },
+  STU004: {
+    name: "Ananya Singh",
+    program: "Computer Science",
+    batch: "2025 batch",
+    semester: "Semester 7",
+    mentor: "Dr. A. Sharma",
+  },
+};
 
 const dashboardByRole = {
   student: {
@@ -89,16 +141,795 @@ const dashboardByRole = {
   },
 } as const;
 
+const dashboardNavigation = {
+  student: [
+    ["Dashboard", Home],
+    ["My backlogs", Archive],
+    ["Recovery plan", Sparkles],
+    ["Exams", ClipboardCheck],
+    ["Progress", LineChart],
+    ["Notifications", Bell],
+  ],
+  mentor: [
+    ["Dashboard", Home],
+    ["Students", UsersRound],
+    ["Interventions", Sparkles],
+    ["Patterns", BarChart3],
+    ["Alerts", Bell],
+    ["Reports", FileText],
+  ],
+  hod: [
+    ["Dashboard", Home],
+    ["Students", UsersRound],
+    ["Backlogs", Archive],
+    ["Patterns", BarChart3],
+    ["Interventions", Sparkles],
+    ["Examinations", ClipboardCheck],
+    ["Alerts", Bell],
+    ["Reports", FileText],
+  ],
+  exam: [
+    ["Dashboard", Home],
+    ["Registrations", ClipboardCheck],
+    ["Eligibility", ShieldCheck],
+    ["Fee clearance", FileText],
+    ["Alerts", Bell],
+    ["Reports", LineChart],
+  ],
+  placement: [
+    ["Dashboard", Home],
+    ["Students", UsersRound],
+    ["Readiness", BriefcaseBusiness],
+    ["Backlog constraints", Archive],
+    ["Alerts", Bell],
+    ["Reports", LineChart],
+  ],
+} as const;
+
+function DashboardSidebar({
+  role,
+  activeTab,
+  onSelect,
+  onLogout,
+}: {
+  role: UserRole;
+  activeTab: string;
+  onSelect: (tab: string) => void;
+  onLogout: () => void;
+}) {
+  const roleLabel = userRoles.find((item) => item.id === role)?.label;
+
+  return (
+    <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
+      <div className="sidebar-top">
+        <Brand />
+        <span className="sidebar-role">{roleLabel}</span>
+      </div>
+      <nav className="sidebar-nav">
+        <span className="sidebar-nav-label">Workspace</span>
+        {dashboardNavigation[role].map(([label, Icon]) => (
+          <button
+            className={`sidebar-link ${activeTab === label ? "active" : ""}`}
+            key={label}
+            type="button"
+            aria-current={activeTab === label ? "page" : undefined}
+            onClick={() => onSelect(label)}
+          >
+            <Icon size={16} />
+            <span>{label}</span>
+            {label === "Alerts" && <b>3</b>}
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-bottom">
+        <button
+          className={`sidebar-link ${activeTab === "Settings" ? "active" : ""}`}
+          type="button"
+          onClick={() => onSelect("Settings")}
+          aria-current={activeTab === "Settings" ? "page" : undefined}
+        >
+          <Settings size={16} />
+          <span>Settings</span>
+        </button>
+        <button
+          className="sidebar-link sidebar-logout"
+          type="button"
+          onClick={onLogout}
+        >
+          <ArrowLeft size={16} />
+          <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function DashboardTopbar({ role }: { role: UserRole }) {
+  const roleLabel = userRoles.find((item) => item.id === role)?.label;
+  return (
+    <header className="dashboard-topbar">
+      <div className="dashboard-search">
+        <Search size={17} />
+        <input
+          aria-label="Search dashboard"
+          placeholder="Search students, courses, or IDs..."
+        />
+      </div>
+      <div className="dashboard-topbar-actions">
+        <button
+          className="dashboard-icon-button"
+          type="button"
+          aria-label="Notifications"
+        >
+          <Bell size={17} />
+          <b>3</b>
+        </button>
+        <span className="dashboard-divider" />
+        <div className="dashboard-profile">
+          <span className="profile-avatar">
+            <CircleUserRound size={20} />
+          </span>
+          <span>
+            <strong>{role === "hod" ? "Dr. Meera Sharma" : roleLabel}</strong>
+            <small>
+              {role === "hod" ? "HOD · CSE" : "EduRecover workspace"}
+            </small>
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+const journeySteps = [
+  ["hod", "HOD identifies", "Department signal", "Students"],
+  ["mentor", "Mentor supports", "Recovery plan", "Interventions"],
+  ["exam", "Exam validates", "Eligibility + attempt", "Registrations"],
+  ["placement", "Placement monitors", "Readiness constraint", "Readiness"],
+  ["student", "Student recovers", "Next action", "Recovery plan"],
+] as const;
+
+function RecoveryJourney({
+  role,
+  onSwitchRole,
+  onSelectTab,
+}: {
+  role: UserRole;
+  onSwitchRole: (role: UserRole) => void;
+  onSelectTab: (tab: string) => void;
+}) {
+  return (
+    <section
+      className="recovery-journey"
+      aria-label="Academic recovery journey"
+    >
+      <div className="journey-heading">
+        <div>
+          <span className="workspace-kicker">
+            <i /> One connected case
+          </span>
+          <h2>From signal to recovery</h2>
+          <p>
+            Each team sees the same student story from its own point of view.
+          </p>
+        </div>
+        <span className="journey-status">
+          <i /> Shared case context
+        </span>
+      </div>
+      <div className="journey-steps">
+        {journeySteps.map(([stepRole, title, detail, tab], index) => (
+          <button
+            key={stepRole}
+            className={`journey-step ${role === stepRole ? "current" : ""}`}
+            type="button"
+            onClick={() => {
+              if (role === stepRole) onSelectTab(tab);
+              else onSwitchRole(stepRole);
+            }}
+          >
+            <span className="journey-number">0{index + 1}</span>
+            <span className="journey-step-copy">
+              <strong>{title}</strong>
+              <small>{detail}</small>
+            </span>
+            <ArrowRight size={14} />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const hodCases = [
+  {
+    id: "STU001",
+    name: "Rahul Sharma",
+    detail: "3 active backlogs · repeated failure",
+    tone: "danger",
+  },
+  {
+    id: "STU002",
+    name: "Priya Rao",
+    detail: "2 active backlogs · supplementary eligible",
+    tone: "warning",
+  },
+  {
+    id: "STU003",
+    name: "Kiran Das",
+    detail: "1 backlog · intervention in progress",
+    tone: "success",
+  },
+] as const;
+
+function HodCommandCenter({
+  onSelectStudent,
+}: {
+  onSelectStudent: (studentId: string) => void;
+}) {
+  return (
+    <section
+      className="hod-command-center"
+      aria-label="Academic command center"
+    >
+      <div className="hod-section-heading">
+        <div>
+          <span className="workspace-kicker">
+            <BarChart3 size={13} /> Department signal map
+          </span>
+          <h2>What needs attention now</h2>
+        </div>
+        <span className="hod-sync-label">
+          <i /> Live academic view
+        </span>
+      </div>
+      <div className="hod-insights-grid">
+        <article className="hod-panel semester-panel">
+          <div className="hod-panel-heading">
+            <div>
+              <span>Trend</span>
+              <h3>Backlogs by semester</h3>
+            </div>
+            <ArrowUpRight size={16} />
+          </div>
+          <div
+            className="semester-chart"
+            aria-label="Backlogs by semester chart"
+          >
+            {[62, 78, 54, 69, 43, 31].map((height, index) => (
+              <div className="chart-column" key={index}>
+                <div className="chart-bar" style={{ height: `${height}%` }} />
+                <span>Sem {index + 1}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="hod-panel pattern-panel">
+          <div className="hod-panel-heading">
+            <div>
+              <span>Pattern detection</span>
+              <h3>Failure patterns by course</h3>
+            </div>
+            <Sparkles size={16} />
+          </div>
+          <div className="course-bars">
+            {[
+              ["Mathematics", "68", "74%"],
+              ["DBMS", "52", "56%"],
+              ["Data Structures", "41", "44%"],
+              ["Operating Systems", "29", "31%"],
+            ].map(([course, count, width]) => (
+              <div className="course-bar-row" key={course}>
+                <span>{course}</span>
+                <div>
+                  <i style={{ width }} />
+                </div>
+                <strong>{count}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="hod-panel recovery-panel">
+          <div className="hod-panel-heading">
+            <div>
+              <span>Assessment</span>
+              <h3>Recoverability</h3>
+            </div>
+            <Gauge size={16} />
+          </div>
+          <div className="recovery-ring">
+            <strong>214</strong>
+            <small>Total</small>
+          </div>
+          <div className="recovery-legend">
+            <span>
+              <i className="routine" /> Routine 54%
+            </span>
+            <span>
+              <i className="structured" /> Structured 32%
+            </span>
+            <span>
+              <i className="intensive" /> Intensive 14%
+            </span>
+          </div>
+        </article>
+      </div>
+      <div className="hod-lower-grid">
+        <article className="hod-panel attention-panel">
+          <div className="hod-panel-heading">
+            <div>
+              <span>Priority queue</span>
+              <h3>Requires HOD attention</h3>
+            </div>
+            <CircleAlert size={16} />
+          </div>
+          <div className="hod-case-list">
+            {hodCases.map((item) => (
+              <button key={item.id} onClick={() => onSelectStudent(item.id)}>
+                <span className={`case-icon ${item.tone}`}>
+                  <CircleAlert size={15} />
+                </span>
+                <span className="case-copy">
+                  <strong>{item.name}</strong>
+                  <small>{item.detail}</small>
+                </span>
+                <ArrowUpRight size={15} />
+              </button>
+            ))}
+          </div>
+        </article>
+        <article className="hod-panel alert-panel">
+          <div className="hod-panel-heading">
+            <div>
+              <span>Recent alerts</span>
+              <h3>Signals worth reviewing</h3>
+            </div>
+            <Users size={16} />
+          </div>
+          <div className="alert-list">
+            <p>
+              <b className="danger-dot" />
+              <span>
+                <strong>Attempt pressure</strong> 14 students have one attempt
+                remaining.
+              </span>
+              <small>2h ago</small>
+            </p>
+            <p>
+              <b className="warning-dot" />
+              <span>
+                <strong>Duration risk</strong> 6 students are nearing maximum
+                duration.
+              </span>
+              <small>5h ago</small>
+            </p>
+            <p>
+              <b className="success-dot" />
+              <span>
+                <strong>Recovery milestone</strong> 12 backlogs cleared this
+                term.
+              </span>
+              <small>Today</small>
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+const tabContent = {
+  Students: {
+    eyebrow: "Student directory",
+    title: "Students needing context",
+    description:
+      "Move from department signals to the student record behind the signal.",
+    rows: [
+      ["Rahul Sharma", "CSE · 2026", "3 active backlogs", "Critical"],
+      ["Priya Rao", "CSE · 2026", "2 active backlogs", "Review"],
+      ["Kiran Das", "IT · 2026", "1 active backlog", "Recovering"],
+      ["Ananya Singh", "CSE · 2025", "2 active backlogs", "Duration risk"],
+    ],
+  },
+  Backlogs: {
+    eyebrow: "Arrear register",
+    title: "Backlog portfolio",
+    description:
+      "Understand volume, repeated failures, and the cases closest to a missed recovery window.",
+    rows: [
+      [
+        "Data Structures",
+        "41 students",
+        "3.2 average attempts",
+        "High pressure",
+      ],
+      ["DBMS", "52 students", "2.1 average attempts", "Watch"],
+      ["Mathematics", "68 students", "1.8 average attempts", "Monitor"],
+      ["Operating Systems", "29 students", "1.6 average attempts", "Stable"],
+    ],
+  },
+  Patterns: {
+    eyebrow: "Academic intelligence",
+    title: "Patterns worth acting on",
+    description:
+      "Agent 35 surfaces recurring failure and duration signals for human review.",
+    rows: [
+      [
+        "Repeated core-course failure",
+        "23 students",
+        "Data Structures + DBMS",
+        "Escalate",
+      ],
+      ["Attempt pressure", "14 students", "One attempt remaining", "Urgent"],
+      ["Duration pressure", "13 students", "Two semesters remaining", "Review"],
+      [
+        "Recovery momentum",
+        "12 students",
+        "Backlogs cleared this term",
+        "Positive",
+      ],
+    ],
+  },
+  Interventions: {
+    eyebrow: "Human decisions",
+    title: "Intervention queue",
+    description:
+      "Review recommendations, assign ownership, and track whether support is working.",
+    rows: [
+      ["Rahul Sharma", "Structured remedial", "Mentor sign-off", "Pending"],
+      ["Kiran Das", "Mentor meeting", "In progress", "Active"],
+      ["Priya Rao", "Supplementary registration", "Exam cell", "Ready"],
+    ],
+  },
+  Examinations: {
+    eyebrow: "Examination operations",
+    title: "Eligibility and attempts",
+    description:
+      "Keep registration, fee clearance, and regulation checks in one operational view.",
+    rows: [
+      ["Eligible to register", "84 students", "Next supplementary", "Ready"],
+      ["Pending fee clearance", "13 students", "Payment follow-up", "Action"],
+      ["Condonation review", "4 students", "HOD decision", "Review"],
+      ["Detained / debarred", "3 students", "Regulation check", "Restricted"],
+    ],
+  },
+  Alerts: {
+    eyebrow: "Signals and notifications",
+    title: "Recent alerts",
+    description:
+      "A focused stream of changes that may require a decision or a student conversation.",
+    rows: [
+      ["Attempt pressure", "14 students", "One attempt remaining", "2h ago"],
+      ["Duration risk", "6 students", "Near maximum duration", "5h ago"],
+      ["Recovery milestone", "12 students", "Backlog cleared", "Today"],
+    ],
+  },
+  Reports: {
+    eyebrow: "Evidence package",
+    title: "Academic reports",
+    description:
+      "Export a clear record of facts, calculations, recommendations, and outcomes.",
+    rows: [
+      [
+        "Department recovery report",
+        "August 2026",
+        "214 active backlogs",
+        "Export",
+      ],
+      [
+        "Intervention effectiveness",
+        "Term to date",
+        "72% clearance rate",
+        "Export",
+      ],
+      [
+        "Regulation compliance",
+        "Academic Regulation 2025",
+        "All cohorts",
+        "Export",
+      ],
+    ],
+  },
+  "My backlogs": {
+    eyebrow: "My academic record",
+    title: "Active backlogs",
+    description:
+      "See each course, attempt, and the next action available to you.",
+    rows: [
+      ["Data Structures", "2 attempts", "One attempt remaining", "Urgent"],
+      ["DBMS", "1 attempt", "Supplementary eligible", "Ready"],
+      ["Mathematics", "1 attempt", "Recovery plan active", "In progress"],
+    ],
+  },
+  "Recovery plan": {
+    eyebrow: "Recommended next steps",
+    title: "My recovery plan",
+    description:
+      "A clear sequence of actions built from your academic record and regulation checks.",
+    rows: [
+      ["Register for supplementary exam", "18 Sept", "Data Structures", "Next"],
+      ["Attend remedial class", "This week", "Core programming", "Scheduled"],
+      ["Meet your mentor", "20 Sept", "Review progress", "Pending"],
+    ],
+  },
+  Exams: {
+    eyebrow: "Exam opportunities",
+    title: "Supplementary exams",
+    description:
+      "Track eligibility, registration windows, and fee clearance for your next attempt.",
+    rows: [
+      ["Data Structures", "Attempt 3", "Registration open", "Eligible"],
+      ["DBMS", "Attempt 2", "Fee paid", "Registered"],
+      ["Mathematics", "Attempt 2", "Window opens soon", "Watch"],
+    ],
+  },
+  Progress: {
+    eyebrow: "Recovery journey",
+    title: "Progress over time",
+    description:
+      "Follow your backlog movement, completed interventions, and upcoming milestones.",
+    rows: [
+      ["Backlog clearance", "78%", "Up 12% this term", "Positive"],
+      ["Mentor actions", "4 of 5", "One meeting pending", "Active"],
+      ["Next milestone", "1 course", "Clear before placement review", "Focus"],
+    ],
+  },
+  Notifications: {
+    eyebrow: "Your notifications",
+    title: "Recent updates",
+    description:
+      "Important changes from examinations, mentors, and your recovery plan.",
+    rows: [
+      [
+        "Supplementary registration",
+        "Exam cell",
+        "Registration window is open",
+        "New",
+      ],
+      ["Mentor follow-up", "Prof. S. Dhital", "Meeting requested", "Action"],
+      ["Recovery milestone", "Agent 35", "Plan updated with evidence", "Read"],
+    ],
+  },
+  Registrations: {
+    eyebrow: "Registration desk",
+    title: "Supplementary registrations",
+    description:
+      "Monitor registration status, attempt number, fees, and exceptions across the cohort.",
+    rows: [
+      ["Rahul Sharma", "Data Structures", "Attempt 3", "Paid"],
+      ["Priya Rao", "DBMS", "Attempt 2", "Pending fee"],
+      ["Kiran Das", "Mathematics", "Attempt 2", "Eligible"],
+    ],
+  },
+  Eligibility: {
+    eyebrow: "Regulation checks",
+    title: "Eligibility review",
+    description:
+      "See which students satisfy the current regulation and which cases require review.",
+    rows: [
+      ["Eligible", "84 students", "All criteria met", "Ready"],
+      ["Review required", "4 students", "Condonation needed", "Review"],
+      ["Restricted", "3 students", "Detained or debarred", "Action"],
+    ],
+  },
+  "Fee clearance": {
+    eyebrow: "Finance checkpoint",
+    title: "Fee clearance",
+    description:
+      "Keep registration decisions aligned with payment status and the next exam window.",
+    rows: [
+      ["Paid", "71 students", "Registration can proceed", "Clear"],
+      ["Pending", "13 students", "Reminder required", "Action"],
+      ["Exception", "2 students", "Manual review", "Review"],
+    ],
+  },
+  Readiness: {
+    eyebrow: "Placement readiness",
+    title: "Student readiness",
+    description:
+      "Understand how backlog status affects placement preparation and opportunity access.",
+    rows: [
+      ["Ready", "438 students", "No blocking backlog", "Eligible"],
+      ["Recovering", "18 students", "Intervention active", "Track"],
+      ["Constrained", "31 students", "Backlog affects opportunities", "Review"],
+    ],
+  },
+  "Backlog constraints": {
+    eyebrow: "Placement constraints",
+    title: "Backlog-constrained students",
+    description:
+      "Coordinate recovery visibility with placement timelines without making placement decisions automatically.",
+    rows: [
+      ["DBMS clearance", "12 students", "Next hiring window", "Priority"],
+      ["Duration pressure", "8 students", "Final placement cycle", "Urgent"],
+      ["Recovery active", "11 students", "Mentor follow-up", "Track"],
+    ],
+  },
+} as const;
+
+function DashboardTabView({
+  role,
+  activeTab,
+  onSelectStudent,
+}: {
+  role: UserRole;
+  activeTab: string;
+  onSelectStudent: (studentId: string) => void;
+}) {
+  const content = tabContent[activeTab as keyof typeof tabContent];
+  if (!content) {
+    return (
+      <section className="dashboard-tab-view">
+        <div className="tab-empty-state">
+          <Settings size={22} />
+          <h2>Workspace settings</h2>
+          <p>
+            Profile, notification, and institution preferences will live here.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const canOpenStudent =
+    activeTab === "Students" || activeTab === "Interventions";
+  const studentIds: Record<string, string> = {
+    "Rahul Sharma": "STU001",
+    "Priya Rao": "STU002",
+    "Kiran Das": "STU003",
+    "Ananya Singh": "STU004",
+  };
+  return (
+    <section className="dashboard-tab-view">
+      <div className="tab-view-heading">
+        <div>
+          <span className="workspace-kicker">
+            <i /> {content.eyebrow}
+          </span>
+          <h2>{content.title}</h2>
+          <p>{content.description}</p>
+        </div>
+        <StatusBadge tone="success">Data synced</StatusBadge>
+      </div>
+      <div className="tab-summary-row">
+        <div>
+          <span>Scope</span>
+          <strong>
+            {role === "hod" ? "Department-wide" : dashboardByRole[role].title}
+          </strong>
+        </div>
+        <div>
+          <span>Last updated</span>
+          <strong>Just now</strong>
+        </div>
+        <div>
+          <span>Owner</span>
+          <strong>Academic operations</strong>
+        </div>
+      </div>
+      <div className="tab-table" role="table" aria-label={content.title}>
+        <div className="tab-table-header" role="row">
+          <span>Signal</span>
+          <span>Scope</span>
+          <span>Context</span>
+          <span>Status</span>
+        </div>
+        {content.rows.map(([signal, scope, context, status]) => (
+          <button
+            className="tab-table-row"
+            key={`${signal}-${scope}`}
+            type="button"
+            onClick={() =>
+              canOpenStudent && onSelectStudent(studentIds[signal] || "STU001")
+            }
+            disabled={!canOpenStudent}
+          >
+            <strong>{signal}</strong>
+            <span>{scope}</span>
+            <span>{context}</span>
+            <StatusBadge
+              tone={
+                status === "Critical" || status === "Urgent"
+                  ? "danger"
+                  : status === "Positive" || status === "Active"
+                    ? "success"
+                    : "warning"
+              }
+            >
+              {status}
+            </StatusBadge>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RoleHomeView({
+  role,
+  onSelectTab,
+}: {
+  role: UserRole;
+  onSelectTab: (tab: string) => void;
+}) {
+  const dashboard = dashboardByRole[role];
+  const nextActions = {
+    student: [
+      ["Register for the next supplementary attempt", "Exams"],
+      ["Review your Data Structures recovery plan", "Recovery plan"],
+      ["Confirm your mentor meeting", "Notifications"],
+    ],
+    mentor: [
+      ["Review the 8 students needing attention", "Students"],
+      ["Prepare the next mentor conversation", "Interventions"],
+      ["Track active interventions", "Reports"],
+    ],
+    exam: [
+      ["Follow up on pending fee clearance", "Fee clearance"],
+      ["Review condonation cases", "Eligibility"],
+      ["Open the next supplementary window", "Registrations"],
+    ],
+    placement: [
+      ["Review backlog-constrained students", "Backlog constraints"],
+      ["Track recovery milestones", "Readiness"],
+      ["Prepare placement readiness report", "Reports"],
+    ],
+    hod: [],
+  }[role];
+  return (
+    <section className="role-home-view">
+      <div className="role-home-heading">
+        <div>
+          <span className="workspace-kicker">
+            <i /> Workspace overview
+          </span>
+          <h2>Your next decisions</h2>
+          <p>
+            Keep the most important academic work visible without opening the
+            Agent 35 prototype console.
+          </p>
+        </div>
+        <StatusBadge tone="success">Synced just now</StatusBadge>
+      </div>
+      <div className="role-home-grid">
+        <article className="role-home-progress">
+          <span className="home-card-label">Current signal</span>
+          <strong>{dashboard.metrics[0][1]}</strong>
+          <h3>{dashboard.metrics[0][0]}</h3>
+          <p>{dashboard.metrics[0][2]}</p>
+          <div className="home-progress-track">
+            <i style={{ width: role === "student" ? "78%" : "64%" }} />
+          </div>
+        </article>
+        <article className="role-home-actions">
+          <span className="home-card-label">Recommended actions</span>
+          {nextActions.map(([action, tab], index) => (
+            <button key={action} type="button" onClick={() => onSelectTab(tab)}>
+              <b>0{index + 1}</b>
+              <span>{action}</span>
+              <ArrowUpRight size={14} />
+            </button>
+          ))}
+        </article>
+      </div>
+    </section>
+  );
+}
+
 export default function PrototypePage({
   role = "hod",
   mode = "dashboard",
   onBack,
+  onSwitchRole,
 }: {
   role?: UserRole;
   mode?: "prototype" | "dashboard";
   onBack: () => void;
+  onSwitchRole?: (role: UserRole) => void;
 }) {
-  const [studentId, setStudentId] = useState(STUDENTS[0]);
+  const [studentId, setStudentId] = useState(
+    () => sessionStorage.getItem("edurecover-focus-student") || STUDENTS[0],
+  );
   const [mentorId, setMentorId] = useState("FACULTY_099");
   const [data, setData] = useState<OrchestrationData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -106,10 +937,15 @@ export default function PrototypePage({
   const [showScanner, setShowScanner] = useState(false);
   const [approved, setApproved] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   const [dispatchLogs, setDispatchLogs] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("Dashboard");
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const requestSequence = useRef(0);
 
   const fetchOrchestration = useCallback(async (targetId: string) => {
+    const requestId = ++requestSequence.current;
+    sessionStorage.setItem("edurecover-focus-student", targetId);
     setLoading(true);
     setError("");
     setApproved(false);
@@ -117,15 +953,17 @@ export default function PrototypePage({
     try {
       const response = await fetch(`${API_URL}/api/orchestrate/${targetId}`);
       if (!response.ok) throw new Error("Unable to fetch orchestration data");
+      if (requestId !== requestSequence.current) return;
       setData((await response.json()) as OrchestrationData);
     } catch (requestError) {
+      if (requestId !== requestSequence.current) return;
       setError(
         requestError instanceof Error
           ? requestError.message
           : "An unexpected error occurred",
       );
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, []);
 
@@ -175,6 +1013,7 @@ export default function PrototypePage({
       );
       if (!response.ok) throw new Error("Unable to approve intervention");
       setApproved(true);
+      setShowApprovalConfirm(false);
       const logs = [
         `[SYSTEM] Initiating downstream pipeline for ${studentId}...`,
         `[SYSTEM] Authorized by mentor ID: ${mentorId}`,
@@ -236,91 +1075,130 @@ export default function PrototypePage({
       ? "HIGH"
       : "LOW";
   const dashboard = dashboardByRole[role];
+  const dashboardAction = {
+    student: ["Review recovery plan", "Recovery plan"],
+    mentor: ["Open priority students", "Students"],
+    hod: ["Review critical cases", "Students"],
+    exam: ["Review registrations", "Registrations"],
+    placement: ["Review readiness constraints", "Backlog constraints"],
+  }[role];
+  const handleTabSelect = (tab: string) => {
+    setActiveTab(tab);
+    setData(null);
+    setDispatchLogs([]);
+    setError("");
+  };
 
   return (
     <main
       className={`workspace-page ${mode === "prototype" ? "prototype-console" : "role-dashboard"}`}
     >
-      <header className="workspace-header">
-        <div className="workspace-brand">
-          <button
-            className="icon-button"
-            onClick={onBack}
-            aria-label="Back to landing page"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <div className="workspace-product-lockup">
-              <Brand compact />
-              <span>EduRecover</span>
-            </div>
-            <span className="workspace-kicker">
-              <i />{" "}
-              {mode === "prototype"
-                ? "Agent 35 prototype console"
-                : role === "hod"
-                  ? "HOD command center"
-                  : role === "mentor"
-                    ? "Faculty workspace"
-                    : role === "student"
-                      ? "Student recovery"
-                      : role === "exam"
-                        ? "Examination operations"
-                        : "Placement readiness"}
-            </span>
-            <h1>
-              {mode === "prototype"
-                ? "Backlog Monitoring Agent"
-                : dashboard.title}
-            </h1>
-            <p>
-              {mode === "prototype"
-                ? "Run the complete Agent 35 flow against a student record, inspect the reasoning, and deploy an approved intervention."
-                : "A role-specific view of academic health, with Agent 35 available when a case needs deeper review."}
-            </p>
-          </div>
-        </div>
-        <div className="workspace-tools">
-          <button
-            className="workspace-button subtle"
-            onClick={() => setShowScanner(true)}
-            disabled={loading}
-          >
-            <QrCode size={16} /> Scan ID
-          </button>
-          <div className="student-search">
-            <Search size={15} />
-            <input
-              value={studentId}
-              onChange={(event) =>
-                setStudentId(event.target.value.toUpperCase())
-              }
-              aria-label="Registration number"
-              placeholder="Registration no."
-            />
-          </div>
-          <button
-            className="workspace-button primary"
-            onClick={() => void fetchOrchestration(studentId)}
-            disabled={loading || !studentId}
-          >
-            {loading ? (
-              <RefreshCw className="spin" size={16} />
-            ) : (
-              <Activity size={16} />
-            )}
-            {loading ? "Analyzing" : "Run orchestrator"}
-          </button>
-        </div>
-      </header>
-
       {mode === "dashboard" && (
-        <section className="dashboard-overview">
+        <DashboardSidebar
+          role={role}
+          activeTab={activeTab}
+          onSelect={handleTabSelect}
+          onLogout={onBack}
+        />
+      )}
+      {mode === "dashboard" ? (
+        <DashboardTopbar role={role} />
+      ) : (
+        <header className="workspace-header">
+          <div className="workspace-brand">
+            <button
+              className="icon-button"
+              onClick={onBack}
+              aria-label="Back to landing page"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <div className="workspace-product-lockup">
+                <Brand compact />
+                <span>EduRecover</span>
+              </div>
+              <span className="workspace-kicker">
+                <i />{" "}
+                {mode === "prototype"
+                  ? "Agent 35 prototype console"
+                  : role === "hod"
+                    ? "HOD command center"
+                    : role === "mentor"
+                      ? "Faculty workspace"
+                      : role === "student"
+                        ? "Student recovery"
+                        : role === "exam"
+                          ? "Examination operations"
+                          : "Placement readiness"}
+              </span>
+              <h1>
+                {mode === "prototype"
+                  ? "Backlog Monitoring Agent"
+                  : dashboard.title}
+              </h1>
+              <p>
+                {mode === "prototype"
+                  ? "Run the complete Agent 35 flow against a student record, inspect the reasoning, and deploy an approved intervention."
+                  : "A role-specific view of academic health, with Agent 35 available when a case needs deeper review."}
+              </p>
+            </div>
+          </div>
+          <div className="workspace-tools">
+            <button
+              className="workspace-button subtle"
+              onClick={() => setShowScanner(true)}
+              disabled={loading}
+            >
+              <QrCode size={16} /> Scan ID
+            </button>
+            <div className="student-search">
+              <Search size={15} />
+              <input
+                value={studentId}
+                onChange={(event) =>
+                  setStudentId(event.target.value.toUpperCase())
+                }
+                aria-label="Registration number"
+                placeholder="Registration no."
+              />
+            </div>
+            <button
+              className="workspace-button primary"
+              onClick={() => void fetchOrchestration(studentId)}
+              disabled={loading || !studentId}
+            >
+              {loading ? (
+                <RefreshCw className="spin" size={16} />
+              ) : (
+                <Activity size={16} />
+              )}
+              {loading ? "Analyzing" : "Run orchestrator"}
+            </button>
+          </div>
+        </header>
+      )}
+
+      {mode === "dashboard" && activeTab === "Dashboard" && (
+        <section className={`dashboard-overview dashboard-role-${role}`}>
           <div className="dashboard-overview-copy">
             <span className="workspace-kicker">{dashboard.greeting}</span>
             <h2>{dashboard.title}</h2>
             <p>{dashboard.description}</p>
+            <button
+              className="dashboard-next-action"
+              type="button"
+              onClick={() => handleTabSelect(dashboardAction[1])}
+            >
+              <span className="dashboard-next-icon">
+                <Sparkles size={15} />
+              </span>
+              <span>
+                <small>Recommended next step</small>
+                <strong>{dashboardAction[0]}</strong>
+              </span>
+              <ArrowUpRight size={16} />
+            </button>
           </div>
           <div className="dashboard-overview-status">
             <span>
@@ -340,36 +1218,76 @@ export default function PrototypePage({
         </section>
       )}
 
-      <section className="workspace-toolbar">
-        <div className="profile-label">
-          <span>
-            {mode === "prototype" ? "Agent 35 test profiles" : "Quick profiles"}
-          </span>
-          <small>
-            {mode === "prototype"
-              ? "Pick a record to exercise the orchestration flow"
-              : "Use a demo record to explore the workflow"}
-          </small>
-        </div>
-        <div className="profile-pills">
-          {STUDENTS.map((id) => (
-            <button
-              key={id}
-              className={studentId === id ? "active" : ""}
-              onClick={() => {
-                setStudentId(id);
-                setData(null);
-                setDispatchLogs([]);
-              }}
-            >
-              {id}
-            </button>
-          ))}
-        </div>
-        <button className="workspace-button ghost" onClick={onBack}>
-          <ArrowLeft size={15} /> Public site
-        </button>
-      </section>
+      {mode === "dashboard" &&
+        activeTab === "Dashboard" &&
+        role === "hod" &&
+        !data &&
+        !loading && (
+          <HodCommandCenter
+            onSelectStudent={(selectedStudentId) => {
+              setStudentId(selectedStudentId);
+              setActiveTab("Students");
+              void fetchOrchestration(selectedStudentId);
+            }}
+          />
+        )}
+
+      {mode === "dashboard" && activeTab === "Dashboard" && onSwitchRole && (
+        <RecoveryJourney
+          role={role}
+          onSwitchRole={onSwitchRole}
+          onSelectTab={handleTabSelect}
+        />
+      )}
+
+      {mode === "dashboard" &&
+        activeTab !== "Dashboard" &&
+        !data &&
+        !loading && (
+          <DashboardTabView
+            role={role}
+            activeTab={activeTab}
+            onSelectStudent={(selectedStudentId) => {
+              setStudentId(selectedStudentId);
+              void fetchOrchestration(selectedStudentId);
+            }}
+          />
+        )}
+
+      {mode === "prototype" && (
+        <section className="workspace-toolbar">
+          <div className="profile-label">
+            <span>
+              {mode === "prototype"
+                ? "Agent 35 test profiles"
+                : "Quick profiles"}
+            </span>
+            <small>
+              {mode === "prototype"
+                ? "Pick a record to exercise the orchestration flow"
+                : "Use a demo record to explore the workflow"}
+            </small>
+          </div>
+          <div className="profile-pills">
+            {STUDENTS.map((id) => (
+              <button
+                key={id}
+                className={studentId === id ? "active" : ""}
+                onClick={() => {
+                  setStudentId(id);
+                  setData(null);
+                  setDispatchLogs([]);
+                }}
+              >
+                {id}
+              </button>
+            ))}
+          </div>
+          <button className="workspace-button ghost" onClick={onBack}>
+            <ArrowLeft size={15} /> Public site
+          </button>
+        </section>
+      )}
 
       {error && (
         <div className="workspace-error">
@@ -380,7 +1298,13 @@ export default function PrototypePage({
           </button>
         </div>
       )}
-      {!data && !loading && (
+      {mode === "dashboard" &&
+        activeTab === "Dashboard" &&
+        role !== "hod" &&
+        !data &&
+        !loading && <RoleHomeView role={role} onSelectTab={handleTabSelect} />}
+
+      {!data && !loading && mode === "prototype" && (
         <section className="workspace-empty">
           <div className="empty-icon">
             <Gauge size={27} />
@@ -413,6 +1337,49 @@ export default function PrototypePage({
 
       {data && evaluation && recommendation && (
         <section className="workspace-content">
+          {(() => {
+            const profile = studentProfiles[data.target_student_id] ?? {
+              name: data.target_student_id,
+              program: "Institutional record",
+              batch: "Batch unavailable",
+              semester: "Semester unavailable",
+              mentor: mentorId,
+            };
+            return (
+              <article className="student-context-card">
+                <div className="student-context-identity">
+                  <span className="student-context-avatar">
+                    <CircleUserRound size={25} />
+                  </span>
+                  <div>
+                    <span className="workspace-kicker">
+                      Student recovery case
+                    </span>
+                    <h2>{profile.name}</h2>
+                    <p>
+                      {profile.program} · {profile.batch}
+                    </p>
+                  </div>
+                </div>
+                <div className="student-context-facts">
+                  <span>
+                    <small>Semester</small>
+                    <strong>{profile.semester}</strong>
+                  </span>
+                  <span>
+                    <small>Assigned mentor</small>
+                    <strong>{profile.mentor}</strong>
+                  </span>
+                  <span>
+                    <small>Case owner</small>
+                    <strong>
+                      {role === "hod" ? "HOD review" : "Academic operations"}
+                    </strong>
+                  </span>
+                </div>
+              </article>
+            );
+          })()}
           <div className="workspace-overview">
             <div>
               <span className="workspace-kicker">
@@ -423,9 +1390,22 @@ export default function PrototypePage({
                 <span> · academic recovery brief</span>
               </h2>
             </div>
-            <StatusBadge tone={approved ? "success" : "warning"}>
-              {approved ? "Intervention approved" : "Human review required"}
-            </StatusBadge>
+            <div className="workspace-overview-actions">
+              {mode === "dashboard" && role === "hod" && (
+                <button
+                  className="workspace-button ghost"
+                  onClick={() => {
+                    setData(null);
+                    setDispatchLogs([]);
+                  }}
+                >
+                  <ArrowLeft size={15} /> Command center
+                </button>
+              )}
+              <StatusBadge tone={approved ? "success" : "warning"}>
+                {approved ? "Intervention approved" : "Human review required"}
+              </StatusBadge>
+            </div>
           </div>
           <div className="workspace-stats">
             <StatCard
@@ -458,6 +1438,40 @@ export default function PrototypePage({
           </div>
           <div className="workspace-grid">
             <div className="workspace-column">
+              <article className="workspace-card agent-checklist-card">
+                <div className="card-heading">
+                  <div>
+                    <span className="workspace-kicker">
+                      <Activity size={12} /> Agent 35 reasoning
+                    </span>
+                    <h3>Analysis complete</h3>
+                  </div>
+                  <StatusBadge tone="success">Evidence ready</StatusBadge>
+                </div>
+                <div className="agent-checklist">
+                  {[
+                    "Retrieved student profile",
+                    "Applied current regulation",
+                    "Calculated attempts and progression",
+                    "Checked results and supplementary feeds",
+                    "Classified recoverability",
+                  ].map((step) => (
+                    <div key={step}>
+                      <Check size={14} />
+                      <span>{step}</span>
+                      <small>Complete</small>
+                    </div>
+                  ))}
+                </div>
+                <div className="agent-next-state">
+                  <span>Next handoff</span>
+                  <strong>
+                    {approved
+                      ? "Intervention is active"
+                      : "Human approval required"}
+                  </strong>
+                </div>
+              </article>
               <article className="workspace-card">
                 <div className="card-heading">
                   <div>
@@ -477,7 +1491,10 @@ export default function PrototypePage({
                     {evaluation.backlog_details.map((backlog) => (
                       <div className="backlog-row" key={backlog.id}>
                         <strong>{backlog.course_code}</strong>
-                        <span>{backlog.attempts_made} attempts</span>
+                        <span>
+                          {backlog.attempts_made} made ·{" "}
+                          {backlog.attempts_remaining ?? "-"} remaining
+                        </span>
                         <StatusBadge tone="warning">
                           {backlog.status}
                         </StatusBadge>
@@ -517,10 +1534,92 @@ export default function PrototypePage({
                   </div>
                   <div>
                     <span>Attempts remaining</span>
-                    <strong>Regulation checked</strong>
+                    <strong>
+                      {evaluation.backlog_details.reduce(
+                        (minimum, backlog) =>
+                          Math.min(minimum, backlog.attempts_remaining ?? 0),
+                        evaluation.max_attempts ?? 0,
+                      )}
+                    </strong>
                   </div>
                 </div>
               </article>
+              {data.integration_feeds && (
+                <article className="workspace-card evidence-card">
+                  <div className="card-heading">
+                    <div>
+                      <span className="workspace-kicker">
+                        Fact · connected systems
+                      </span>
+                      <h3>Evidence feeds</h3>
+                    </div>
+                    <Activity size={18} />
+                  </div>
+                  <div className="feed-block">
+                    <div className="feed-heading">
+                      <strong>Agent 34 · Results</strong>
+                      <StatusBadge tone="success">Institutional</StatusBadge>
+                    </div>
+                    {data.integration_feeds.agent_34_results.results.length >
+                    0 ? (
+                      data.integration_feeds.agent_34_results.results.map(
+                        (result) => (
+                          <div
+                            className="feed-row"
+                            key={`${result.course_code}-${result.term}`}
+                          >
+                            <span>{result.course_code}</span>
+                            <small>{result.term}</small>
+                            <StatusBadge
+                              tone={
+                                result.result === "PASS" ? "success" : "danger"
+                              }
+                            >
+                              {result.result}
+                            </StatusBadge>
+                          </div>
+                        ),
+                      )
+                    ) : (
+                      <p className="muted-copy">No result feed available.</p>
+                    )}
+                  </div>
+                  <div className="feed-block">
+                    <div className="feed-heading">
+                      <strong>Agent 30 · Supplementary</strong>
+                      <StatusBadge tone="success">Institutional</StatusBadge>
+                    </div>
+                    {data.integration_feeds.agent_30_supplementary
+                      .supplementary_exams.length > 0 ? (
+                      data.integration_feeds.agent_30_supplementary.supplementary_exams.map(
+                        (exam) => (
+                          <div
+                            className="feed-row feed-stack"
+                            key={exam.course_code}
+                          >
+                            <span>{exam.course_code}</span>
+                            <small>
+                              {exam.supplementary_available
+                                ? "Available"
+                                : "Unavailable"}{" "}
+                              ·{" "}
+                              {exam.fee_cleared ? "Fee cleared" : "Fee pending"}{" "}
+                              ·{" "}
+                              {exam.attendance_eligible
+                                ? "Attendance eligible"
+                                : "Attendance blocked"}
+                            </small>
+                          </div>
+                        ),
+                      )
+                    ) : (
+                      <p className="muted-copy">
+                        No supplementary feed available.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              )}
             </div>
             <div className="workspace-column">
               <article className="workspace-card recommendation-card">
@@ -568,7 +1667,13 @@ export default function PrototypePage({
                   </div>
                   <button
                     className={`workspace-button ${approved ? "success" : "primary"}`}
-                    onClick={() => void handleApprove()}
+                    onClick={() => {
+                      if (showApprovalConfirm) {
+                        void handleApprove();
+                      } else {
+                        setShowApprovalConfirm(true);
+                      }
+                    }}
                     disabled={approving || approved}
                   >
                     {approved ? <Check size={16} /> : <ShieldCheck size={16} />}
@@ -576,8 +1681,20 @@ export default function PrototypePage({
                       ? "Logging"
                       : approved
                         ? "Intervention approved"
-                        : "Approve & deploy"}
+                        : showApprovalConfirm
+                          ? "Confirm & deploy"
+                          : "Approve & deploy"}
                   </button>
+                  {!approved && showApprovalConfirm && (
+                    <button
+                      className="workspace-button ghost"
+                      type="button"
+                      onClick={() => setShowApprovalConfirm(false)}
+                      disabled={approving}
+                    >
+                      Cancel
+                    </button>
+                  )}
                 </div>
               </article>
               {dispatchLogs.length > 0 && (

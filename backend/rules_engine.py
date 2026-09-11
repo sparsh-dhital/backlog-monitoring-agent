@@ -27,13 +27,22 @@ def evaluate_student_progression(supabase: Client, student_id: str):
 
     is_eligible = backlog_count <= max_allowed_backlogs
 
+    backlog_details = [
+        {
+            **backlog,
+            "attempts_remaining": max(0, max_attempts - backlog["attempts_made"]),
+        }
+        for backlog in backlogs
+    ]
+
     return {
         "student_id": student_id,
         "active_backlog_count": backlog_count,
         "max_allowed_backlogs": max_allowed_backlogs,
         "promotion_status": "ELIGIBLE" if is_eligible else "REVIEW_REQUIRED",
         "attempt_pressure": attempt_pressure,
-        "backlog_details": backlogs
+        "backlog_details": backlog_details,
+        "max_attempts": max_attempts,
     }
 
 def orchestrate_agent_35_workflow(supabase: Client, student_id: str):

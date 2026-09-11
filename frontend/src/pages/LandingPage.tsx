@@ -177,7 +177,7 @@ export default function LandingPage({
             <button className="primary-button" onClick={onEnter}>
               Explore platform <ArrowUpRight size={16} />
             </button>
-            <button className="secondary-button" onClick={onEnter}>
+            <button className="secondary-button" onClick={onPrototype}>
               <CirclePlay size={20} /> View live demo
             </button>
           </div>

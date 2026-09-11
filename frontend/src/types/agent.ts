@@ -2,6 +2,7 @@ export interface BacklogDetail {
   id: string;
   course_code: string;
   attempts_made: number;
+  attempts_remaining?: number;
   status: string;
 }
 
@@ -12,6 +13,7 @@ export interface OrchestrationData {
     student_id: string;
     active_backlog_count: number;
     max_allowed_backlogs: number;
+    max_attempts?: number;
     promotion_status: string;
     attempt_pressure: string;
     backlog_details: BacklogDetail[];
@@ -21,5 +23,24 @@ export interface OrchestrationData {
     reasoning: string;
     recommended_actions: string[];
     human_approval_required: boolean;
+  };
+  integration_feeds?: {
+    agent_34_results: {
+      student_id: string;
+      results: Array<{
+        course_code: string;
+        term: string;
+        result: string;
+      }>;
+    };
+    agent_30_supplementary: {
+      student_id: string;
+      supplementary_exams: Array<{
+        course_code: string;
+        supplementary_available: boolean;
+        fee_cleared: boolean;
+        attendance_eligible: boolean;
+      }>;
+    };
   };
 }

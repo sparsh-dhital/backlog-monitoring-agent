@@ -14,7 +14,14 @@ app = FastAPI(title="Agent 35 Backlog Monitoring Orchestrator")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.environ.get(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+        ).split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,6 +56,8 @@ def run_orchestration(student_id: str):
 
 @app.post("/api/approve-intervention/{student_id}")
 def approve_intervention(student_id: str, background_tasks: BackgroundTasks, mentor_id: str = "FACULTY_099"):
+    if not mentor_id.strip():
+        raise HTTPException(status_code=400, detail="mentor_id is required")
     try:
         try:
             # 1. Log the mentor's approval with their ID
@@ -64,9 +73,11 @@ def approve_intervention(student_id: str, background_tasks: BackgroundTasks, men
             supabase.table("backlogs").update({
                 "status": "INTERVENTION_ACTIVE"
             }).eq("student_id", student_id).eq("status", "PENDING").execute()
-            
         except Exception as db_error:
-            print(f"⚠️ Warning: Database loop error. {db_error}")
+            raise HTTPException(
+                status_code=502,
+                detail="Intervention could not be persisted; no downstream work was started.",
+            ) from db_error
         
         # 3. Generate payload and fire background dispatcher
         payload = orchestrate_agent_35_workflow(supabase, student_id)

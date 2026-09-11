@@ -57,6 +57,10 @@ function ProtectedDashboard() {
       mode="dashboard"
       role={role as UserRole}
       onBack={() => navigate("/")}
+      onSwitchRole={(nextRole) => {
+        sessionStorage.setItem("edurecover-role", nextRole);
+        navigate(`/dashboard/${nextRole}`);
+      }}
     />
   );
 }
