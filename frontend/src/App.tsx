@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 interface OrchestrationData {
   agent_id: string;
   target_student_id: string;
@@ -45,9 +47,7 @@ export default function App() {
     setApproved(false);
     setDispatchLogs([]);
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/orchestrate/${targetId}`,
-      );
+      const res = await fetch(`${API_URL}/api/orchestrate/${targetId}`);
       if (!res.ok) throw new Error("Failed to fetch orchestration data");
       const json = await res.json();
       setData(json);
@@ -101,7 +101,6 @@ export default function App() {
 
   const handleInstantScan = () => {
     setShowScanner(false);
-    // Dynamically uses the currently selected or first test profile instead of hardcoding
     const scannedId = studentId || students[0];
     setStudentId(scannedId);
     fetchOrchestration(scannedId);
@@ -111,7 +110,7 @@ export default function App() {
     setApproving(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/api/approve-intervention/${studentId}?mentor_id=${mentorId}`,
+        `${API_URL}/api/approve-intervention/${studentId}?mentor_id=${mentorId}`,
         { method: "POST" },
       );
       if (!res.ok) throw new Error("Failed to approve intervention");
