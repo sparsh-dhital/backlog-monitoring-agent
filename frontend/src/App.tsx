@@ -179,18 +179,18 @@ export default function App() {
           <head>
             <title>Academic Recovery Report - ${data.target_student_id}</title>
             <style>
-              body { font-family: Arial, sans-serif; color: #111; padding: 40px; line-height: 1.6; }
-              .header { border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 25px; }
-              .header h1 { color: #4f46e5; margin: 0; font-size: 24px; }
+              body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: #111; padding: 40px; line-height: 1.6; }
+              .header { border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px; }
+              .header h1 { color: #000; margin: 0; font-size: 24px; }
               .header p { color: #666; margin: 5px 0 0 0; font-size: 14px; }
-              .section { margin-bottom: 25px; background: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; }
-              .section h2 { font-size: 16px; color: #374151; margin-top: 0; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+              .section { margin-bottom: 25px; background: #f9f9fb; border: 1px solid #e5e5ea; padding: 20px; border-radius: 16px; }
+              .section h2 { font-size: 14px; color: #333; margin-top: 0; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e5ea; padding-bottom: 8px; }
               .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px; }
-              .label { font-size: 12px; color: #6b7280; font-weight: bold; text-transform: uppercase; }
-              .value { font-size: 15px; color: #111827; font-weight: bold; margin-top: 2px; }
+              .label { font-size: 11px; color: #888; font-weight: 700; text-transform: uppercase; }
+              .value { font-size: 16px; color: #111; font-weight: 700; margin-top: 2px; }
               ul { padding-left: 20px; margin: 10px 0; }
-              li { margin-bottom: 8px; font-size: 14px; color: #374151; }
-              .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 15px; }
+              li { margin-bottom: 8px; font-size: 14px; color: #333; }
+              .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 15px; }
             </style>
           </head>
           <body>
@@ -224,10 +224,10 @@ export default function App() {
             <div class="section">
               <h2>Recovery Orchestration Strategy</h2>
               <div class="label">Assigned Segment</div>
-              <div class="value" style="color: #4f46e5; margin-bottom: 15px;">${data.ai_orchestration.recoverability_segment}</div>
+              <div class="value" style="color: #000; margin-bottom: 15px;">${data.ai_orchestration.recoverability_segment}</div>
               
               <div class="label">Evidence-Based Reasoning</div>
-              <p style="font-size: 14px; color: #374151; background: #fff; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <p style="font-size: 14px; color: #333; background: #fff; padding: 12px; border: 1px solid #e5e5ea; border-radius: 12px;">
                 ${data.ai_orchestration.reasoning}
               </p>
             </div>
@@ -276,17 +276,18 @@ export default function App() {
       : "NONE";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans pb-20 relative">
+    <div className="min-h-screen bg-black text-white font-sans p-6 md:p-10 selection:bg-white selection:text-black pb-24">
+      {/* Barcode Scanner Modal */}
       {showScanner && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm p-6">
-          <div className="bg-slate-900 p-5 rounded-xl border border-slate-700 w-full max-w-lg shadow-2xl space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-indigo-400">
-                Scan ID Card Barcode or QR Code
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-xl p-6">
+          <div className="bg-[#141416] p-6 rounded-3xl border border-white/15 w-full max-w-lg shadow-2xl space-y-5">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <h3 className="text-sm font-semibold tracking-wide text-white uppercase">
+                Scan Student ID Barcode
               </h3>
               <button
                 onClick={() => setShowScanner(false)}
-                className="text-slate-400 hover:text-rose-400 transition text-sm font-semibold"
+                className="text-zinc-400 hover:text-white transition text-xs font-medium bg-white/10 px-3 py-1.5 rounded-full"
               >
                 ✕ Close
               </button>
@@ -294,16 +295,16 @@ export default function App() {
 
             <div
               id="barcode-reader"
-              className="w-full bg-black rounded-lg overflow-hidden border border-slate-800"
+              className="w-full bg-black rounded-2xl overflow-hidden border border-white/10"
             ></div>
 
             <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-slate-400">
-                Align linear barcode inside the red frame.
+              <p className="text-[11px] text-zinc-400">
+                Align barcode within the target frame.
               </p>
               <button
                 onClick={handleInstantScan}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition"
+                className="bg-white text-black hover:bg-zinc-200 px-4 py-2 rounded-full text-xs font-semibold transition"
               >
                 ⚡ Instant Scan Simulation
               </button>
@@ -312,25 +313,31 @@ export default function App() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto space-y-6">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-indigo-400">
-              Agent 35: Vignan University Academic Recovery
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Apple Bento Header Card */}
+        <header className="bg-[#121214] border border-white/10 rounded-3xl p-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-2xl">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-[11px] font-semibold tracking-widest uppercase">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Agent 35 Core System
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Vignan University Academic Recovery
             </h1>
-            <p className="text-sm text-slate-400">
-              Multi-agent deterministic rule enforcement & intelligent
-              intervention analysis
+            <p className="text-xs text-zinc-400 max-w-xl">
+              Deterministic rule enforcement and intelligent intervention
+              orchestration engine.
             </p>
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
+
+          <div className="flex items-center gap-3 w-full lg:w-auto flex-wrap">
             <button
               onClick={() => setShowScanner(true)}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold bg-[#1c1c1e] hover:bg-[#2c2c2e] text-zinc-200 border border-white/10 transition"
             >
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-emerald-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -345,26 +352,29 @@ export default function App() {
               </svg>
               Scan ID Card
             </button>
+
             <input
               type="text"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value.toUpperCase())}
               placeholder="Registration No."
-              className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-all w-full md:w-40 font-mono"
+              className="bg-black border border-white/15 rounded-full px-4 py-2.5 text-xs font-mono text-zinc-200 focus:outline-none focus:border-white transition w-full sm:w-36 text-center"
             />
+
             <button
               onClick={() => fetchOrchestration(studentId)}
               disabled={loading || !studentId}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 whitespace-nowrap"
+              className="bg-white text-black hover:bg-zinc-200 px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition disabled:opacity-50 flex-1 sm:flex-none shadow-lg shadow-white/5"
             >
               {loading ? "Analyzing..." : "Run Orchestrator"}
             </button>
           </div>
         </header>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold mr-2">
-            Quick Test Profiles:
+        {/* Quick Test Selector Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <span className="text-[11px] text-zinc-500 uppercase tracking-widest font-bold mr-2">
+            Quick Profiles:
           </span>
           {students.map((id) => (
             <button
@@ -373,10 +383,10 @@ export default function App() {
                 setStudentId(id);
                 setDispatchLogs([]);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition ${
+              className={`px-4 py-2 rounded-full text-xs font-mono font-semibold transition ${
                 studentId === id
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/30"
-                  : "bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800"
+                  ? "bg-white text-black shadow-lg shadow-white/10"
+                  : "bg-[#121214] text-zinc-400 border border-white/10 hover:bg-[#1c1c1e] hover:text-white"
               }`}
             >
               {id}
@@ -385,91 +395,81 @@ export default function App() {
         </div>
 
         {error && (
-          <div className="bg-red-950/50 border border-red-800 text-red-200 p-4 rounded-xl text-sm">
+          <div className="bg-red-950/40 border border-red-800/60 text-red-200 p-4 rounded-3xl text-xs">
             {error}
           </div>
         )}
 
         {data && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Bento Column */}
             <div className="space-y-6">
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">
+              {/* Deterministic Bento Card */}
+              <div className="bg-[#121214] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 border-b border-white/10 pb-3">
                   Deterministic Evaluation
                 </h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">
-                      Registration No.
-                    </span>
-                    <span className="text-sm font-bold text-slate-200 font-mono">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">Registration No.</span>
+                    <span className="font-mono font-bold text-white bg-white/5 px-3 py-1 rounded-full border border-white/10">
                       {data.target_student_id}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">
-                      Active Backlogs
-                    </span>
-                    <span className="font-semibold text-amber-400 text-sm">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">Active Backlogs</span>
+                    <span className="font-bold text-amber-400">
                       {data.deterministic_evaluation.active_backlog_count} /{" "}
                       {data.deterministic_evaluation.max_allowed_backlogs}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">
-                      Promotion Status
-                    </span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">Promotion Status</span>
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide ${
                         data.deterministic_evaluation.promotion_status ===
                         "ELIGIBLE"
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                          : "bg-rose-950 text-rose-400 border border-rose-800"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                       }`}
                     >
                       {data.deterministic_evaluation.promotion_status}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">
-                      Attempt Pressure
-                    </span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">Attempt Pressure</span>
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide ${
                         data.deterministic_evaluation.attempt_pressure ===
                           "HIGH" ||
                         data.deterministic_evaluation.attempt_pressure ===
                           "CRITICAL"
-                          ? "bg-amber-950 text-amber-400 border border-amber-800"
-                          : "bg-blue-950 text-blue-400 border border-blue-800"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                       }`}
                     >
                       {data.deterministic_evaluation.attempt_pressure}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">
-                      Duration Risk
-                    </span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-400">Duration Risk</span>
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide ${
                         durationRisk === "HIGH"
-                          ? "bg-rose-950 text-rose-400 border border-rose-800"
-                          : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                          ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                       }`}
                     >
                       {durationRisk}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-xs text-slate-500">
-                      Chronic Pattern
-                    </span>
+                  <div className="flex justify-between items-center text-xs pt-1">
+                    <span className="text-zinc-400">Chronic Pattern</span>
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide ${
                         chronicPattern === "DETECTED"
-                          ? "bg-amber-950 text-amber-400 border border-amber-800"
-                          : "bg-slate-800 text-slate-400"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-white/5 text-zinc-400 border border-white/10"
                       }`}
                     >
                       {chronicPattern}
@@ -478,28 +478,29 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
+              {/* Arrear Register Bento Card */}
+              <div className="bg-[#121214] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 border-b border-white/10 pb-3">
                   Arrear Register
                 </h2>
                 {data.deterministic_evaluation.backlog_details.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-2">
+                  <p className="text-xs text-zinc-500 italic py-2">
                     No active backlogs found for this profile.
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {data.deterministic_evaluation.backlog_details.map((b) => (
                       <div
                         key={b.id}
-                        className="flex justify-between items-center bg-slate-950 p-3 rounded-lg border border-slate-800/60 text-sm"
+                        className="flex justify-between items-center bg-black/40 p-3.5 rounded-2xl border border-white/10 text-xs"
                       >
-                        <span className="font-mono text-indigo-300">
+                        <span className="font-mono font-bold text-zinc-200">
                           {b.course_code}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-zinc-400">
                           Attempts: {b.attempts_made}
                         </span>
-                        <span className="text-xs text-amber-500 font-medium">
+                        <span className="text-amber-400 font-semibold">
                           {b.status}
                         </span>
                       </div>
@@ -509,102 +510,112 @@ export default function App() {
               </div>
             </div>
 
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 shadow-lg space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
+            {/* Right Bento Column */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-[#121214] border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-5 gap-4">
                   <div>
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">
                       Recovery Orchestrator Output
-                    </h2>
-                    <span className="text-xl font-bold text-indigo-300 mt-1 block">
-                      {data.ai_orchestration.recoverability_segment}
                     </span>
+                    <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                      {data.ai_orchestration.recoverability_segment}
+                    </h2>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        data.ai_orchestration.human_approval_required
-                          ? "bg-amber-950/80 text-amber-300 border border-amber-700"
-                          : "bg-emerald-950/80 text-emerald-300 border border-emerald-700"
-                      }`}
-                    >
-                      {data.ai_orchestration.human_approval_required
-                        ? "Approval Required"
-                        : "Auto-Processable"}
-                    </span>
-                  </div>
+                  <span
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide ${
+                      data.ai_orchestration.human_approval_required
+                        ? "bg-amber-500/10 text-amber-300 border border-amber-500/30"
+                        : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30"
+                    }`}
+                  >
+                    {data.ai_orchestration.human_approval_required
+                      ? "Approval Required"
+                      : "Auto-Processable"}
+                  </span>
                 </div>
 
-                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 shadow-inner">
-                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                {/* Export Options Toolbar */}
+                <div className="bg-black/40 p-4 rounded-2xl border border-white/10 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-widest">
                     Export Document:
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => handleExport("pdf")}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow"
+                      className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-zinc-200 border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition"
                     >
-                      <span className="text-red-400 font-bold">PDF</span>{" "}
+                      <span className="text-rose-400 font-bold mr-1">PDF</span>{" "}
                       Document
                     </button>
                     <button
                       onClick={() => handleExport("docx")}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow"
+                      className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-zinc-200 border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition"
                     >
-                      <span className="text-blue-400 font-bold">DOCX</span> Word
+                      <span className="text-blue-400 font-bold mr-1">DOCX</span>{" "}
+                      Word
                     </button>
                     <button
                       onClick={() => handleExport("csv")}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow"
+                      className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-zinc-200 border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition"
                     >
-                      <span className="text-emerald-400 font-bold">CSV</span>{" "}
+                      <span className="text-emerald-400 font-bold mr-1">
+                        CSV
+                      </span>{" "}
                       Data
                     </button>
                     <button
                       onClick={() => handleExport("json")}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow"
+                      className="bg-[#1c1c1e] hover:bg-[#2c2c2e] text-zinc-200 border border-white/10 px-4 py-2 rounded-xl text-xs font-semibold transition"
                     >
-                      <span className="text-indigo-400 font-bold">JSON</span>{" "}
+                      <span className="text-indigo-400 font-bold mr-1">
+                        JSON
+                      </span>{" "}
                       Payload
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                {/* Evidence-Based Reasoning */}
+                <div className="space-y-2">
+                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
                     Evidence-Based Reasoning
                   </h3>
-                  <p className="text-sm text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-lg border border-slate-800/80">
+                  <div className="text-sm text-zinc-300 leading-relaxed bg-black/60 p-5 rounded-2xl border border-white/10 shadow-inner">
                     {data.ai_orchestration.reasoning}
-                  </p>
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                {/* Recommended Interventions */}
+                <div className="space-y-3">
+                  <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
                     Recommended Interventions
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {data.ai_orchestration.recommended_actions.map(
                       (action, idx) => (
                         <li
                           key={idx}
-                          className="flex items-start gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800/60 text-sm text-slate-200"
+                          className="flex items-start gap-3.5 bg-black/60 p-4 rounded-2xl border border-white/10 text-xs text-zinc-200"
                         >
-                          <span className="text-indigo-400 font-bold shrink-0">
+                          <span className="text-emerald-400 font-mono font-bold shrink-0 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
                             0{idx + 1}
                           </span>
-                          <span className="leading-relaxed">{action}</span>
+                          <span className="leading-relaxed mt-0.5">
+                            {action}
+                          </span>
                         </li>
                       ),
                     )}
                   </ul>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800 flex flex-col gap-4">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                {/* Approval & Terminal Log Section */}
+                <div className="pt-5 border-t border-white/10 space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-zinc-400 font-medium">
                         {approved
                           ? `✓ Intervention logged by ${mentorId}.`
                           : "Awaiting mentor sign-off:"}
@@ -613,7 +624,7 @@ export default function App() {
                         <select
                           value={mentorId}
                           onChange={(e) => setMentorId(e.target.value)}
-                          className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-indigo-500"
+                          className="bg-black border border-white/15 rounded-full px-4 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-white"
                         >
                           <option value="FACULTY_099">Prof. S. Dhital</option>
                           <option value="FACULTY_104">Dr. A. Sharma</option>
@@ -624,10 +635,10 @@ export default function App() {
                     <button
                       onClick={handleApprove}
                       disabled={approving || approved}
-                      className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition whitespace-nowrap ${
+                      className={`px-6 py-2.5 rounded-full text-xs font-bold tracking-wide transition whitespace-nowrap shadow-lg ${
                         approved
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800 cursor-default"
-                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-default"
+                          : "bg-emerald-500 text-black hover:bg-emerald-400 shadow-emerald-500/20"
                       }`}
                     >
                       {approving
@@ -639,11 +650,11 @@ export default function App() {
                   </div>
 
                   {dispatchLogs.length > 0 && (
-                    <div className="mt-4 bg-black border border-slate-800 rounded-lg p-4 font-mono text-xs overflow-y-auto max-h-48 shadow-inner shadow-black">
+                    <div className="bg-black border border-white/10 rounded-2xl p-5 font-mono text-[11px] overflow-y-auto max-h-48 shadow-inner space-y-1.5">
                       {dispatchLogs.map((log, idx) => (
                         <div
                           key={idx}
-                          className={`mb-1 ${log.includes("SYSTEM") ? "text-indigo-400 font-bold" : "text-emerald-500"}`}
+                          className={`${log.includes("SYSTEM") ? "text-zinc-200 font-bold" : "text-emerald-400"}`}
                         >
                           {log}
                         </div>

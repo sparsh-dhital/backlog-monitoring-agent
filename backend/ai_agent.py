@@ -3,16 +3,14 @@ import json
 from groq import Groq
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Initialize Groq client
 groq_api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 def run_agent_35_orchestration(student_evaluation: dict, integration_results: dict, supplementary_data: dict):
     """
-    Agent 35 AI Orchestrator using Groq (Llama 3 70B) for lightning-fast JSON inference.
+    Agent 35 AI Orchestrator using Groq with token limits optimized for free tier constraints.
     """
     if not client:
         return get_fallback_response(student_evaluation.get("student_id", "UNKNOWN"), "Groq API key not found in environment variables.")
@@ -56,7 +54,8 @@ def run_agent_35_orchestration(student_evaluation: dict, integration_results: di
                 }
             ],
             response_format={"type": "json_object"},
-            temperature=0.2
+            temperature=0.2,
+            max_tokens=600  # Keeps output within Groq OTPM limits
         )
         
         text_response = response.choices[0].message.content
@@ -64,13 +63,13 @@ def run_agent_35_orchestration(student_evaluation: dict, integration_results: di
         
     except Exception as e:
         error_str = str(e)
-        print(f"⚠️ Groq API Error: {error_str}")
+        print(f"[WARNING] Groq API Error: {error_str}")
         return get_fallback_response(student_evaluation.get("student_id", "UNKNOWN"), f"LLM Error/Rate Limit: {error_str}")
 
 def get_fallback_response(student_id: str, reason: str):
     """
-    Provides a seamless synthesized fallback analysis if the AI API fails,
-    ensuring the hackathon demo remains functional.
+    Provides a seamless synthesized fallback analysis if the AI API hits rate limits,
+    ensuring the hackathon demo remains fully functional.
     """
     if student_id == "STU003":
         return {
