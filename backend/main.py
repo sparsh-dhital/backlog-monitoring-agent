@@ -12,6 +12,14 @@ load_dotenv()
 
 app = FastAPI(title="Agent 35 Backlog Monitoring Orchestrator")
 
+@app.get("/")
+def read_root():
+    return {
+        "status": "online",
+        "service": "Agent 35: Backlog Monitoring Orchestrator",
+        "message": "Backend is running successfully."
+    }
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

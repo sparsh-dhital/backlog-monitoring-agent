@@ -64,7 +64,6 @@ export default function App() {
     }
   }, [dispatchLogs]);
 
-  // Real Barcode Scanner Integration
   useEffect(() => {
     if (showScanner) {
       const scanner = new Html5QrcodeScanner(
@@ -79,16 +78,13 @@ export default function App() {
 
       scanner.render(
         (decodedText) => {
-          // On successful scan: stop camera, close modal, set ID, and auto-fetch
           scanner.clear();
           setShowScanner(false);
           const scannedId = decodedText.trim().toUpperCase();
           setStudentId(scannedId);
           fetchOrchestration(scannedId);
         },
-        (_errorMessage) => {
-          // Ignore frequent error callbacks while it attempts to focus/read
-        },
+        (_errorMessage) => {},
       );
 
       return () => {
@@ -102,9 +98,7 @@ export default function App() {
     try {
       const res = await fetch(
         `http://127.0.0.1:8000/api/approve-intervention/${studentId}?mentor_id=${mentorId}`,
-        {
-          method: "POST",
-        },
+        { method: "POST" },
       );
       if (!res.ok) throw new Error("Failed to approve intervention");
       setApproved(true);
@@ -112,10 +106,10 @@ export default function App() {
       const sequence = [
         `> [SYSTEM] INITIATING DOWNSTREAM PIPELINE FOR ${studentId}...`,
         `> [SYSTEM] Authorized by Mentor ID: ${mentorId}`,
-        `> [AGENT_12_COMM] Received orchestration contract.`,
-        `> [AGENT_12_COMM] Action: Sending formal intervention email to ${studentId}@university.edu.`,
-        `> [AGENT_14_REMEDIAL] Received payload. Flagging for support module.`,
-        `> [AGENT_45_SCHEDULE] Action: Booking faculty counseling slot.`,
+        `> [COMM_MODULE] Received orchestration contract.`,
+        `> [COMM_MODULE] Action: Sending formal intervention email to ${studentId}@university.edu.`,
+        `> [REMEDIAL_MODULE] Received payload. Flagging for support module.`,
+        `> [SCHEDULER_MODULE] Action: Booking faculty counseling slot.`,
         `> [SYSTEM] BACKLOG STATUS MUTATED TO 'INTERVENTION_ACTIVE'.`,
         `> [SYSTEM] PIPELINE FULLY DEPLOYED AND SYNCED WITH SUPABASE.`,
       ];
@@ -135,6 +129,70 @@ export default function App() {
     }
   };
 
+  const handleExport = (format: string) => {
+    if (!data) return;
+    let content = "";
+    let mimeType = "";
+    let filename = `Recovery_Plan_${data.target_student_id}.${format}`;
+
+    if (format === "json") {
+      content = JSON.stringify(data, null, 2);
+      mimeType = "application/json";
+      filename = `Recovery_Data_${data.target_student_id}.json`;
+    } else if (format === "csv") {
+      content =
+        "Course Code,Attempts Made,Status\n" +
+        data.deterministic_evaluation.backlog_details
+          .map((b) => `${b.course_code},${b.attempts_made},${b.status}`)
+          .join("\n");
+      mimeType = "text/csv";
+      filename = `Arrear_Register_${data.target_student_id}.csv`;
+    } else if (format === "docx") {
+      content =
+        `VIGNAN UNIVERSITY - ACADEMIC RECOVERY REPORT\n==========================================\n` +
+        `Registration No: ${data.target_student_id}\n` +
+        `Active Backlogs: ${data.deterministic_evaluation.active_backlog_count} / ${data.deterministic_evaluation.max_allowed_backlogs}\n` +
+        `Promotion Status: ${data.deterministic_evaluation.promotion_status}\n` +
+        `Attempt Pressure: ${data.deterministic_evaluation.attempt_pressure}\n\n` +
+        `RECOVERY STRATEGY\n------------------------------------------\n` +
+        `Segment: ${data.ai_orchestration.recoverability_segment}\n\n` +
+        `Evidence-Based Reasoning:\n${data.ai_orchestration.reasoning}\n\n` +
+        `Recommended Actions:\n${data.ai_orchestration.recommended_actions.map((a, i) => `${i + 1}. ${a}`).join("\n")}`;
+      mimeType = "application/msword";
+      filename = `Recovery_Plan_${data.target_student_id}.doc`;
+    } else if (format === "pdf") {
+      content =
+        `==================================================\n` +
+        `         ACADEMIC RECOVERY ACTION PLAN            \n` +
+        `         Vignan University Student Record         \n` +
+        `==================================================\n\n` +
+        `Registration Number : ${data.target_student_id}\n` +
+        `Active Backlogs     : ${data.deterministic_evaluation.active_backlog_count} / ${data.deterministic_evaluation.max_allowed_backlogs}\n` +
+        `Promotion Status    : ${data.deterministic_evaluation.promotion_status}\n` +
+        `Attempt Pressure    : ${data.deterministic_evaluation.attempt_pressure}\n\n` +
+        `RECOVERY STRATEGY CLASSIFICATION:\n` +
+        `-> ${data.ai_orchestration.recoverability_segment}\n\n` +
+        `EVIDENCE-BASED REASONING:\n` +
+        `${data.ai_orchestration.reasoning}\n\n` +
+        `RECOMMENDED INTERVENTION STEPS:\n` +
+        data.ai_orchestration.recommended_actions
+          .map((a, i) => `[ ] ${i + 1}. ${a}`)
+          .join("\n") +
+        `\n\n==================================================\n` +
+        `Official Document Generated by Academic Recovery System`;
+      mimeType = "text/plain";
+      filename = `Recovery_Report_${data.target_student_id}.txt`;
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const durationRisk =
     data?.deterministic_evaluation.attempt_pressure === "HIGH" ? "HIGH" : "LOW";
   const chronicPattern =
@@ -144,7 +202,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans pb-20 relative">
-      {/* Camera Scanner Modal Overlay */}
       {showScanner && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm p-6">
           <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 w-full max-w-lg shadow-2xl">
@@ -159,7 +216,6 @@ export default function App() {
                 Cancel (X)
               </button>
             </div>
-            {/* The scanner library will inject the video feed here */}
             <div
               id="barcode-reader"
               className="w-full bg-black rounded-lg overflow-hidden border border-slate-800"
@@ -178,7 +234,7 @@ export default function App() {
               Agent 35: Vignan University Academic Recovery
             </h1>
             <p className="text-sm text-slate-400">
-              Multi-agent deterministic rule enforcement & Gemini qualitative
+              Multi-agent deterministic rule enforcement & intelligent
               intervention analysis
             </p>
           </div>
@@ -370,15 +426,16 @@ export default function App() {
 
             <div className="md:col-span-2 space-y-6">
               <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-6 shadow-lg space-y-6">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
                   <div>
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Gemini AI Recovery Orchestrator
+                      Recovery Orchestrator Output
                     </h2>
                     <span className="text-xl font-bold text-indigo-300 mt-1 block">
                       {data.ai_orchestration.recoverability_segment}
                     </span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -391,6 +448,41 @@ export default function App() {
                         ? "Approval Required"
                         : "Auto-Processable"}
                     </span>
+                  </div>
+                </div>
+
+                {/* Beautified Direct Export Option Buttons */}
+                <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Export Options:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => handleExport("pdf")}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                    >
+                      <span className="text-red-400 font-bold">PDF</span> Report
+                    </button>
+                    <button
+                      onClick={() => handleExport("docx")}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                    >
+                      <span className="text-blue-400 font-bold">DOCX</span> Word
+                    </button>
+                    <button
+                      onClick={() => handleExport("csv")}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                    >
+                      <span className="text-emerald-400 font-bold">CSV</span>{" "}
+                      Excel
+                    </button>
+                    <button
+                      onClick={() => handleExport("json")}
+                      className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                    >
+                      <span className="text-indigo-400 font-bold">JSON</span>{" "}
+                      Payload
+                    </button>
                   </div>
                 </div>
 
