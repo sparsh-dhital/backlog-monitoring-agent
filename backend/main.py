@@ -40,27 +40,32 @@ def run_orchestration(student_id: str):
     return orchestrate_agent_35_workflow(supabase, student_id)
 
 @app.post("/api/approve-intervention/{student_id}")
-def approve_intervention(student_id: str, background_tasks: BackgroundTasks):
+def approve_intervention(student_id: str, background_tasks: BackgroundTasks, mentor_id: str = "FACULTY_099"):
     try:
-        # Wrap the Supabase insert in its own try block
         try:
+            # 1. Log the mentor's approval with their ID
             supabase.table("interventions").insert({
                 "student_id": student_id,
                 "risk_level": "HIGH",
                 "recommended_action": "AI-Orchestrated Recovery Plan Approved",
-                "human_approved": True
+                "human_approved": True,
+                "mentor_id": mentor_id
             }).execute()
+            
+            # 2. Close the Feedback Loop: Update backlogs so they aren't flagged again
+            # In a real app, you would check RLS for this table as well!
+            supabase.table("backlogs").update({
+                "status": "INTERVENTION_ACTIVE"
+            }).eq("student_id", student_id).eq("status", "PENDING").execute()
+            
         except Exception as db_error:
-            print(f"⚠️ Warning: Could not log to Supabase 'interventions' table. Proceeding with dispatch. Error: {db_error}")
+            print(f"⚠️ Warning: Database loop error. {db_error}")
         
-        # 2. Generate payload for downstream agents
+        # 3. Generate payload and fire background dispatcher
         payload = orchestrate_agent_35_workflow(supabase, student_id)
-        
-        # 3. Fire background dispatcher
         background_tasks.add_task(trigger_execution_pipeline, student_id, payload)
         
-        return {"status": "success", "message": "Intervention deployed successfully."}
+        return {"status": "success", "message": "Intervention deployed and feedback loop closed."}
     except Exception as e:
-        # This will only fire if there's a critical error outside the DB layer
         print(f"Endpoint Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

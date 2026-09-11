@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface OrchestrationData {
   agent_id: string;
@@ -26,7 +27,9 @@ interface OrchestrationData {
 
 export default function App() {
   const [studentId, setStudentId] = useState("STU001");
+  const [mentorId, setMentorId] = useState("FACULTY_099");
   const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [data, setData] = useState<OrchestrationData | null>(null);
   const [error, setError] = useState("");
   const [approved, setApproved] = useState(false);
@@ -61,11 +64,44 @@ export default function App() {
     }
   }, [dispatchLogs]);
 
+  // Real Barcode Scanner Integration
+  useEffect(() => {
+    if (showScanner) {
+      const scanner = new Html5QrcodeScanner(
+        "barcode-reader",
+        {
+          fps: 10,
+          qrbox: { width: 300, height: 150 },
+          rememberLastUsedCamera: true,
+        },
+        false,
+      );
+
+      scanner.render(
+        (decodedText) => {
+          // On successful scan: stop camera, close modal, set ID, and auto-fetch
+          scanner.clear();
+          setShowScanner(false);
+          const scannedId = decodedText.trim().toUpperCase();
+          setStudentId(scannedId);
+          fetchOrchestration(scannedId);
+        },
+        (_errorMessage) => {
+          // Ignore frequent error callbacks while it attempts to focus/read
+        },
+      );
+
+      return () => {
+        scanner.clear().catch(console.error);
+      };
+    }
+  }, [showScanner]);
+
   const handleApprove = async () => {
     setApproving(true);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/api/approve-intervention/${studentId}`,
+        `http://127.0.0.1:8000/api/approve-intervention/${studentId}?mentor_id=${mentorId}`,
         {
           method: "POST",
         },
@@ -73,14 +109,14 @@ export default function App() {
       if (!res.ok) throw new Error("Failed to approve intervention");
       setApproved(true);
 
-      // Simulate live background task streaming for the UI demo
       const sequence = [
         `> [SYSTEM] INITIATING DOWNSTREAM PIPELINE FOR ${studentId}...`,
+        `> [SYSTEM] Authorized by Mentor ID: ${mentorId}`,
         `> [AGENT_12_COMM] Received orchestration contract.`,
         `> [AGENT_12_COMM] Action: Sending formal intervention email to ${studentId}@university.edu.`,
-        `> [AGENT_14_REMEDIAL] Received payload. Flagging for math support module.`,
-        `> [AGENT_45_SCHEDULE] Received payload.`,
-        `> [AGENT_45_SCHEDULE] Action: Booking faculty counseling slot for upcoming Thursday.`,
+        `> [AGENT_14_REMEDIAL] Received payload. Flagging for support module.`,
+        `> [AGENT_45_SCHEDULE] Action: Booking faculty counseling slot.`,
+        `> [SYSTEM] BACKLOG STATUS MUTATED TO 'INTERVENTION_ACTIVE'.`,
         `> [SYSTEM] PIPELINE FULLY DEPLOYED AND SYNCED WITH SUPABASE.`,
       ];
 
@@ -99,13 +135,47 @@ export default function App() {
     }
   };
 
+  const durationRisk =
+    data?.deterministic_evaluation.attempt_pressure === "HIGH" ? "HIGH" : "LOW";
+  const chronicPattern =
+    data && data.deterministic_evaluation.active_backlog_count >= 3
+      ? "DETECTED"
+      : "NONE";
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans pb-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans pb-20 relative">
+      {/* Camera Scanner Modal Overlay */}
+      {showScanner && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-sm p-6">
+          <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 w-full max-w-lg shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-indigo-400">
+                Scan Student ID Barcode
+              </h3>
+              <button
+                onClick={() => setShowScanner(false)}
+                className="text-slate-400 hover:text-rose-400 transition"
+              >
+                Cancel (X)
+              </button>
+            </div>
+            {/* The scanner library will inject the video feed here */}
+            <div
+              id="barcode-reader"
+              className="w-full bg-black rounded-lg overflow-hidden border border-slate-800"
+            ></div>
+            <p className="text-xs text-center text-slate-500 mt-4">
+              Point your camera at a 1D barcode or QR code.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto space-y-6">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-indigo-400">
-              Agent 35: Academic Recovery Orchestrator
+              Agent 35: Vignan University Academic Recovery
             </h1>
             <p className="text-sm text-slate-400">
               Multi-agent deterministic rule enforcement & Gemini qualitative
@@ -113,16 +183,37 @@ export default function App() {
             </p>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => setShowScanner(true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                />
+              </svg>
+              Scan ID Card
+            </button>
             <input
               type="text"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value.toUpperCase())}
-              placeholder="Enter Student ID"
-              className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 w-full md:w-36"
+              placeholder="Registration No."
+              className="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-all w-full md:w-40"
             />
             <button
               onClick={() => fetchOrchestration(studentId)}
-              disabled={loading}
+              disabled={loading || !studentId}
               className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-medium transition disabled:opacity-50 whitespace-nowrap"
             >
               {loading ? "Analyzing..." : "Run Orchestrator"}
@@ -167,7 +258,9 @@ export default function App() {
                 </h2>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
-                    <span className="text-xs text-slate-500">Student ID</span>
+                    <span className="text-xs text-slate-500">
+                      Registration No.
+                    </span>
                     <span className="text-sm font-bold text-slate-200">
                       {data.target_student_id}
                     </span>
@@ -196,7 +289,7 @@ export default function App() {
                       {data.deterministic_evaluation.promotion_status}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center pt-1">
+                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
                     <span className="text-xs text-slate-500">
                       Attempt Pressure
                     </span>
@@ -211,6 +304,34 @@ export default function App() {
                       }`}
                     >
                       {data.deterministic_evaluation.attempt_pressure}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-800/60 pb-2">
+                    <span className="text-xs text-slate-500">
+                      Duration Risk
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                        durationRisk === "HIGH"
+                          ? "bg-rose-950 text-rose-400 border border-rose-800"
+                          : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                      }`}
+                    >
+                      {durationRisk}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-xs text-slate-500">
+                      Chronic Pattern
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded text-xs font-bold ${
+                        chronicPattern === "DETECTED"
+                          ? "bg-amber-950 text-amber-400 border border-amber-800"
+                          : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {chronicPattern}
                     </span>
                   </div>
                 </div>
@@ -304,16 +425,29 @@ export default function App() {
                 </div>
 
                 <div className="pt-4 border-t border-slate-800 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400">
-                      {approved
-                        ? "✓ Intervention logged to Supabase database."
-                        : "Awaiting mentor sign-off to push workflow."}
-                    </span>
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400">
+                        {approved
+                          ? `✓ Intervention logged by ${mentorId}.`
+                          : "Awaiting mentor sign-off:"}
+                      </span>
+                      {!approved && (
+                        <select
+                          value={mentorId}
+                          onChange={(e) => setMentorId(e.target.value)}
+                          className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono text-slate-300 focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="FACULTY_099">Prof. S. Dhital</option>
+                          <option value="FACULTY_104">Dr. A. Sharma</option>
+                        </select>
+                      )}
+                    </div>
+
                     <button
                       onClick={handleApprove}
                       disabled={approving || approved}
-                      className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition ${
+                      className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition whitespace-nowrap ${
                         approved
                           ? "bg-emerald-950 text-emerald-400 border border-emerald-800 cursor-default"
                           : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30"
