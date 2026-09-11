@@ -44,3 +44,13 @@ export interface OrchestrationData {
     };
   };
 }
+
+export interface ActivityEvent {
+  event_id: string;
+  request_id: string;
+  student_id: string;
+  agent_id: string;
+  status: string;
+  message: string;
+  created_at: string;
+}

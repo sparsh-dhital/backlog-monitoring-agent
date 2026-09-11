@@ -2,7 +2,11 @@
   "name": "backlog-monitoring-agent",
   "private": true,
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail \"npm run dev --prefix frontend\" \"cd backend && venv\\Scripts\\python.exe -m uvicorn main:app --reload\""
+    "dev": "concurrently --kill-others-on-fail \"npm run dev --prefix frontend\" \"cd backend && venv\\Scripts\\python.exe -m uvicorn main:app --reload\"",
+    "build": "npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
+    "backend:check": "cd backend && venv\\Scripts\\python.exe -m compileall -q .",
+    "check": "npm run build && npm run lint && npm run backend:check"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

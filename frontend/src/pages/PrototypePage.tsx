@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import Brand from "../components/Brand";
-import type { OrchestrationData } from "../types/agent";
+import type { ActivityEvent, OrchestrationData } from "../types/agent";
 import { userRoles, type UserRole } from "../types/roles";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -939,33 +939,52 @@ export default function PrototypePage({
   const [approving, setApproving] = useState(false);
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   const [dispatchLogs, setDispatchLogs] = useState<string[]>([]);
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [activeTab, setActiveTab] = useState("Dashboard");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
 
-  const fetchOrchestration = useCallback(async (targetId: string) => {
-    const requestId = ++requestSequence.current;
-    sessionStorage.setItem("edurecover-focus-student", targetId);
-    setLoading(true);
-    setError("");
-    setApproved(false);
-    setDispatchLogs([]);
+  const refreshActivity = useCallback(async (targetId: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/orchestrate/${targetId}`);
-      if (!response.ok) throw new Error("Unable to fetch orchestration data");
-      if (requestId !== requestSequence.current) return;
-      setData((await response.json()) as OrchestrationData);
-    } catch (requestError) {
-      if (requestId !== requestSequence.current) return;
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "An unexpected error occurred",
+      const response = await fetch(
+        `${API_URL}/api/dispatch/activity/${targetId}`,
       );
-    } finally {
-      if (requestId === requestSequence.current) setLoading(false);
+      if (!response.ok) return;
+      const payload = (await response.json()) as { events: ActivityEvent[] };
+      setActivityEvents(payload.events);
+    } catch {
+      setActivityEvents([]);
     }
   }, []);
+
+  const fetchOrchestration = useCallback(
+    async (targetId: string) => {
+      const requestId = ++requestSequence.current;
+      sessionStorage.setItem("edurecover-focus-student", targetId);
+      setLoading(true);
+      setError("");
+      setApproved(false);
+      setDispatchLogs([]);
+      setActivityEvents([]);
+      try {
+        const response = await fetch(`${API_URL}/api/orchestrate/${targetId}`);
+        if (!response.ok) throw new Error("Unable to fetch orchestration data");
+        if (requestId !== requestSequence.current) return;
+        setData((await response.json()) as OrchestrationData);
+        void refreshActivity(targetId);
+      } catch (requestError) {
+        if (requestId !== requestSequence.current) return;
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "An unexpected error occurred",
+        );
+      } finally {
+        if (requestId === requestSequence.current) setLoading(false);
+      }
+    },
+    [refreshActivity],
+  );
 
   useEffect(() => {
     if (!showScanner) return;
@@ -1029,6 +1048,7 @@ export default function PrototypePage({
           (index + 1) * 550,
         ),
       );
+      window.setTimeout(() => void refreshActivity(studentId), 1800);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -1697,7 +1717,7 @@ export default function PrototypePage({
                   )}
                 </div>
               </article>
-              {dispatchLogs.length > 0 && (
+              {(dispatchLogs.length > 0 || activityEvents.length > 0) && (
                 <article className="workspace-card activity-card">
                   <div className="card-heading">
                     <div>
@@ -1707,12 +1727,22 @@ export default function PrototypePage({
                     <Activity size={18} />
                   </div>
                   <div className="activity-log">
-                    {dispatchLogs.map((log) => (
-                      <p key={log}>
-                        <Check size={13} />
-                        {log}
-                      </p>
-                    ))}
+                    {activityEvents.length > 0
+                      ? activityEvents.map((event) => (
+                          <p key={event.event_id}>
+                            <Check size={13} />
+                            <span>
+                              <strong>{event.agent_id}</strong> {event.message}
+                            </span>
+                            <small>{event.status}</small>
+                          </p>
+                        ))
+                      : dispatchLogs.map((log) => (
+                          <p key={log}>
+                            <Check size={13} />
+                            {log}
+                          </p>
+                        ))}
                     <div ref={logsEndRef} />
                   </div>
                 </article>

@@ -2548,6 +2548,17 @@ h2 em {
   flex: 0 0 auto;
   margin-top: 2px;
 }
+.activity-log p span {
+  flex: 1;
+}
+.activity-log p span strong {
+  color: #c4ceff;
+}
+.activity-log p small {
+  color: #6ed1ab;
+  font-size: 9px;
+  font-weight: 800;
+}
 .export-card {
   display: flex;
   align-items: center;

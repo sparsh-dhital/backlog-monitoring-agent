@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from rules_engine import evaluate_student_progression, orchestrate_agent_35_workflow
 from routers.integrations import router as integrations_router
-from routers.dispatch import trigger_execution_pipeline
+from routers.dispatch import router as dispatch_router, trigger_execution_pipeline
 
 load_dotenv()
 
@@ -32,6 +32,7 @@ key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 app.include_router(integrations_router)
+app.include_router(dispatch_router)
 
 @app.get("/")
 def read_root():
@@ -86,4 +87,6 @@ def approve_intervention(student_id: str, background_tasks: BackgroundTasks, men
         return {"status": "success", "message": "Intervention deployed and feedback loop closed."}
     except Exception as e:
         print(f"Endpoint Error: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise
         raise HTTPException(status_code=500, detail=str(e))
