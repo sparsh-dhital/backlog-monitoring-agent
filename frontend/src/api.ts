@@ -15,11 +15,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,
     );
   }
-  if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as {
-      detail?: string;
-    } | null;
-    throw new Error(body?.detail || `Request failed (${response.status})`);
+  const contentType = response.headers.get("content-type") || "";
+  if (!response.ok || !contentType.includes("application/json")) {
+    const body = contentType.includes("application/json")
+      ? ((await response.json().catch(() => null)) as {
+          detail?: string;
+        } | null)
+      : null;
+    if (body?.detail) throw new Error(body.detail);
+    throw new Error(
+      response.ok
+        ? `The API URL ${API_URL} returned HTML instead of JSON. Deploy the FastAPI backend separately and set VITE_API_URL to that backend URL.`
+        : `API request failed with status ${response.status}. Check the backend deployment at ${API_URL}.`,
+    );
   }
   return (await response.json()) as T;
 }

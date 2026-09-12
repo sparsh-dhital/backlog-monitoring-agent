@@ -28,8 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
+if not url or not key:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be configured")
 supabase: Client = create_client(url, key)
 
 app.include_router(integrations_router)
@@ -42,6 +44,10 @@ def read_root():
         "service": "Agent 35: Backlog Monitoring Orchestrator",
         "message": "Backend is running successfully. API endpoints are available at /api/"
     }
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "backlog-monitoring-agent-api"}
 
 @app.get("/api/test-db")
 def test_database():
