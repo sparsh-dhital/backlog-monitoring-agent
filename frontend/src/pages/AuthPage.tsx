@@ -90,9 +90,16 @@ export default function AuthPage({
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
+    // Use VITE_SITE_URL when set (allows dev vs prod separation).
+    // In dev: set VITE_SITE_URL=http://localhost:5174 in .env.development
+    // In prod: set VITE_SITE_URL=https://your-domain.com in .env.production
+    // Also add both URLs to Supabase Dashboard → Auth → URL Configuration → Redirect URLs
+    const siteUrl =
+      import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
+      window.location.origin;
     const { error } = await supabaseAuth.auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo: `${window.location.origin}/auth` },
+      options: { redirectTo: `${siteUrl}/auth` },
     });
     if (error) {
       setAuthMessage(error.message);

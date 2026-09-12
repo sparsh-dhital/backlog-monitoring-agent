@@ -30,8 +30,10 @@ select:focus-visible {
 
 .landing-page {
   overflow: hidden;
-  background: linear-gradient(180deg, #f9faff 0%, #f2f5ff 54%, #ffffff 100%);
+  background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
   color: var(--navy);
+  --muted: #475569;
+  --navy: #0f172a;
 }
 .site-nav {
   height: 74px;
@@ -226,6 +228,7 @@ h2 em {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.75;
+  font-weight: 500;
 }
 .hero-actions {
   display: flex;
@@ -342,12 +345,13 @@ h2 em {
   z-index: 1;
   width: min(100%, 520px);
   padding: 18px;
-  border: 7px solid #ffffffa8;
-  border-radius: 18px;
-  background: #fdfdffed;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
   box-shadow:
-    0 30px 50px #5f70b52e,
-    0 3px 12px #8190b522;
+    0 30px 60px rgba(79, 70, 229, 0.15),
+    0 3px 12px rgba(255, 255, 255, 0.5) inset;
   transform: rotate(1.8deg);
 }
 .preview-top,
@@ -562,10 +566,11 @@ h2 em {
   align-items: center;
   gap: 8px;
   padding: 10px;
-  border: 1px solid #ffffff;
-  border-radius: 10px;
-  background: #fffffff2;
-  box-shadow: 0 12px 22px #5c6ba52b;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.1);
 }
 .float-card small {
   display: block;
@@ -4635,4 +4640,40 @@ h2 em {
   .landing-page .human-copy p {
     font-size: 17px;
   }
+}
+
+/* ============================================================
+   NEW DASHBOARD LAYOUT OVERRIDES
+   Reset legacy CSS that conflicts with the Tailwind flex layout.
+   The new dashboard uses: main.flex > aside(sticky) + div.flex-1
+   ============================================================ */
+
+/* When the main element has Tailwind's flex class applied (dashboard mode),
+   reset any padding added by the legacy .role-dashboard rule */
+main.flex.role-dashboard,
+main.role-dashboard.flex {
+  padding-left: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure the aside/sidebar is NOT position:fixed in the new flex layout.
+   The old .dashboard-sidebar rule is not used by the new Tailwind sidebar,
+   but add this safety reset in case class names overlap. */
+main.flex aside {
+  position: sticky !important;
+  top: 0 !important;
+  left: auto !important;
+}
+
+/* The new dashboard main container */
+main.flex {
+  display: flex !important;
+  flex-direction: row !important;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: none !important;
+  color: inherit !important;
+  font-family: inherit !important;
 }

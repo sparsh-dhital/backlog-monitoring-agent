@@ -22,14 +22,43 @@
 }
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 body {
   margin: 0;
   min-width: 320px;
   font-size: 1rem;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 button,
 a {
   font: inherit;
+}
+
+/* ─── Custom scrollbar ───────────────────────────────────────── */
+/* Thin, elegant scrollbar that matches the indigo color palette */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  border-radius: 100px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.55);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.25) transparent;
 }
