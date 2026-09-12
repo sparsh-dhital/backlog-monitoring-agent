@@ -2,6 +2,8 @@ import os
 from collections import Counter
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -37,26 +39,21 @@ supabase: Client = create_client(url, key)
 app.include_router(integrations_router)
 app.include_router(dispatch_router)
 
+# Pydantic Model for External Feeds
+class CustomFeeds(BaseModel):
+    agent_34_results: Optional[Dict[str, Any]] = None
+    agent_30_supplementary: Optional[Dict[str, Any]] = None
+
 @app.get("/")
 def read_root():
-    return {
-        "status": "online",
-        "service": "Agent 35: Backlog Monitoring Orchestrator",
-        "message": "Backend is running successfully. API endpoints are available at /api/"
-    }
+    return {"status": "online", "service": "Agent 35: Backlog Monitoring Orchestrator"}
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "backlog-monitoring-agent-api"}
-
-@app.get("/api/test-db")
-def test_database():
-    response = supabase.table("regulations").select("*").execute()
-    return {"status": "success", "data": response.data}
+    return {"status": "ok"}
 
 @app.get("/api/dashboard")
 def dashboard():
-    """Return dashboard facts computed from the institution's current records."""
     try:
         backlogs = supabase.table("backlogs").select("*").execute().data or []
     except Exception as error:
@@ -87,18 +84,48 @@ def dashboard():
         "critical_case_count": sum(item["status"] == "CRITICAL" for item in students),
         "intervention_count": len(interventions),
         "students": students,
-        "course_patterns": [
-            {"course_code": course, "count": count}
-            for course, count in course_counts.most_common()
-        ],
+        "course_patterns": [{"course_code": course, "count": count} for course, count in course_counts.most_common()],
     }
-
-@app.get("/api/evaluate/{student_id}")
-def evaluate_student(student_id: str):
-    return evaluate_student_progression(supabase, student_id)
 
 @app.get("/api/orchestrate/{student_id}")
 def run_orchestration(student_id: str):
+    return orchestrate_agent_35_workflow(supabase, student_id)
+
+@app.post("/api/orchestrate/{student_id}")
+def run_orchestration_custom(student_id: str, feeds: Optional[CustomFeeds] = None):
+    """Saves external agent JSON directly into Supabase, then runs orchestration normally."""
+    if feeds:
+        try:
+            # Save Agent 34 (Results) to Supabase
+            if feeds.agent_34_results and "results" in feeds.agent_34_results:
+                supabase.table("results").delete().eq("student_id", student_id).execute() # Clear old
+                results_data = feeds.agent_34_results["results"]
+                db_results = [
+                    {"student_id": student_id, "course_code": r.get("course_code"), "term": r.get("term"), "result": r.get("result")} 
+                    for r in results_data
+                ]
+                if db_results:
+                    supabase.table("results").insert(db_results).execute()
+
+            # Save Agent 30 (Supplementary) to Supabase
+            if feeds.agent_30_supplementary and "supplementary_exams" in feeds.agent_30_supplementary:
+                supabase.table("exam_registrations").delete().eq("student_id", student_id).execute() # Clear old
+                supp_data = feeds.agent_30_supplementary["supplementary_exams"]
+                db_exams = [
+                    {
+                        "student_id": student_id, 
+                        "course_code": e.get("course_code"), 
+                        "fee_cleared": e.get("fee_cleared", False),
+                        "eligibility_status": "ELIGIBLE" if e.get("supplementary_available") else "DEBARRED"
+                    } 
+                    for e in supp_data
+                ]
+                if db_exams:
+                    supabase.table("exam_registrations").insert(db_exams).execute()
+        except Exception as e:
+            print(f"Failed saving external JSON to Supabase: {e}")
+
+    # Now run workflow strictly off Supabase data
     return orchestrate_agent_35_workflow(supabase, student_id)
 
 @app.post("/api/approve-intervention/{student_id}")
@@ -106,33 +133,15 @@ def approve_intervention(student_id: str, background_tasks: BackgroundTasks, men
     if not mentor_id.strip():
         raise HTTPException(status_code=400, detail="mentor_id is required")
     try:
-        try:
-            # 1. Log the mentor's approval with their ID
-            supabase.table("interventions").insert({
-                "student_id": student_id,
-                "risk_level": "HIGH",
-                "recommended_action": "AI-Orchestrated Recovery Plan Approved",
-                "human_approved": True,
-                "mentor_id": mentor_id
-            }).execute()
-            
-            # 2. Close the Feedback Loop: Update backlogs so they aren't flagged again
-            supabase.table("backlogs").update({
-                "status": "INTERVENTION_ACTIVE"
-            }).eq("student_id", student_id).eq("status", "PENDING").execute()
-        except Exception as db_error:
-            raise HTTPException(
-                status_code=502,
-                detail="Intervention could not be persisted; no downstream work was started.",
-            ) from db_error
+        supabase.table("interventions").insert({
+            "student_id": student_id, "risk_level": "HIGH", "recommended_action": "AI-Orchestrated Recovery Plan Approved",
+            "human_approved": True, "mentor_id": mentor_id
+        }).execute()
         
-        # 3. Generate payload and fire background dispatcher
+        supabase.table("backlogs").update({"status": "INTERVENTION_ACTIVE"}).eq("student_id", student_id).eq("status", "PENDING").execute()
+        
         payload = orchestrate_agent_35_workflow(supabase, student_id)
         background_tasks.add_task(trigger_execution_pipeline, student_id, payload)
-        
-        return {"status": "success", "message": "Intervention deployed and feedback loop closed."}
+        return {"status": "success", "message": "Intervention deployed."}
     except Exception as e:
-        print(f"Endpoint Error: {str(e)}")
-        if isinstance(e, HTTPException):
-            raise
         raise HTTPException(status_code=500, detail=str(e))

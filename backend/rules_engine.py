@@ -5,16 +5,18 @@ from ai_agent import run_agent_35_orchestration
 
 def evaluate_student_progression(supabase: Client, student_id: str):
     backlogs_res = supabase.table("backlogs").select("*").eq("student_id", student_id).eq("status", "PENDING").execute()
-    backlogs = backlogs_res.data
+    backlogs = backlogs_res.data or []
     backlog_count = len(backlogs)
 
     batch_year = 2023 
 
     reg_res = supabase.table("regulations").select("*").eq("batch_year", batch_year).execute()
-    if not reg_res.data:
-        raise HTTPException(status_code=404, detail="Regulation not found for batch")
     
-    regulation = reg_res.data[0]
+    if not reg_res.data:
+        regulation = {"max_backlogs_for_promotion": 4, "max_attempts": 3}
+    else:
+        regulation = reg_res.data[0]
+        
     max_allowed_backlogs = regulation["max_backlogs_for_promotion"]
     max_attempts = regulation["max_attempts"]
 
@@ -30,7 +32,7 @@ def evaluate_student_progression(supabase: Client, student_id: str):
     backlog_details = [
         {
             **backlog,
-            "attempts_remaining": max(0, max_attempts - backlog["attempts_made"]),
+            "attempts_remaining": max(0, max_attempts - backlog.get("attempts_made", 0)),
         }
         for backlog in backlogs
     ]
@@ -46,12 +48,14 @@ def evaluate_student_progression(supabase: Client, student_id: str):
     }
 
 def orchestrate_agent_35_workflow(supabase: Client, student_id: str):
+    # ALWAYS pull fresh from DB (even if we just inserted external JSON)
     eval_data = evaluate_student_progression(supabase, student_id)
     agent_34_payload = fetch_agent_34_results(student_id, supabase)
     agent_30_payload = fetch_agent_30_supplementary(student_id, supabase)
+        
     ai_insights = run_agent_35_orchestration(eval_data, agent_34_payload, agent_30_payload)
     
-    complete_assessment = {
+    return {
         "agent_id": "AGENT_35",
         "target_student_id": student_id,
         "deterministic_evaluation": eval_data,
@@ -61,5 +65,3 @@ def orchestrate_agent_35_workflow(supabase: Client, student_id: str):
         },
         "ai_orchestration": ai_insights
     }
-    
-    return complete_assessment

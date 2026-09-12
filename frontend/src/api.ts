@@ -34,10 +34,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   dashboard: () => request<DashboardData>("/api/dashboard"),
-  orchestration: (studentId: string) =>
-    request<OrchestrationData>(
-      `/api/orchestrate/${encodeURIComponent(studentId)}`,
-    ),
+  orchestration: (studentId: string, customFeeds?: any) => {
+    const path = `/api/orchestrate/${encodeURIComponent(studentId)}`;
+    if (customFeeds) {
+      return request<OrchestrationData>(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(customFeeds),
+      });
+    }
+    return request<OrchestrationData>(path);
+  },
   activity: (studentId: string) =>
     request<{ events: ActivityEvent[] }>(
       `/api/dispatch/activity/${encodeURIComponent(studentId)}`,

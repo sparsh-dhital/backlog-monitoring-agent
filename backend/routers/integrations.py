@@ -15,7 +15,6 @@ router = APIRouter(prefix="/api/integrations", tags=["Integrations"])
 def get_agent_34_results(student_id: str):
     return fetch_agent_34_results(student_id, supabase)
 
-
 def fetch_agent_34_results(student_id: str, client: Client | None = None):
     client = client or supabase
     if client is None:
@@ -30,13 +29,26 @@ def fetch_agent_34_results(student_id: str, client: Client | None = None):
 def get_agent_30_supplementary(student_id: str):
     return fetch_agent_30_supplementary(student_id, supabase)
 
-
 def fetch_agent_30_supplementary(student_id: str, client: Client | None = None):
     client = client or supabase
     if client is None:
         return {"student_id": student_id, "supplementary_exams": []}
     try:
-        response = client.table("supplementary_exams").select("*").eq("student_id", student_id).execute()
-        return {"student_id": student_id, "supplementary_exams": response.data or []}
-    except Exception:
+        # Query your new exam_registrations table
+        response = client.table("exam_registrations").select("*").eq("student_id", student_id).execute()
+        data = response.data or []
+        
+        # Map your DB columns to the format the frontend UI expects
+        formatted_data = []
+        for item in data:
+            formatted_data.append({
+                "course_code": item.get("course_code"),
+                "supplementary_available": item.get("eligibility_status") == "ELIGIBLE",
+                "fee_cleared": item.get("fee_cleared", False),
+                "attendance_eligible": item.get("eligibility_status") != "DEBARRED"
+            })
+            
+        return {"student_id": student_id, "supplementary_exams": formatted_data}
+    except Exception as e:
+        print(f"Integration Error: {e}")
         return {"student_id": student_id, "supplementary_exams": []}

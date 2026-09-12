@@ -162,45 +162,90 @@ function DashboardSidebar({
   onLogout: () => void;
 }) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
+  const roleBadgeColors: Record<string, string> = {
+    hod: "bg-violet-100 text-violet-700",
+    mentor: "bg-blue-100 text-blue-700",
+    student: "bg-emerald-100 text-emerald-700",
+    exam: "bg-amber-100 text-amber-700",
+    placement: "bg-rose-100 text-rose-700",
+  };
 
   return (
-    <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
-      <div className="sidebar-top">
-        <Brand />
-        <span className="sidebar-role">{roleLabel}</span>
+    <aside
+      className="flex flex-col w-64 shrink-0 h-screen sticky top-0 bg-white border-r border-slate-100 shadow-[2px_0_12px_rgba(0,0,0,0.04)] z-20"
+      aria-label="Dashboard navigation"
+    >
+      {/* Brand & Role */}
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        <Brand compact />
+        <div className="flex flex-col">
+          <span className="text-sm font-extrabold text-slate-800 tracking-tight">EduRecover</span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 self-start ${roleBadgeColors[role] ?? "bg-slate-100 text-slate-600"}`}>
+            {roleLabel}
+          </span>
+        </div>
       </div>
-      <nav className="sidebar-nav">
-        <span className="sidebar-nav-label">Workspace</span>
-        {dashboardNavigation[role].map(([label, Icon]) => (
-          <button
-            className={`sidebar-link ${activeTab === label ? "active" : ""}`}
-            key={label}
-            type="button"
-            aria-current={activeTab === label ? "page" : undefined}
-            onClick={() => onSelect(label)}
-          >
-            <Icon size={16} />
-            <span>{label}</span>
-            {label === "Alerts" && <b>3</b>}
-          </button>
-        ))}
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <p className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Workspace
+        </p>
+        <div className="flex flex-col gap-0.5">
+          {dashboardNavigation[role].map(([label, Icon]) => (
+            <button
+              key={label}
+              type="button"
+              aria-current={activeTab === label ? "page" : undefined}
+              onClick={() => onSelect(label)}
+              className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                activeTab === label
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <Icon
+                size={17}
+                className={activeTab === label ? "text-indigo-200" : "text-slate-400 group-hover:text-slate-600"}
+              />
+              <span className="flex-1 text-left">{label}</span>
+              {label === "Alerts" && (
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeTab === label
+                      ? "bg-white/20 text-white"
+                      : "bg-rose-100 text-rose-600"
+                  }`}
+                >
+                  3
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </nav>
-      <div className="sidebar-bottom">
+
+      {/* Bottom */}
+      <div className="px-3 py-3 border-t border-slate-100 flex flex-col gap-0.5">
         <button
-          className={`sidebar-link ${activeTab === "Settings" ? "active" : ""}`}
           type="button"
           onClick={() => onSelect("Settings")}
           aria-current={activeTab === "Settings" ? "page" : undefined}
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+            activeTab === "Settings"
+              ? "bg-indigo-600 text-white"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          }`}
         >
-          <Settings size={16} />
+          <Settings size={17} className={activeTab === "Settings" ? "text-indigo-200" : "text-slate-400"} />
           <span>Settings</span>
         </button>
         <button
-          className="sidebar-link sidebar-logout"
           type="button"
           onClick={onLogout}
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-150"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={17} className="text-slate-400" />
           <span>Logout</span>
         </button>
       </div>
@@ -233,35 +278,56 @@ function DashboardTopbar({ role }: { role: UserRole }) {
     };
   }, []);
 
+  const pageTitle: Record<string, string> = {
+    Dashboard: "Dashboard",
+    Students: "Students",
+    Backlogs: "Backlogs",
+    Patterns: "Patterns",
+    Interventions: "Interventions",
+    Examinations: "Examinations",
+    Alerts: "Alerts",
+    Reports: "Reports",
+  };
+
   return (
-    <header className="dashboard-topbar">
-      <div className="dashboard-search">
-        <Search size={17} />
+    <header className="h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8">
+      {/* Search */}
+      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
+        <Search size={15} className="text-slate-400 shrink-0" />
         <input
           aria-label="Search dashboard"
+          className="bg-transparent border-none outline-none text-sm text-slate-700 w-full placeholder:text-slate-400"
           placeholder="Search students, courses, or IDs..."
         />
       </div>
-      <div className="dashboard-topbar-actions">
+
+      {/* Actions */}
+      <div className="flex items-center gap-4">
+        {/* Notification bell */}
         <button
-          className="dashboard-icon-button"
           type="button"
           aria-label="Notifications"
+          className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-150"
         >
-          <Bell size={17} />
-          <b>3</b>
+          <Bell size={19} />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
         </button>
-        <span className="dashboard-divider" />
-        <div className="dashboard-profile">
-          <span className="profile-avatar">
-            <CircleUserRound size={20} />
-          </span>
-          <span>
-            <strong>{profileName || roleLabel}</strong>
-            <small>
-              {profileEmail || `${roleLabel} · EduRecover workspace`}
-            </small>
-          </span>
+
+        <div className="w-px h-7 bg-slate-200" />
+
+        {/* Profile */}
+        <div className="flex items-center gap-3 cursor-pointer group">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:shadow-indigo-200 transition-all duration-200">
+            <CircleUserRound size={19} />
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+              {profileName || roleLabel}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {profileEmail || `${roleLabel} · EduRecover`}
+            </span>
+          </div>
         </div>
       </div>
     </header>
@@ -287,40 +353,51 @@ function RecoveryJourney({
 }) {
   return (
     <section
-      className="recovery-journey"
+      className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6"
       aria-label="Academic recovery journey"
     >
-      <div className="journey-heading">
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <span className="workspace-kicker">
-            <i /> One connected case
-          </span>
-          <h2>From signal to recovery</h2>
-          <p>
-            Each team sees the same student story from its own point of view.
-          </p>
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">One connected case</p>
+          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">From signal to recovery</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Each team sees the same student story from its own point of view.</p>
         </div>
-        <span className="journey-status">
-          <i /> Shared case context
+        <span className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-full">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          Shared case context
         </span>
       </div>
-      <div className="journey-steps">
+      <div className="grid grid-cols-5 gap-3">
         {journeySteps.map(([stepRole, title, detail, tab], index) => (
           <button
             key={stepRole}
-            className={`journey-step ${role === stepRole ? "current" : ""}`}
             type="button"
             onClick={() => {
               if (role === stepRole) onSelectTab(tab);
               else onSwitchRole(stepRole);
             }}
+            className={`flex flex-col gap-2 p-4 rounded-xl border text-left transition-all duration-200 hover:-translate-y-0.5 ${
+              role === stepRole
+                ? "bg-indigo-600 border-indigo-500 shadow-lg shadow-indigo-200 text-white"
+                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-indigo-200 hover:shadow-md"
+            }`}
           >
-            <span className="journey-number">0{index + 1}</span>
-            <span className="journey-step-copy">
-              <strong>{title}</strong>
-              <small>{detail}</small>
-            </span>
-            <ArrowRight size={14} />
+            <div className="flex items-center justify-between">
+              <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold font-mono ${
+                role === stepRole ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"
+              }`}>
+                0{index + 1}
+              </span>
+              <ArrowRight size={14} className={role === stepRole ? "text-indigo-200" : "text-slate-400"} />
+            </div>
+            <div>
+              <p className={`text-sm font-bold leading-tight ${
+                role === stepRole ? "text-white" : "text-slate-800"
+              }`}>{title}</p>
+              <p className={`text-xs mt-0.5 ${
+                role === stepRole ? "text-indigo-200" : "text-slate-500"
+              }`}>{detail}</p>
+            </div>
           </button>
         ))}
       </div>
@@ -336,159 +413,164 @@ function HodCommandCenter({
   dashboard: DashboardData;
 }) {
   return (
-    <section
-      className="hod-command-center"
-      aria-label="Academic command center"
-    >
-      <div className="hod-section-heading">
+    <section aria-label="Academic command center">
+      {/* Section heading */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <span className="workspace-kicker">
-            <BarChart3 size={13} /> Department signal map
-          </span>
-          <h2>What needs attention now</h2>
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+            <BarChart3 size={12} /> Department signal map
+          </p>
+          <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">What needs attention now</h2>
         </div>
-        <span className="hod-sync-label">
-          <i /> Live academic view
+        <span className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-full">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          Live academic view
         </span>
       </div>
-      <div className="hod-insights-grid">
-        <article className="hod-panel semester-panel">
-          <div className="hod-panel-heading">
+
+      {/* Top 3-column grid */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Bar chart card */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <span>Trend</span>
-              <h3>Backlogs by semester</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trend</p>
+              <h3 className="text-sm font-bold text-slate-800">Backlogs by course</h3>
             </div>
-            <ArrowUpRight size={16} />
+            <ArrowUpRight size={16} className="text-slate-300" />
           </div>
           <div
-            className="semester-chart"
-            aria-label="Backlogs by semester chart"
+            className="flex items-end gap-2 h-24"
+            aria-label="Backlogs by course chart"
           >
             {dashboard.course_patterns.slice(0, 6).map((pattern, index) => (
-              <div className="chart-column" key={index}>
+              <div key={index} className="flex flex-col items-center gap-1 flex-1">
                 <div
-                  className="chart-bar"
-                  style={{ height: `${Math.min(100, pattern.count * 10)}%` }}
+                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all duration-500"
+                  style={{ height: `${Math.min(100, pattern.count * 10)}%`, minHeight: 8 }}
                 />
-                <span>{pattern.course_code}</span>
+                <span className="text-[9px] text-slate-400 font-medium truncate w-full text-center">{pattern.course_code}</span>
               </div>
             ))}
           </div>
-        </article>
-        <article className="hod-panel pattern-panel">
-          <div className="hod-panel-heading">
+        </div>
+
+        {/* Failure patterns card */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <span>Pattern detection</span>
-              <h3>Failure patterns by course</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pattern detection</p>
+              <h3 className="text-sm font-bold text-slate-800">Failure patterns</h3>
             </div>
-            <Sparkles size={16} />
+            <Sparkles size={16} className="text-violet-400" />
           </div>
-          <div className="course-bars">
+          <div className="flex flex-col gap-3">
             {dashboard.course_patterns.map((pattern) => (
-              <div className="course-bar-row" key={pattern.course_code}>
-                <span>{pattern.course_code}</span>
-                <div>
-                  <i
+              <div key={pattern.course_code} className="flex items-center gap-3">
+                <span className="text-[10px] font-mono font-bold text-slate-500 w-14 shrink-0">{pattern.course_code}</span>
+                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-rose-400 to-orange-400 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, pattern.count * 10)}%` }}
                   />
                 </div>
-                <strong>{pattern.count}</strong>
+                <span className="text-xs font-bold text-slate-700 w-5 text-right">{pattern.count}</span>
               </div>
             ))}
           </div>
-        </article>
-        <article className="hod-panel recovery-panel">
-          <div className="hod-panel-heading">
+        </div>
+
+        {/* Recoverability card */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <span>Assessment</span>
-              <h3>Recoverability</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assessment</p>
+              <h3 className="text-sm font-bold text-slate-800">Recoverability</h3>
             </div>
-            <Gauge size={16} />
+            <Gauge size={16} className="text-slate-300" />
           </div>
-          <div className="recovery-ring">
-            <strong>{dashboard.active_backlog_count}</strong>
-            <small>Total</small>
+          {/* Donut ring visual */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
+              <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray="54 46" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#a78bfa" strokeWidth="3" strokeDasharray="32 68" strokeDashoffset="-54" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray="14 86" strokeDashoffset="-86" strokeLinecap="round" />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-xl font-extrabold text-slate-900 leading-none">{dashboard.active_backlog_count}</span>
+                <span className="text-[9px] text-slate-400">Total</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 text-xs">
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Routine 54%</span>
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-violet-400" /> Structured 32%</span>
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> Intensive 14%</span>
+            </div>
           </div>
-          <div className="recovery-legend">
-            <span>
-              <i className="routine" /> Routine 54%
-            </span>
-            <span>
-              <i className="structured" /> Structured 32%
-            </span>
-            <span>
-              <i className="intensive" /> Intensive 14%
-            </span>
-          </div>
-        </article>
+        </div>
       </div>
-      <div className="hod-lower-grid">
-        <article className="hod-panel attention-panel">
-          <div className="hod-panel-heading">
+
+      {/* Bottom 2-column grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Priority queue */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <span>Priority queue</span>
-              <h3>Requires HOD attention</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority queue</p>
+              <h3 className="text-sm font-bold text-slate-800">Requires HOD attention</h3>
             </div>
-            <CircleAlert size={16} />
+            <CircleAlert size={16} className="text-rose-400" />
           </div>
-          <div className="hod-case-list">
+          <div className="flex flex-col gap-2">
             {dashboard.students.map((item) => (
               <button
                 key={item.student_id}
+                type="button"
                 onClick={() => onSelectStudent(item.student_id)}
+                className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition-all duration-150 group text-left"
               >
-                <span
-                  className={`case-icon ${item.status === "CRITICAL" ? "danger" : "warning"}`}
-                >
+                <span className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                  item.status === "CRITICAL" ? "bg-rose-100 text-rose-600" : "bg-amber-100 text-amber-600"
+                }`}>
                   <CircleAlert size={15} />
                 </span>
-                <span className="case-copy">
-                  <strong>{item.student_id}</strong>
-                  <small>
-                    {item.active_backlog_count} active backlogs ·{" "}
-                    {item.status.toLowerCase()}
-                  </small>
+                <span className="flex-1">
+                  <strong className="text-sm font-bold text-slate-800 block font-mono">{item.student_id}</strong>
+                  <small className="text-xs text-slate-500">{item.active_backlog_count} active backlogs · {item.status.toLowerCase()}</small>
                 </span>
-                <ArrowUpRight size={15} />
+                <ArrowUpRight size={15} className="text-slate-300 group-hover:text-rose-500 transition-colors" />
               </button>
             ))}
           </div>
-        </article>
-        <article className="hod-panel alert-panel">
-          <div className="hod-panel-heading">
+        </div>
+
+        {/* Alerts feed */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <span>Recent alerts</span>
-              <h3>Signals worth reviewing</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent alerts</p>
+              <h3 className="text-sm font-bold text-slate-800">Signals worth reviewing</h3>
             </div>
-            <Users size={16} />
+            <Users size={16} className="text-slate-300" />
           </div>
-          <div className="alert-list">
-            <p>
-              <b className="danger-dot" />
-              <span>
-                <strong>Attempt pressure</strong> 14 students have one attempt
-                remaining.
-              </span>
-              <small>2h ago</small>
-            </p>
-            <p>
-              <b className="warning-dot" />
-              <span>
-                <strong>Duration risk</strong> 6 students are nearing maximum
-                duration.
-              </span>
-              <small>5h ago</small>
-            </p>
-            <p>
-              <b className="success-dot" />
-              <span>
-                <strong>Recovery milestone</strong> 12 backlogs cleared this
-                term.
-              </span>
-              <small>Today</small>
-            </p>
+          <div className="flex flex-col gap-3">
+            {[
+              { dot: "bg-rose-500", title: "Attempt pressure", desc: "14 students have one attempt remaining.", time: "2h ago" },
+              { dot: "bg-amber-500", title: "Duration risk", desc: "6 students are nearing maximum duration.", time: "5h ago" },
+              { dot: "bg-emerald-500", title: "Recovery milestone", desc: "12 backlogs cleared this term.", time: "Today" },
+            ].map(({ dot, title, desc, time }) => (
+              <div key={title} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot}`} />
+                <p className="flex-1 text-sm text-slate-600">
+                  <strong className="text-slate-800 font-semibold">{title}</strong>{" "}{desc}
+                </p>
+                <small className="text-xs text-slate-400 shrink-0 mt-0.5">{time}</small>
+              </div>
+            ))}
           </div>
-        </article>
+        </div>
       </div>
     </section>
   );
@@ -737,15 +819,15 @@ function DashboardTabView({
   const content = tabContent[activeTab as keyof typeof tabContent];
   if (!content) {
     return (
-      <section className="dashboard-tab-view">
-        <div className="tab-empty-state">
-          <Settings size={22} />
-          <h2>Workspace settings</h2>
-          <p>
-            Profile, notification, and institution preferences will live here.
-          </p>
+      <div className="flex-1 flex items-center justify-center p-12">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <Settings size={24} className="text-slate-400" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Workspace settings</h2>
+          <p className="text-slate-500 text-sm">Profile, notification, and institution preferences will live here.</p>
         </div>
-      </section>
+      </div>
     );
   }
 
@@ -767,78 +849,91 @@ function DashboardTabView({
           ])
         : []
     : [];
+
+  const statusTone = (status: string): "danger" | "success" | "warning" | "neutral" => {
+    if (status === "Critical" || status === "Urgent" || status === "CRITICAL") return "danger";
+    if (status === "Positive" || status === "Active" || status === "Live") return "success";
+    if (status === "Review" || status === "Watch" || status === "Monitor" || status === "Action") return "warning";
+    return "neutral";
+  };
+
   return (
-    <section className="dashboard-tab-view">
-      <div className="tab-view-heading">
+    <div className="flex-1 flex flex-col p-8">
+      {/* Page header */}
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <span className="workspace-kicker">
-            <i /> {content.eyebrow}
-          </span>
-          <h2>{content.title}</h2>
-          <p>{content.description}</p>
+          <p className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1">
+            {content.eyebrow}
+          </p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{content.title}</h1>
+          <p className="text-sm text-slate-500 mt-1 max-w-lg">{content.description}</p>
         </div>
-        <StatusBadge tone="success">Data synced</StatusBadge>
+        <StatusBadge tone="success">Live data</StatusBadge>
       </div>
-      <div className="tab-summary-row">
-        <div>
-          <span>Scope</span>
-          <strong>
-            {role === "hod" ? "Department-wide" : dashboardByRole[role].title}
-          </strong>
+
+      {/* Meta bar */}
+      <div className="flex items-center gap-6 py-3 px-4 bg-white rounded-xl border border-slate-100 shadow-sm mb-4">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Scope</span>
+          <span className="text-sm font-semibold text-slate-700">{role === "hod" ? "Department-wide" : dashboardByRole[role].title}</span>
         </div>
-        <div>
-          <span>Last updated</span>
-          <strong>Just now</strong>
+        <div className="w-px h-8 bg-slate-100" />
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last updated</span>
+          <span className="text-sm font-semibold text-slate-700">Just now</span>
         </div>
-        <div>
-          <span>Owner</span>
-          <strong>Academic operations</strong>
+        <div className="w-px h-8 bg-slate-100" />
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Owner</span>
+          <span className="text-sm font-semibold text-slate-700">Academic operations</span>
+        </div>
+        <div className="ml-auto">
+          <span className="text-xs text-slate-400">{liveRows.length} records</span>
         </div>
       </div>
-      <div className="tab-table" role="table" aria-label={content.title}>
-        <div className="tab-table-header" role="row">
-          <span>Signal</span>
-          <span>Scope</span>
-          <span>Context</span>
-          <span>Status</span>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1">
+        {/* Table header */}
+        <div className="grid grid-cols-4 px-5 py-3 bg-slate-50 border-b border-slate-100">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Signal</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Scope</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Context</span>
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</span>
         </div>
+
         {liveRows.length === 0 ? (
-          <div className="tab-empty-state">
-            <Activity size={22} />
-            <h3>No live records available</h3>
-            <p>
-              This view will populate when the connected institution system
-              provides data.
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+              <Activity size={20} className="text-slate-400" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-700 mb-1">No live records available</h3>
+            <p className="text-xs text-slate-400 max-w-xs">
+              This view will populate when the connected institution system provides data.
             </p>
           </div>
         ) : (
           liveRows.map(([signal, scope, context, status]) => (
             <button
-              className="tab-table-row"
               key={`${signal}-${scope}`}
               type="button"
               onClick={() => canOpenStudent && onSelectStudent(signal)}
               disabled={!canOpenStudent}
+              className={`w-full grid grid-cols-4 items-center px-5 py-4 border-b border-slate-50 text-left transition-all duration-150 ${
+                canOpenStudent
+                  ? "hover:bg-indigo-50/50 cursor-pointer"
+                  : "cursor-default"
+              }`}
             >
-              <strong>{signal}</strong>
-              <span>{scope}</span>
-              <span>{context}</span>
-              <StatusBadge
-                tone={
-                  status === "Critical" || status === "Urgent"
-                    ? "danger"
-                    : status === "Positive" || status === "Active"
-                      ? "success"
-                      : "warning"
-                }
-              >
-                {status}
-              </StatusBadge>
+              <strong className="text-sm font-semibold text-slate-800 font-mono">{signal}</strong>
+              <span className="text-sm text-slate-500">{scope}</span>
+              <span className="text-sm text-slate-500">{context}</span>
+              <StatusBadge tone={statusTone(status)}>{status}</StatusBadge>
             </button>
           ))
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -874,42 +969,48 @@ function RoleHomeView({
     hod: [],
   }[role];
   return (
-    <section className="role-home-view">
-      <div className="role-home-heading">
-        <div>
-          <span className="workspace-kicker">
-            <i /> Workspace overview
-          </span>
-          <h2>Your next decisions</h2>
-          <p>
-            Keep the most important academic work visible without opening the
-            Agent 35 prototype console.
-          </p>
-        </div>
-        <StatusBadge tone="success">Synced just now</StatusBadge>
-      </div>
-      <div className="role-home-grid">
-        <article className="role-home-progress">
-          <span className="home-card-label">Current signal</span>
-          <strong>{dashboard.metrics[0][1]}</strong>
-          <h3>{dashboard.metrics[0][0]}</h3>
-          <p>{dashboard.metrics[0][2]}</p>
-          <div className="home-progress-track">
-            <i style={{ width: role === "student" ? "78%" : "64%" }} />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Current signal card */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Current signal</p>
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <span className="text-4xl font-extrabold text-slate-900 tracking-tight">{dashboard.metrics[0][1]}</span>
+            <p className="text-sm font-semibold text-slate-700 mt-1">{dashboard.metrics[0][0]}</p>
           </div>
-        </article>
-        <article className="role-home-actions">
-          <span className="home-card-label">Recommended actions</span>
+          <StatusBadge tone="success">{dashboard.metrics[0][2]}</StatusBadge>
+        </div>
+        {/* Progress bar */}
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
+            style={{ width: role === "student" ? "78%" : "64%" }}
+          />
+        </div>
+        <p className="text-xs text-slate-400 mt-2">{role === "student" ? "78%" : "64%"} complete</p>
+      </div>
+
+      {/* Recommended actions card */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Recommended actions</p>
+        <div className="flex flex-col gap-2">
           {nextActions.map(([action, tab], index) => (
-            <button key={action} type="button" onClick={() => onSelectTab(tab)}>
-              <b>0{index + 1}</b>
-              <span>{action}</span>
-              <ArrowUpRight size={14} />
+            <button
+              key={action}
+              type="button"
+              onClick={() => onSelectTab(tab)}
+              className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 text-left transition-all duration-150 group"
+            >
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 text-xs font-bold group-hover:bg-indigo-200 transition-colors shrink-0">
+                0{index + 1}
+              </span>
+              <span className="flex-1 text-sm font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">{action}</span>
+              <ArrowUpRight size={15} className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0" />
             </button>
           ))}
-        </article>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1157,7 +1258,9 @@ export default function PrototypePage({
 
   return (
     <main
-      className={`workspace-page ${mode === "prototype" ? "prototype-console" : "role-dashboard"}`}
+      className={mode === "dashboard"
+        ? "flex min-h-screen bg-slate-50 font-sans"
+        : `workspace-page prototype-console`}
     >
       {mode === "dashboard" && (
         <DashboardSidebar
@@ -1167,6 +1270,8 @@ export default function PrototypePage({
           onLogout={onBack}
         />
       )}
+      {/* Main content area */}
+      <div className={mode === "dashboard" ? "flex-1 flex flex-col min-w-0 overflow-hidden" : ""}>
       {mode === "dashboard" ? (
         <DashboardTopbar role={role} />
       ) : (
@@ -1246,86 +1351,136 @@ export default function PrototypePage({
       )}
 
       {mode === "dashboard" && activeTab === "Dashboard" && (
-        <section className={`dashboard-overview dashboard-role-${role}`}>
-          <div className="dashboard-overview-copy">
-            <span className="workspace-kicker">{dashboard.greeting}</span>
-            <h2>{dashboard.title}</h2>
-            <p>{dashboard.description}</p>
-            <button
-              className="dashboard-next-action"
-              type="button"
-              onClick={() => handleTabSelect(dashboardAction[1])}
-            >
-              <span className="dashboard-next-icon">
-                <Sparkles size={15} />
-              </span>
-              <span>
-                <small>Recommended next step</small>
-                <strong>{dashboardAction[0]}</strong>
-              </span>
-              <ArrowUpRight size={16} />
-            </button>
-          </div>
-          <div className="dashboard-overview-status">
-            <span>
-              <i /> Data synced
-            </span>
-            <small>Last updated just now</small>
-          </div>
-          <div className="dashboard-metrics">
-            {liveMetrics.map(([label, value, detail]) => (
-              <div className="dashboard-metric" key={label}>
-                <span>{label}</span>
-                <strong>{value}</strong>
-                <small>{detail}</small>
+        <div className="flex-1 overflow-y-auto">
+          {/* Hero overview card */}
+          <div className="px-8 pt-8 pb-6">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-7 text-white shadow-xl shadow-indigo-200">
+              {/* Background decoration */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/30" />
+                <div className="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-white/20" />
               </div>
-            ))}
+              <div className="relative z-10 flex items-start justify-between gap-8">
+                <div className="max-w-xl">
+                  <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2">{dashboard.greeting}</p>
+                  <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">{dashboard.title}</h1>
+                  <p className="text-indigo-200 text-sm leading-relaxed mb-5">{dashboard.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleTabSelect(dashboardAction[1])}
+                    className="inline-flex items-center gap-3 bg-white/15 hover:bg-white/25 border border-white/20 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                  >
+                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20">
+                      <Sparkles size={14} />
+                    </span>
+                    <span className="flex flex-col text-left">
+                      <small className="text-indigo-200 text-[10px] font-bold uppercase tracking-wider">Recommended next step</small>
+                      <strong className="text-white text-sm">{dashboardAction[0]}</strong>
+                    </span>
+                    <ArrowUpRight size={16} className="ml-1 opacity-70" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="flex items-center gap-2 bg-white/10 border border-white/20 text-indigo-100 text-xs font-semibold px-3 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Live data
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </section>
+
+          {/* Metric cards */}
+          {liveMetrics.length > 0 && (
+            <div className="px-8 pb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {liveMetrics.map(([label, value, detail], idx) => {
+                  const tones = ["warning", "danger", "neutral", "success"] as const;
+                  return (
+                    <StatCard
+                      key={label}
+                      label={label}
+                      value={value}
+                      detail={detail}
+                      tone={tones[idx % tones.length]}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mode === "dashboard" &&
+            activeTab === "Dashboard" &&
+            role === "hod" &&
+            !data &&
+            !loading &&
+            !dashboardLoading &&
+            dashboardData && (
+              <div className="px-8 pb-6">
+                <HodCommandCenter
+                  dashboard={dashboardData}
+                  onSelectStudent={(selectedStudentId) => {
+                    setStudentId(selectedStudentId);
+                    setActiveTab("Students");
+                    void fetchOrchestration(selectedStudentId);
+                  }}
+                />
+              </div>
+            )}
+
+          {mode === "dashboard" && activeTab === "Dashboard" && onSwitchRole && (
+            <div className="px-8 pb-8">
+              <RecoveryJourney
+                role={role}
+                onSwitchRole={onSwitchRole}
+                onSelectTab={handleTabSelect}
+              />
+            </div>
+          )}
+
+          {mode === "dashboard" &&
+            activeTab === "Dashboard" &&
+            role !== "hod" &&
+            !data &&
+            !loading && (
+              <div className="px-8 pb-8">
+                <RoleHomeView role={role} onSelectTab={handleTabSelect} />
+              </div>
+            )}
+        </div> {/* end of dashboard "Dashboard" tab content */}
       )}
 
-      {mode === "dashboard" &&
-        activeTab === "Dashboard" &&
-        role === "hod" &&
-        !data &&
-        !loading &&
-        !dashboardLoading &&
-        dashboardData && (
-          <HodCommandCenter
-            dashboard={dashboardData}
-            onSelectStudent={(selectedStudentId) => {
-              setStudentId(selectedStudentId);
-              setActiveTab("Students");
-              void fetchOrchestration(selectedStudentId);
-            }}
-          />
-        )}
-
-      {mode === "dashboard" && activeTab === "Dashboard" && onSwitchRole && (
-        <RecoveryJourney
-          role={role}
-          onSwitchRole={onSwitchRole}
-          onSelectTab={handleTabSelect}
-        />
-      )}
-
+      {/* Dashboard tab views (non-Dashboard tabs) */}
       {mode === "dashboard" &&
         activeTab !== "Dashboard" &&
         !data &&
         !loading &&
         !dashboardLoading &&
         dashboardData && (
-          <DashboardTabView
-            role={role}
-            activeTab={activeTab}
-            dashboard={dashboardData}
-            onSelectStudent={(selectedStudentId) => {
-              setStudentId(selectedStudentId);
-              void fetchOrchestration(selectedStudentId);
-            }}
-          />
+          <div className="flex-1 overflow-y-auto">
+            <DashboardTabView
+              role={role}
+              activeTab={activeTab}
+              dashboard={dashboardData}
+              onSelectStudent={(selectedStudentId) => {
+                setStudentId(selectedStudentId);
+                void fetchOrchestration(selectedStudentId);
+              }}
+            />
+          </div>
         )}
 
+      {/* Student detail view (inside dashboard) */}
+      {mode === "dashboard" && data && evaluation && recommendation && (
+        <div className="flex-1 overflow-y-auto px-8 py-8">
+          <section className="workspace-content">
+          {/* fall-through to existing content */}
+          </section>
+        </div>
+      )}
+
+      {/* Prototype sections (outside the flex-1 div since they are the only content) */}
       {mode === "prototype" && (
         <section className="workspace-toolbar">
           <div className="profile-label">
@@ -1363,6 +1518,7 @@ export default function PrototypePage({
         </section>
       )}
 
+
       {error && (
         <div className="workspace-error">
           <AlertTriangle size={17} />
@@ -1372,11 +1528,6 @@ export default function PrototypePage({
           </button>
         </div>
       )}
-      {mode === "dashboard" &&
-        activeTab === "Dashboard" &&
-        role !== "hod" &&
-        !data &&
-        !loading && <RoleHomeView role={role} onSelectTab={handleTabSelect} />}
 
       {!data && !loading && mode === "prototype" && (
         <section className="workspace-empty">
@@ -1856,6 +2007,7 @@ export default function PrototypePage({
           </div>
         </div>
       )}
+      </div>{/* end of inner content wrapper */}
     </main>
   );
 }
