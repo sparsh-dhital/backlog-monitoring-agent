@@ -3295,14 +3295,25 @@ h2 em {
     overflow-x: auto;
     padding-bottom: 2px;
   }
-  .sidebar-nav-label,
-  .sidebar-bottom {
+  .sidebar-nav-label {
     display: none;
   }
   .sidebar-link {
     width: auto;
     flex: 0 0 auto;
     padding: 0 12px;
+  }
+  .sidebar-bottom {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    padding-top: 9px;
+    border-top: 1px solid #ffffff14;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sidebar-bottom::-webkit-scrollbar {
+    display: none;
   }
   .tab-view-heading {
     align-items: flex-start;

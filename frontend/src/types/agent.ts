@@ -54,3 +54,19 @@ export interface ActivityEvent {
   message: string;
   created_at: string;
 }
+
+export interface DashboardStudent {
+  student_id: string;
+  active_backlog_count: number;
+  max_attempts_made: number;
+  status: string;
+}
+
+export interface DashboardData {
+  student_count: number;
+  active_backlog_count: number;
+  critical_case_count: number;
+  intervention_count: number;
+  students: DashboardStudent[];
+  course_patterns: Array<{ course_code: string; count: number }>;
+}

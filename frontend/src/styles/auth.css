@@ -378,7 +378,7 @@
 }
 .auth-providers {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 9px;
 }
 .auth-providers button {
@@ -406,15 +406,10 @@
   line-height: 1.45;
   text-align: center;
 }
-.provider-google,
-.provider-ms {
+.provider-github {
+  color: #172e5d;
+  font-size: 10px;
   font-weight: 900;
-}
-.provider-google {
-  color: #ef6d62;
-}
-.provider-ms {
-  color: #4e5ef5;
 }
 .demo-heading {
   display: flex;

@@ -47,8 +47,8 @@ def evaluate_student_progression(supabase: Client, student_id: str):
 
 def orchestrate_agent_35_workflow(supabase: Client, student_id: str):
     eval_data = evaluate_student_progression(supabase, student_id)
-    agent_34_payload = get_agent_34_results(student_id)
-    agent_30_payload = get_agent_30_supplementary(student_id)
+    agent_34_payload = get_agent_34_results(student_id, supabase)
+    agent_30_payload = get_agent_30_supplementary(student_id, supabase)
     ai_insights = run_agent_35_orchestration(eval_data, agent_34_payload, agent_30_payload)
     
     complete_assessment = {

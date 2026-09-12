@@ -31,52 +31,16 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import Brand from "../components/Brand";
-import type { ActivityEvent, OrchestrationData } from "../types/agent";
+import type {
+  ActivityEvent,
+  DashboardData,
+  OrchestrationData,
+} from "../types/agent";
 import { userRoles, type UserRole } from "../types/roles";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-const STUDENTS = ["STU001", "STU002", "STU003", "STU004"];
-const studentProfiles: Record<
-  string,
-  {
-    name: string;
-    program: string;
-    batch: string;
-    semester: string;
-    mentor: string;
-  }
-> = {
-  STU001: {
-    name: "Rahul Sharma",
-    program: "Computer Science",
-    batch: "2026 batch",
-    semester: "Semester 5",
-    mentor: "Prof. S. Dhital",
-  },
-  STU002: {
-    name: "Priya Rao",
-    program: "Computer Science",
-    batch: "2026 batch",
-    semester: "Semester 5",
-    mentor: "Dr. A. Sharma",
-  },
-  STU003: {
-    name: "Kiran Das",
-    program: "Information Technology",
-    batch: "2026 batch",
-    semester: "Semester 5",
-    mentor: "Prof. S. Dhital",
-  },
-  STU004: {
-    name: "Ananya Singh",
-    program: "Computer Science",
-    batch: "2025 batch",
-    semester: "Semester 7",
-    mentor: "Dr. A. Sharma",
-  },
-};
+import { api } from "../api";
+import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
+import { supabaseAuth } from "../supabaseClient";
 
 const dashboardByRole = {
   student: {
@@ -246,6 +210,29 @@ function DashboardSidebar({
 
 function DashboardTopbar({ role }: { role: UserRole }) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    supabaseAuth.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return;
+      const metadata = data.user.user_metadata ?? {};
+      const name =
+        metadata.full_name ||
+        metadata.name ||
+        metadata.user_name ||
+        metadata.preferred_username ||
+        data.user.email?.split("@")[0] ||
+        "Authenticated user";
+      setProfileName(String(name));
+      setProfileEmail(data.user.email || "");
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <header className="dashboard-topbar">
       <div className="dashboard-search">
@@ -270,9 +257,9 @@ function DashboardTopbar({ role }: { role: UserRole }) {
             <CircleUserRound size={20} />
           </span>
           <span>
-            <strong>{role === "hod" ? "Dr. Meera Sharma" : roleLabel}</strong>
+            <strong>{profileName || roleLabel}</strong>
             <small>
-              {role === "hod" ? "HOD · CSE" : "EduRecover workspace"}
+              {profileEmail || `${roleLabel} · EduRecover workspace`}
             </small>
           </span>
         </div>
@@ -341,31 +328,12 @@ function RecoveryJourney({
   );
 }
 
-const hodCases = [
-  {
-    id: "STU001",
-    name: "Rahul Sharma",
-    detail: "3 active backlogs · repeated failure",
-    tone: "danger",
-  },
-  {
-    id: "STU002",
-    name: "Priya Rao",
-    detail: "2 active backlogs · supplementary eligible",
-    tone: "warning",
-  },
-  {
-    id: "STU003",
-    name: "Kiran Das",
-    detail: "1 backlog · intervention in progress",
-    tone: "success",
-  },
-] as const;
-
 function HodCommandCenter({
   onSelectStudent,
+  dashboard,
 }: {
   onSelectStudent: (studentId: string) => void;
+  dashboard: DashboardData;
 }) {
   return (
     <section
@@ -396,10 +364,13 @@ function HodCommandCenter({
             className="semester-chart"
             aria-label="Backlogs by semester chart"
           >
-            {[62, 78, 54, 69, 43, 31].map((height, index) => (
+            {dashboard.course_patterns.slice(0, 6).map((pattern, index) => (
               <div className="chart-column" key={index}>
-                <div className="chart-bar" style={{ height: `${height}%` }} />
-                <span>Sem {index + 1}</span>
+                <div
+                  className="chart-bar"
+                  style={{ height: `${Math.min(100, pattern.count * 10)}%` }}
+                />
+                <span>{pattern.course_code}</span>
               </div>
             ))}
           </div>
@@ -413,18 +384,15 @@ function HodCommandCenter({
             <Sparkles size={16} />
           </div>
           <div className="course-bars">
-            {[
-              ["Mathematics", "68", "74%"],
-              ["DBMS", "52", "56%"],
-              ["Data Structures", "41", "44%"],
-              ["Operating Systems", "29", "31%"],
-            ].map(([course, count, width]) => (
-              <div className="course-bar-row" key={course}>
-                <span>{course}</span>
+            {dashboard.course_patterns.map((pattern) => (
+              <div className="course-bar-row" key={pattern.course_code}>
+                <span>{pattern.course_code}</span>
                 <div>
-                  <i style={{ width }} />
+                  <i
+                    style={{ width: `${Math.min(100, pattern.count * 10)}%` }}
+                  />
                 </div>
-                <strong>{count}</strong>
+                <strong>{pattern.count}</strong>
               </div>
             ))}
           </div>
@@ -438,7 +406,7 @@ function HodCommandCenter({
             <Gauge size={16} />
           </div>
           <div className="recovery-ring">
-            <strong>214</strong>
+            <strong>{dashboard.active_backlog_count}</strong>
             <small>Total</small>
           </div>
           <div className="recovery-legend">
@@ -464,14 +432,22 @@ function HodCommandCenter({
             <CircleAlert size={16} />
           </div>
           <div className="hod-case-list">
-            {hodCases.map((item) => (
-              <button key={item.id} onClick={() => onSelectStudent(item.id)}>
-                <span className={`case-icon ${item.tone}`}>
+            {dashboard.students.map((item) => (
+              <button
+                key={item.student_id}
+                onClick={() => onSelectStudent(item.student_id)}
+              >
+                <span
+                  className={`case-icon ${item.status === "CRITICAL" ? "danger" : "warning"}`}
+                >
                   <CircleAlert size={15} />
                 </span>
                 <span className="case-copy">
-                  <strong>{item.name}</strong>
-                  <small>{item.detail}</small>
+                  <strong>{item.student_id}</strong>
+                  <small>
+                    {item.active_backlog_count} active backlogs ·{" "}
+                    {item.status.toLowerCase()}
+                  </small>
                 </span>
                 <ArrowUpRight size={15} />
               </button>
@@ -751,10 +727,12 @@ function DashboardTabView({
   role,
   activeTab,
   onSelectStudent,
+  dashboard,
 }: {
   role: UserRole;
   activeTab: string;
   onSelectStudent: (studentId: string) => void;
+  dashboard: DashboardData | null;
 }) {
   const content = tabContent[activeTab as keyof typeof tabContent];
   if (!content) {
@@ -771,14 +749,24 @@ function DashboardTabView({
     );
   }
 
-  const canOpenStudent =
-    activeTab === "Students" || activeTab === "Interventions";
-  const studentIds: Record<string, string> = {
-    "Rahul Sharma": "STU001",
-    "Priya Rao": "STU002",
-    "Kiran Das": "STU003",
-    "Ananya Singh": "STU004",
-  };
+  const canOpenStudent = activeTab === "Students";
+  const liveRows = dashboard
+    ? activeTab === "Students"
+      ? dashboard.students.map((student) => [
+          student.student_id,
+          `${student.active_backlog_count} active backlogs`,
+          `${student.max_attempts_made} maximum attempts made`,
+          student.status,
+        ])
+      : activeTab === "Backlogs"
+        ? dashboard.course_patterns.map((pattern) => [
+            pattern.course_code,
+            `${pattern.count} records`,
+            "Current pending backlog volume",
+            "Live",
+          ])
+        : []
+    : [];
   return (
     <section className="dashboard-tab-view">
       <div className="tab-view-heading">
@@ -814,32 +802,41 @@ function DashboardTabView({
           <span>Context</span>
           <span>Status</span>
         </div>
-        {content.rows.map(([signal, scope, context, status]) => (
-          <button
-            className="tab-table-row"
-            key={`${signal}-${scope}`}
-            type="button"
-            onClick={() =>
-              canOpenStudent && onSelectStudent(studentIds[signal] || "STU001")
-            }
-            disabled={!canOpenStudent}
-          >
-            <strong>{signal}</strong>
-            <span>{scope}</span>
-            <span>{context}</span>
-            <StatusBadge
-              tone={
-                status === "Critical" || status === "Urgent"
-                  ? "danger"
-                  : status === "Positive" || status === "Active"
-                    ? "success"
-                    : "warning"
-              }
+        {liveRows.length === 0 ? (
+          <div className="tab-empty-state">
+            <Activity size={22} />
+            <h3>No live records available</h3>
+            <p>
+              This view will populate when the connected institution system
+              provides data.
+            </p>
+          </div>
+        ) : (
+          liveRows.map(([signal, scope, context, status]) => (
+            <button
+              className="tab-table-row"
+              key={`${signal}-${scope}`}
+              type="button"
+              onClick={() => canOpenStudent && onSelectStudent(signal)}
+              disabled={!canOpenStudent}
             >
-              {status}
-            </StatusBadge>
-          </button>
-        ))}
+              <strong>{signal}</strong>
+              <span>{scope}</span>
+              <span>{context}</span>
+              <StatusBadge
+                tone={
+                  status === "Critical" || status === "Urgent"
+                    ? "danger"
+                    : status === "Positive" || status === "Active"
+                      ? "success"
+                      : "warning"
+                }
+              >
+                {status}
+              </StatusBadge>
+            </button>
+          ))
+        )}
       </div>
     </section>
   );
@@ -928,7 +925,7 @@ export default function PrototypePage({
   onSwitchRole?: (role: UserRole) => void;
 }) {
   const [studentId, setStudentId] = useState(
-    () => sessionStorage.getItem("edurecover-focus-student") || STUDENTS[0],
+    () => sessionStorage.getItem("edurecover-focus-student") || "",
   );
   const [mentorId, setMentorId] = useState("FACULTY_099");
   const [data, setData] = useState<OrchestrationData | null>(null);
@@ -940,17 +937,47 @@ export default function PrototypePage({
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   const [dispatchLogs, setDispatchLogs] = useState<string[]>([]);
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null,
+  );
+  const [dashboardLoading, setDashboardLoading] = useState(
+    mode === "dashboard",
+  );
   const [activeTab, setActiveTab] = useState("Dashboard");
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
 
+  useEffect(() => {
+    if (mode !== "dashboard") return;
+    let active = true;
+    api
+      .dashboard()
+      .then((payload) => {
+        if (!active) return;
+        setDashboardData(payload);
+        setStudentId(
+          (current) => current || payload.students[0]?.student_id || "",
+        );
+      })
+      .catch((requestError) => {
+        if (active)
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load dashboard data",
+          );
+      })
+      .finally(() => {
+        if (active) setDashboardLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode]);
+
   const refreshActivity = useCallback(async (targetId: string) => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/dispatch/activity/${targetId}`,
-      );
-      if (!response.ok) return;
-      const payload = (await response.json()) as { events: ActivityEvent[] };
+      const payload = await api.activity(targetId);
       setActivityEvents(payload.events);
     } catch {
       setActivityEvents([]);
@@ -967,10 +994,9 @@ export default function PrototypePage({
       setDispatchLogs([]);
       setActivityEvents([]);
       try {
-        const response = await fetch(`${API_URL}/api/orchestrate/${targetId}`);
-        if (!response.ok) throw new Error("Unable to fetch orchestration data");
+        const payload = await api.orchestration(targetId);
         if (requestId !== requestSequence.current) return;
-        setData((await response.json()) as OrchestrationData);
+        setData(payload);
         void refreshActivity(targetId);
       } catch (requestError) {
         if (requestId !== requestSequence.current) return;
@@ -1026,11 +1052,7 @@ export default function PrototypePage({
     setApproving(true);
     setError("");
     try {
-      const response = await fetch(
-        `${API_URL}/api/approve-intervention/${studentId}?mentor_id=${mentorId}`,
-        { method: "POST" },
-      );
-      if (!response.ok) throw new Error("Unable to approve intervention");
+      await api.approve(studentId, mentorId);
       setApproved(true);
       setShowApprovalConfirm(false);
       const logs = [
@@ -1095,6 +1117,30 @@ export default function PrototypePage({
       ? "HIGH"
       : "LOW";
   const dashboard = dashboardByRole[role];
+  const liveMetrics: Array<[string, string, string]> = dashboardData
+    ? [
+        [
+          "Active backlogs",
+          String(dashboardData.active_backlog_count),
+          "Current institutional records",
+        ],
+        [
+          "Students affected",
+          String(dashboardData.student_count),
+          "Students with pending backlogs",
+        ],
+        [
+          "Critical cases",
+          String(dashboardData.critical_case_count),
+          "Requires human review",
+        ],
+        [
+          "Interventions",
+          String(dashboardData.intervention_count),
+          "Recorded in the system",
+        ],
+      ]
+    : [];
   const dashboardAction = {
     student: ["Review recovery plan", "Recovery plan"],
     mentor: ["Open priority students", "Students"],
@@ -1227,7 +1273,7 @@ export default function PrototypePage({
             <small>Last updated just now</small>
           </div>
           <div className="dashboard-metrics">
-            {dashboard.metrics.map(([label, value, detail]) => (
+            {liveMetrics.map(([label, value, detail]) => (
               <div className="dashboard-metric" key={label}>
                 <span>{label}</span>
                 <strong>{value}</strong>
@@ -1242,8 +1288,11 @@ export default function PrototypePage({
         activeTab === "Dashboard" &&
         role === "hod" &&
         !data &&
-        !loading && (
+        !loading &&
+        !dashboardLoading &&
+        dashboardData && (
           <HodCommandCenter
+            dashboard={dashboardData}
             onSelectStudent={(selectedStudentId) => {
               setStudentId(selectedStudentId);
               setActiveTab("Students");
@@ -1263,10 +1312,13 @@ export default function PrototypePage({
       {mode === "dashboard" &&
         activeTab !== "Dashboard" &&
         !data &&
-        !loading && (
+        !loading &&
+        !dashboardLoading &&
+        dashboardData && (
           <DashboardTabView
             role={role}
             activeTab={activeTab}
+            dashboard={dashboardData}
             onSelectStudent={(selectedStudentId) => {
               setStudentId(selectedStudentId);
               void fetchOrchestration(selectedStudentId);
@@ -1289,7 +1341,9 @@ export default function PrototypePage({
             </small>
           </div>
           <div className="profile-pills">
-            {STUDENTS.map((id) => (
+            {(
+              dashboardData?.students.map((student) => student.student_id) ?? []
+            ).map((id) => (
               <button
                 key={id}
                 className={studentId === id ? "active" : ""}
@@ -1358,7 +1412,7 @@ export default function PrototypePage({
       {data && evaluation && recommendation && (
         <section className="workspace-content">
           {(() => {
-            const profile = studentProfiles[data.target_student_id] ?? {
+            const profile = {
               name: data.target_student_id,
               program: "Institutional record",
               batch: "Batch unavailable",

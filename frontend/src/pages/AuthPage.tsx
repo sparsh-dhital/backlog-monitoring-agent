@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import {
   ArrowLeft,
@@ -6,7 +6,6 @@ import {
   BriefcaseBusiness,
   Check,
   ClipboardCheck,
-  GraduationCap,
   LayoutDashboard,
   LockKeyhole,
   Mail,
@@ -15,6 +14,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import { supabaseAuth } from "../supabaseClient";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
 import "../styles/auth.css";
@@ -37,10 +37,84 @@ export default function AuthPage({
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [selectedRole, setSelectedRole] = useState<UserRole>("hod");
   const [authMessage, setAuthMessage] = useState("");
+  const [authenticating, setAuthenticating] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    let active = true;
+    supabaseAuth.auth.getSession().then(({ data }) => {
+      if (!active || !data.session) return;
+      const savedRole = sessionStorage.getItem(
+        "edurecover-pending-role",
+      ) as UserRole | null;
+      onContinue(
+        savedRole && userRoles.some((role) => role.id === savedRole)
+          ? savedRole
+          : selectedRole,
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [onContinue, selectedRole]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setAuthenticating(true);
+    setAuthMessage("");
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "");
+    const password = String(form.get("password") || "");
+    const result =
+      mode === "signin"
+        ? await supabaseAuth.auth.signInWithPassword({ email, password })
+        : await supabaseAuth.auth.signUp({ email, password });
+    if (result.error) {
+      setAuthMessage(result.error.message);
+      setAuthenticating(false);
+      return;
+    }
+    if (!result.data.session) {
+      setAuthMessage(
+        "Check your email to confirm your account before signing in.",
+      );
+      setAuthenticating(false);
+      return;
+    }
+    sessionStorage.setItem("edurecover-role", selectedRole);
+    sessionStorage.removeItem("edurecover-pending-role");
     onContinue(selectedRole);
+    setAuthenticating(false);
+  };
+
+  const handleGitHubLogin = async () => {
+    setAuthenticating(true);
+    setAuthMessage("");
+    sessionStorage.setItem("edurecover-pending-role", selectedRole);
+    const { error } = await supabaseAuth.auth.signInWithOAuth({
+      provider: "github",
+      options: { redirectTo: `${window.location.origin}/auth` },
+    });
+    if (error) {
+      setAuthMessage(error.message);
+      setAuthenticating(false);
+    }
+  };
+
+  const handlePasswordRecovery = async () => {
+    const email = window.prompt("Enter your account email");
+    if (!email?.trim()) return;
+    setAuthenticating(true);
+    setAuthMessage("");
+    const { error } = await supabaseAuth.auth.resetPasswordForEmail(
+      email.trim(),
+      { redirectTo: `${window.location.origin}/auth` },
+    );
+    setAuthMessage(
+      error
+        ? error.message
+        : "Password reset instructions have been sent to your email.",
+    );
+    setAuthenticating(false);
   };
 
   return (
@@ -150,7 +224,12 @@ export default function AuthPage({
               <span>Institutional email or ID</span>
               <div className="auth-input">
                 <Mail size={17} />
-                <input required type="text" placeholder="you@university.edu" />
+                <input
+                  required
+                  name="email"
+                  type="email"
+                  placeholder="you@university.edu"
+                />
               </div>
             </label>
             <label>
@@ -159,6 +238,7 @@ export default function AuthPage({
                 <LockKeyhole size={17} />
                 <input
                   required
+                  name="password"
                   type="password"
                   placeholder="Enter your password"
                 />
@@ -170,17 +250,22 @@ export default function AuthPage({
               </label>
               <button
                 type="button"
-                onClick={() =>
-                  setAuthMessage(
-                    "Password recovery will be handled by your institution administrator.",
-                  )
-                }
+                onClick={() => void handlePasswordRecovery()}
+                disabled={authenticating}
               >
                 Forgot password?
               </button>
             </div>
-            <button className="auth-submit" type="submit">
-              {mode === "signin" ? "Sign in to workspace" : "Create account"}
+            <button
+              className="auth-submit"
+              type="submit"
+              disabled={authenticating}
+            >
+              {authenticating
+                ? "Connecting..."
+                : mode === "signin"
+                  ? "Sign in to workspace"
+                  : "Create account"}
               <ArrowRight size={17} />
             </button>
           </form>
@@ -190,23 +275,10 @@ export default function AuthPage({
           <div className="auth-providers">
             <button
               type="button"
-              onClick={() =>
-                setAuthMessage(
-                  "Google sign-in is available in the institution deployment.",
-                )
-              }
+              onClick={() => void handleGitHubLogin()}
+              disabled={authenticating}
             >
-              <span className="provider-google">G</span> Google
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setAuthMessage(
-                  "Microsoft sign-in is available in the institution deployment.",
-                )
-              }
-            >
-              <span className="provider-ms">▦</span> Microsoft
+              <span className="provider-github">GH</span> GitHub
             </button>
           </div>
           {authMessage && (
@@ -216,10 +288,9 @@ export default function AuthPage({
           )}
           <div className="demo-heading">
             <div>
-              <span>Demo mode</span>
-              <small>Choose a role to explore the product</small>
+              <span>Workspace role</span>
+              <small>Select the dashboard to open after authentication</small>
             </div>
-            <GraduationCap size={20} />
           </div>
           <div className="role-selector">
             {userRoles.map((role) => {
@@ -245,15 +316,6 @@ export default function AuthPage({
               );
             })}
           </div>
-          <button
-            className="demo-submit"
-            type="button"
-            onClick={() => onContinue(selectedRole)}
-          >
-            Enter {userRoles.find((role) => role.id === selectedRole)?.label}{" "}
-            demo
-            <ArrowRight size={16} />
-          </button>
           <p className="auth-note">
             By continuing, you agree to EduRecover's responsible AI and human
             oversight principles.

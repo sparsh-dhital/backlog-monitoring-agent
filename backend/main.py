@@ -1,4 +1,5 @@
 import os
+from collections import Counter
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
@@ -46,6 +47,45 @@ def read_root():
 def test_database():
     response = supabase.table("regulations").select("*").execute()
     return {"status": "success", "data": response.data}
+
+@app.get("/api/dashboard")
+def dashboard():
+    """Return dashboard facts computed from the institution's current records."""
+    try:
+        backlogs = supabase.table("backlogs").select("*").execute().data or []
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="Backlog data could not be loaded") from error
+
+    pending_backlogs = [item for item in backlogs if item.get("status", "PENDING") == "PENDING"]
+    student_ids = sorted({item.get("student_id") for item in pending_backlogs if item.get("student_id")})
+    course_counts = Counter(item.get("course_code", "Unknown") for item in pending_backlogs)
+    students = []
+    for student_id in student_ids:
+        records = [item for item in pending_backlogs if item.get("student_id") == student_id]
+        attempts = [item.get("attempts_made", 0) for item in records]
+        students.append({
+            "student_id": student_id,
+            "active_backlog_count": len(records),
+            "max_attempts_made": max(attempts, default=0),
+            "status": "CRITICAL" if max(attempts, default=0) >= 3 or len(records) >= 3 else "REVIEW",
+        })
+
+    try:
+        interventions = supabase.table("interventions").select("*").execute().data or []
+    except Exception:
+        interventions = []
+
+    return {
+        "student_count": len(student_ids),
+        "active_backlog_count": len(pending_backlogs),
+        "critical_case_count": sum(item["status"] == "CRITICAL" for item in students),
+        "intervention_count": len(interventions),
+        "students": students,
+        "course_patterns": [
+            {"course_code": course, "count": count}
+            for course, count in course_counts.most_common()
+        ],
+    }
 
 @app.get("/api/evaluate/{student_id}")
 def evaluate_student(student_id: str):
