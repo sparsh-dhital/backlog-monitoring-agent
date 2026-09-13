@@ -324,8 +324,8 @@ export default function AuthPage({
             })}
           </div>
           <p className="auth-note">
-            By continuing, you agree to EduRecover's responsible AI and human
-            oversight principles.
+            By continuing, you agree to EduRecover's responsible practice and
+            human oversight principles.
           </p>
         </div>
       </section>

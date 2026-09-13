@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import Lenis from "lenis";
+import { useState } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -7,6 +6,7 @@ import {
   BriefcaseBusiness,
   Calculator,
   Check,
+  ChevronDown,
   CircleCheckBig,
   CirclePlay,
   Fingerprint,
@@ -132,11 +132,6 @@ export default function LandingPage({
 }) {
   const [activeWorkflow, setActiveWorkflow] = useState(0);
   const [activeRole, setActiveRole] = useState(0);
-  useEffect(() => {
-    const lenis = new Lenis({ autoRaf: true, lerp: 0.08, anchors: true });
-    return () => lenis.destroy();
-  }, []);
-
   return (
     <main className="landing-page">
       <nav className="site-nav">
@@ -162,8 +157,7 @@ export default function LandingPage({
       <section className="hero-section" id="top">
         <div className="hero-copy">
           <div className="eyebrow">
-            <span className="eyebrow-dot" /> AI-powered academic recovery
-            platform
+            <span className="eyebrow-dot" /> Academic recovery platform
           </div>
           <h1>
             Turn academic signals into <em>timely student action.</em>
@@ -215,7 +209,9 @@ export default function LandingPage({
                 <small>Department-wide overview</small>
                 <strong>Academic Command Center</strong>
               </div>
-              <span className="date-pill">2025 - 26⌄</span>
+              <span className="date-pill">
+                2025 - 26 <ChevronDown size={10} strokeWidth={2.2} />
+              </span>
             </div>
             <div className="preview-metrics">
               <div>
@@ -298,9 +294,7 @@ export default function LandingPage({
 
       <section className="workflow-section section-shell" id="workflows">
         <div className="section-heading centered">
-          <div className="eyebrow">
-            One platform · nine intelligent workflows
-          </div>
+          <div className="eyebrow">One platform · nine connected workflows</div>
           <h2>
             From early detection to <em>lasting recovery.</em>
           </h2>
@@ -440,8 +434,8 @@ export default function LandingPage({
               <Sparkles size={18} />
             </span>
             <div>
-              <small>AI layer</small>
-              <strong>Detects · calculates · recommends</strong>
+              <small>Academic review</small>
+              <strong>Detect · calculate · recommend</strong>
             </div>
           </div>
           <div className="flow-connector">
@@ -474,7 +468,7 @@ export default function LandingPage({
           <h2>
             Academic problems become harder when they're discovered too late.
           </h2>
-          <p>Detect earlier. Understand deeper. Intervene smarter.</p>
+          <p>Notice earlier. Understand clearly. Support students well.</p>
         </div>
         <button className="primary-button" onClick={onEnter}>
           Get started <ArrowUpRight size={16} />
@@ -491,7 +485,7 @@ export default function LandingPage({
             </a>
             <p>Academic recovery, made actionable.</p>
             <span className="footer-live">
-              <i /> Platform ready for early action
+              <i /> Ready for early support
             </span>
             <button className="footer-cta" onClick={onPrototype}>
               Open the prototype <ArrowUpRight size={15} />
@@ -501,7 +495,7 @@ export default function LandingPage({
             <div>
               <strong>Explore</strong>
               <a href="#platform">How it works</a>
-              <a href="#workflows">Nine workflows</a>
+              <a href="#workflows">Connected workflows</a>
               <a href="#about">About EduRecover</a>
             </div>
             <div>
@@ -513,7 +507,7 @@ export default function LandingPage({
             <div>
               <strong>Trust center</strong>
               <a href="#platform">Human oversight</a>
-              <a href="#platform">Responsible AI</a>
+              <a href="#platform">Responsible practice</a>
               <a href="#platform">Privacy & security</a>
             </div>
           </div>

@@ -1,5 +1,12 @@
-import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { useEffect, useState } from "react";
+import Lenis from "lenis";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -14,6 +21,46 @@ function clearLocalSession() {
   sessionStorage.removeItem("edurecover-role");
   sessionStorage.removeItem("edurecover-pending-role");
   sessionStorage.removeItem("edurecover-focus-student");
+}
+
+function SmoothScroll() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reduceMotion.matches) return;
+
+    const lenis = new Lenis({
+      autoRaf: true,
+      anchors: true,
+      lerp: 0.075,
+      smoothWheel: true,
+      syncTouch: false,
+    });
+
+    return () => lenis.destroy();
+  }, []);
+
+  return null;
+}
+
+function SiteLoader() {
+  return (
+    <div className="site-loader" role="status" aria-label="Loading EduRecover">
+      <div className="site-loader-glow site-loader-glow-one" />
+      <div className="site-loader-glow site-loader-glow-two" />
+      <div className="site-loader-mark">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="site-loader-copy">
+        <strong>EduRecover</strong>
+        <span>Preparing your academic signal</span>
+      </div>
+      <div className="site-loader-line" aria-hidden="true">
+        <i />
+      </div>
+    </div>
+  );
 }
 
 function AuthRoute() {
@@ -49,7 +96,9 @@ function ProtectedDashboard() {
   const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
   const [sessionChecked, setSessionChecked] = useState(false);
-  const sessionRole = sessionStorage.getItem("edurecover-role") as UserRole | null;
+  const sessionRole = sessionStorage.getItem(
+    "edurecover-role",
+  ) as UserRole | null;
 
   useEffect(() => {
     let active = true;
@@ -92,13 +141,25 @@ function ProtectedDashboard() {
 }
 
 export default function App() {
+  const [isBooting, setIsBooting] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsBooting(false), 760);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (isBooting) return <SiteLoader />;
+
   return (
-    <Routes>
-      <Route path="/" element={<LandingRoute />} />
-      <Route path="/auth" element={<AuthRoute />} />
-      <Route path="/prototype" element={<PrototypeRoute />} />
-      <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <>
+      <SmoothScroll />
+      <Routes>
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/auth" element={<AuthRoute />} />
+        <Route path="/prototype" element={<PrototypeRoute />} />
+        <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   );
 }

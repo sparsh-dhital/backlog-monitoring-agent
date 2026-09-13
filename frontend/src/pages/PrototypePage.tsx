@@ -15,6 +15,7 @@ import {
   CircleUserRound,
   ClipboardCheck,
   Download,
+  Ellipsis,
   FileJson,
   FileSpreadsheet,
   FileText,
@@ -161,6 +162,7 @@ function DashboardSidebar({
   onSelect: (tab: string) => void;
   onLogout: () => void;
 }) {
+  const [moreOpen, setMoreOpen] = useState(false);
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
   const roleBadgeColors: Record<string, string> = {
     hod: "bg-violet-100 text-violet-700",
@@ -169,18 +171,29 @@ function DashboardSidebar({
     exam: "bg-amber-100 text-amber-700",
     placement: "bg-rose-100 text-rose-700",
   };
+  const mobilePrimaryItems = dashboardNavigation[role].slice(0, 4);
+  const mobileMoreItems = dashboardNavigation[role].slice(4);
+
+  const selectMobileItem = (label: string) => {
+    setMoreOpen(false);
+    onSelect(label);
+  };
 
   return (
     <aside
-      className="flex flex-col w-64 shrink-0 h-full bg-white border-r border-slate-100 shadow-[2px_0_12px_rgba(0,0,0,0.04)] z-20"
+      className="dashboard-sidebar flex flex-col w-64 shrink-0 h-full bg-white border-r border-slate-100 shadow-[2px_0_12px_rgba(0,0,0,0.04)] z-20"
       aria-label="Dashboard navigation"
     >
       {/* Brand & Role */}
       <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
         <Brand compact />
         <div className="flex flex-col">
-          <span className="text-sm font-extrabold text-slate-800 tracking-tight">EduRecover</span>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 self-start ${roleBadgeColors[role] ?? "bg-slate-100 text-slate-600"}`}>
+          <span className="text-sm font-extrabold text-slate-800 tracking-tight">
+            EduRecover
+          </span>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 self-start ${roleBadgeColors[role] ?? "bg-slate-100 text-slate-600"}`}
+          >
             {roleLabel}
           </span>
         </div>
@@ -206,7 +219,11 @@ function DashboardSidebar({
             >
               <Icon
                 size={17}
-                className={activeTab === label ? "text-indigo-200" : "text-slate-400 group-hover:text-slate-600"}
+                className={
+                  activeTab === label
+                    ? "text-indigo-200"
+                    : "text-slate-400 group-hover:text-slate-600"
+                }
               />
               <span className="flex-1 text-left">{label}</span>
               {label === "Alerts" && (
@@ -226,7 +243,7 @@ function DashboardSidebar({
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-3 border-t border-slate-100 flex flex-col gap-0.5">
+      <div className="dashboard-sidebar-actions px-3 py-3 border-t border-slate-100 flex flex-col gap-0.5">
         <button
           type="button"
           onClick={() => onSelect("Settings")}
@@ -237,7 +254,12 @@ function DashboardSidebar({
               : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
           }`}
         >
-          <Settings size={17} className={activeTab === "Settings" ? "text-indigo-200" : "text-slate-400"} />
+          <Settings
+            size={17}
+            className={
+              activeTab === "Settings" ? "text-indigo-200" : "text-slate-400"
+            }
+          />
           <span>Settings</span>
         </button>
         <button
@@ -248,6 +270,72 @@ function DashboardSidebar({
           <ArrowLeft size={17} className="text-slate-400" />
           <span>Logout</span>
         </button>
+      </div>
+
+      <div
+        className="dashboard-mobile-nav"
+        aria-label="Mobile dashboard navigation"
+      >
+        {mobilePrimaryItems.map(([label, Icon]) => (
+          <button
+            key={label}
+            type="button"
+            aria-current={activeTab === label ? "page" : undefined}
+            onClick={() => selectMobileItem(label)}
+            className={activeTab === label ? "is-active" : ""}
+          >
+            <Icon size={19} />
+            <span>{label === "Dashboard" ? "Overview" : label}</span>
+            {label === "Alerts" && <b>3</b>}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-expanded={moreOpen}
+          aria-controls="mobile-dashboard-more"
+          onClick={() => setMoreOpen((current) => !current)}
+          className={
+            moreOpen ||
+            !mobilePrimaryItems.some(([label]) => label === activeTab)
+              ? "is-active"
+              : ""
+          }
+        >
+          {moreOpen ? <X size={19} /> : <Ellipsis size={19} />}
+          <span>More</span>
+        </button>
+        {moreOpen && (
+          <div className="dashboard-mobile-more" id="mobile-dashboard-more">
+            {mobileMoreItems.map(([label, Icon]) => (
+              <button
+                key={label}
+                type="button"
+                aria-current={activeTab === label ? "page" : undefined}
+                onClick={() => selectMobileItem(label)}
+                className={activeTab === label ? "is-active" : ""}
+              >
+                <Icon size={17} />
+                <span>{label}</span>
+                {label === "Alerts" && <b>3</b>}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setMoreOpen(false);
+                onSelect("Settings");
+              }}
+              className={activeTab === "Settings" ? "is-active" : ""}
+            >
+              <Settings size={17} />
+              <span>Settings</span>
+            </button>
+            <button type="button" onClick={onLogout}>
+              <ArrowLeft size={17} />
+              <span>Log out</span>
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );
@@ -278,12 +366,10 @@ function DashboardTopbar({ role }: { role: UserRole }) {
     };
   }, []);
 
-
-
   return (
-    <header className="h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8">
+    <header className="dashboard-topbar h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8">
       {/* Search */}
-      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
+      <div className="dashboard-search flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
         <Search size={15} className="text-slate-400 shrink-0" />
         <input
           aria-label="Search dashboard"
@@ -349,9 +435,15 @@ function RecoveryJourney({
     >
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">One connected case</p>
-          <h2 className="text-xl font-bold text-slate-800 tracking-tight">From signal to recovery</h2>
-          <p className="text-sm text-slate-500 mt-1">Each team sees the same student story from its own point of view.</p>
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
+            One connected case
+          </p>
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            From signal to recovery
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Each team sees the same student story from its own point of view.
+          </p>
         </div>
         <span className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-full">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -374,20 +466,37 @@ function RecoveryJourney({
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold font-mono ${
-                role === stepRole ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-600"
-              }`}>
+              <span
+                className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold font-mono ${
+                  role === stepRole
+                    ? "bg-white/20 text-white"
+                    : "bg-indigo-100 text-indigo-600"
+                }`}
+              >
                 0{index + 1}
               </span>
-              <ArrowRight size={14} className={role === stepRole ? "text-indigo-200" : "text-slate-400"} />
+              <ArrowRight
+                size={14}
+                className={
+                  role === stepRole ? "text-indigo-200" : "text-slate-400"
+                }
+              />
             </div>
             <div>
-              <p className={`text-sm font-bold leading-tight ${
-                role === stepRole ? "text-white" : "text-slate-800"
-              }`}>{title}</p>
-              <p className={`text-xs mt-0.5 ${
-                role === stepRole ? "text-indigo-200" : "text-slate-500"
-              }`}>{detail}</p>
+              <p
+                className={`text-sm font-bold leading-tight ${
+                  role === stepRole ? "text-white" : "text-slate-800"
+                }`}
+              >
+                {title}
+              </p>
+              <p
+                className={`text-xs mt-0.5 ${
+                  role === stepRole ? "text-indigo-200" : "text-slate-500"
+                }`}
+              >
+                {detail}
+              </p>
             </div>
           </button>
         ))}
@@ -411,7 +520,9 @@ function HodCommandCenter({
           <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
             <BarChart3 size={14} /> Department signal map
           </p>
-          <h2 className="text-xl font-bold text-slate-800 tracking-tight">What needs attention now</h2>
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+            What needs attention now
+          </h2>
         </div>
         <span className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold px-3 py-1.5 rounded-full">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -425,8 +536,12 @@ function HodCommandCenter({
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trend</p>
-              <h3 className="text-sm font-bold text-slate-800">Backlogs by course</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Trend
+              </p>
+              <h3 className="text-sm font-bold text-slate-800">
+                Backlogs by course
+              </h3>
             </div>
             <ArrowUpRight size={16} className="text-slate-300" />
           </div>
@@ -435,12 +550,20 @@ function HodCommandCenter({
             aria-label="Backlogs by course chart"
           >
             {dashboard.course_patterns.slice(0, 6).map((pattern, index) => (
-              <div key={index} className="flex flex-col items-center gap-1 flex-1">
+              <div
+                key={index}
+                className="flex flex-col items-center gap-1 flex-1"
+              >
                 <div
                   className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all duration-500"
-                  style={{ height: `${Math.min(100, pattern.count * 10)}%`, minHeight: 8 }}
+                  style={{
+                    height: `${Math.min(100, pattern.count * 10)}%`,
+                    minHeight: 8,
+                  }}
                 />
-                <span className="text-[9px] text-slate-400 font-medium truncate w-full text-center">{pattern.course_code}</span>
+                <span className="text-[9px] text-slate-400 font-medium truncate w-full text-center">
+                  {pattern.course_code}
+                </span>
               </div>
             ))}
           </div>
@@ -450,22 +573,33 @@ function HodCommandCenter({
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pattern detection</p>
-              <h3 className="text-sm font-bold text-slate-800">Failure patterns</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Pattern detection
+              </p>
+              <h3 className="text-sm font-bold text-slate-800">
+                Failure patterns
+              </h3>
             </div>
             <Sparkles size={16} className="text-violet-400" />
           </div>
           <div className="flex flex-col gap-3">
             {dashboard.course_patterns.map((pattern) => (
-              <div key={pattern.course_code} className="flex items-center gap-3">
-                <span className="text-[10px] font-mono font-bold text-slate-500 w-14 shrink-0">{pattern.course_code}</span>
+              <div
+                key={pattern.course_code}
+                className="flex items-center gap-3"
+              >
+                <span className="text-[10px] font-mono font-bold text-slate-500 w-14 shrink-0">
+                  {pattern.course_code}
+                </span>
                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-rose-400 to-orange-400 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, pattern.count * 10)}%` }}
                   />
                 </div>
-                <span className="text-xs font-bold text-slate-700 w-5 text-right">{pattern.count}</span>
+                <span className="text-xs font-bold text-slate-700 w-5 text-right">
+                  {pattern.count}
+                </span>
               </div>
             ))}
           </div>
@@ -475,8 +609,12 @@ function HodCommandCenter({
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assessment</p>
-              <h3 className="text-sm font-bold text-slate-800">Recoverability</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Assessment
+              </p>
+              <h3 className="text-sm font-bold text-slate-800">
+                Recoverability
+              </h3>
             </div>
             <Gauge size={16} className="text-slate-300" />
           </div>
@@ -484,20 +622,67 @@ function HodCommandCenter({
           <div className="flex items-center gap-4">
             <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
               <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f1f5f9" strokeWidth="3" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6366f1" strokeWidth="3" strokeDasharray="54 46" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#a78bfa" strokeWidth="3" strokeDasharray="32 68" strokeDashoffset="-54" strokeLinecap="round" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray="14 86" strokeDashoffset="-86" strokeLinecap="round" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9"
+                  fill="none"
+                  stroke="#f1f5f9"
+                  strokeWidth="3"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9"
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="3"
+                  strokeDasharray="54 46"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9"
+                  fill="none"
+                  stroke="#a78bfa"
+                  strokeWidth="3"
+                  strokeDasharray="32 68"
+                  strokeDashoffset="-54"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.9"
+                  fill="none"
+                  stroke="#f97316"
+                  strokeWidth="3"
+                  strokeDasharray="14 86"
+                  strokeDashoffset="-86"
+                  strokeLinecap="round"
+                />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="text-xl font-extrabold text-slate-900 leading-none">{dashboard.active_backlog_count}</span>
+                <span className="text-xl font-extrabold text-slate-900 leading-none">
+                  {dashboard.active_backlog_count}
+                </span>
                 <span className="text-[9px] text-slate-400">Total</span>
               </div>
             </div>
             <div className="flex flex-col gap-2 text-xs">
-              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> Routine 54%</span>
-              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-violet-400" /> Structured 32%</span>
-              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-400" /> Intensive 14%</span>
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />{" "}
+                Routine 54%
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />{" "}
+                Structured 32%
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />{" "}
+                Intensive 14%
+              </span>
             </div>
           </div>
         </div>
@@ -509,8 +694,12 @@ function HodCommandCenter({
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority queue</p>
-              <h3 className="text-sm font-bold text-slate-800">Requires HOD attention</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Priority queue
+              </p>
+              <h3 className="text-sm font-bold text-slate-800">
+                Requires HOD attention
+              </h3>
             </div>
             <CircleAlert size={16} className="text-rose-400" />
           </div>
@@ -522,16 +711,28 @@ function HodCommandCenter({
                 onClick={() => onSelectStudent(item.student_id)}
                 className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition-all duration-150 group text-left"
               >
-                <span className={`flex items-center justify-center w-8 h-8 rounded-lg ${
-                  item.status === "CRITICAL" ? "bg-rose-100 text-rose-600" : "bg-amber-100 text-amber-600"
-                }`}>
+                <span
+                  className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                    item.status === "CRITICAL"
+                      ? "bg-rose-100 text-rose-600"
+                      : "bg-amber-100 text-amber-600"
+                  }`}
+                >
                   <CircleAlert size={15} />
                 </span>
                 <span className="flex-1">
-                  <strong className="text-sm font-bold text-slate-800 block font-mono">{item.student_id}</strong>
-                  <small className="text-xs text-slate-500">{item.active_backlog_count} active backlogs · {item.status.toLowerCase()}</small>
+                  <strong className="text-sm font-bold text-slate-800 block font-mono">
+                    {item.student_id}
+                  </strong>
+                  <small className="text-xs text-slate-500">
+                    {item.active_backlog_count} active backlogs ·{" "}
+                    {item.status.toLowerCase()}
+                  </small>
                 </span>
-                <ArrowUpRight size={15} className="text-slate-300 group-hover:text-rose-500 transition-colors" />
+                <ArrowUpRight
+                  size={15}
+                  className="text-slate-300 group-hover:text-rose-500 transition-colors"
+                />
               </button>
             ))}
           </div>
@@ -541,23 +742,52 @@ function HodCommandCenter({
         <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent alerts</p>
-              <h3 className="text-sm font-bold text-slate-800">Signals worth reviewing</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Recent alerts
+              </p>
+              <h3 className="text-sm font-bold text-slate-800">
+                Signals worth reviewing
+              </h3>
             </div>
             <Users size={16} className="text-slate-300" />
           </div>
           <div className="flex flex-col gap-3">
             {[
-              { dot: "bg-rose-500", title: "Attempt pressure", desc: "14 students have one attempt remaining.", time: "2h ago" },
-              { dot: "bg-amber-500", title: "Duration risk", desc: "6 students are nearing maximum duration.", time: "5h ago" },
-              { dot: "bg-emerald-500", title: "Recovery milestone", desc: "12 backlogs cleared this term.", time: "Today" },
+              {
+                dot: "bg-rose-500",
+                title: "Attempt pressure",
+                desc: "14 students have one attempt remaining.",
+                time: "2h ago",
+              },
+              {
+                dot: "bg-amber-500",
+                title: "Duration risk",
+                desc: "6 students are nearing maximum duration.",
+                time: "5h ago",
+              },
+              {
+                dot: "bg-emerald-500",
+                title: "Recovery milestone",
+                desc: "12 backlogs cleared this term.",
+                time: "Today",
+              },
             ].map(({ dot, title, desc, time }) => (
-              <div key={title} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <span className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot}`} />
+              <div
+                key={title}
+                className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+              >
+                <span
+                  className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot}`}
+                />
                 <p className="flex-1 text-sm text-slate-600">
-                  <strong className="text-slate-800 font-semibold">{title}</strong>{" "}{desc}
+                  <strong className="text-slate-800 font-semibold">
+                    {title}
+                  </strong>{" "}
+                  {desc}
                 </p>
-                <small className="text-xs text-slate-400 shrink-0 mt-0.5">{time}</small>
+                <small className="text-xs text-slate-400 shrink-0 mt-0.5">
+                  {time}
+                </small>
               </div>
             ))}
           </div>
@@ -601,7 +831,7 @@ const tabContent = {
     eyebrow: "Academic intelligence",
     title: "Patterns worth acting on",
     description:
-      "Agent 35 surfaces recurring failure and duration signals for human review.",
+      "The platform surfaces recurring failure and duration signals for human review.",
     rows: [
       [
         "Repeated core-course failure",
@@ -736,7 +966,12 @@ const tabContent = {
         "New",
       ],
       ["Mentor follow-up", "Prof. S. Dhital", "Meeting requested", "Action"],
-      ["Recovery milestone", "Agent 35", "Plan updated with evidence", "Read"],
+      [
+        "Recovery milestone",
+        "Academic support",
+        "Plan updated with evidence",
+        "Read",
+      ],
     ],
   },
   Registrations: {
@@ -830,58 +1065,112 @@ function DashboardTabView({
           p.count >= 5 ? "High pressure" : p.count >= 3 ? "Watch" : "Stable",
         ]);
       case "Patterns":
-        return course_patterns.slice(0, 6).map((p) => [
-          p.course_code,
-          `${p.count} repeated failures`,
-          p.count >= 5 ? "Multiple attempt pressure" : "Pattern detected",
-          p.count >= 5 ? "Escalate" : "Review",
-        ]);
+        return course_patterns
+          .slice(0, 6)
+          .map((p) => [
+            p.course_code,
+            `${p.count} repeated failures`,
+            p.count >= 5 ? "Multiple attempt pressure" : "Pattern detected",
+            p.count >= 5 ? "Escalate" : "Review",
+          ]);
       case "Interventions":
-        return criticalStudents.slice(0, 5).map((s) => [
-          s.student_id,
-          `${s.active_backlog_count} backlogs · CRITICAL`,
-          "Mentor sign-off required",
-          "Pending",
-        ]).concat(reviewStudents.slice(0, 3).map((s) => [
-          s.student_id,
-          `${s.active_backlog_count} backlogs · REVIEW`,
-          "Structured remedial plan",
-          "Active",
-        ]));
+        return criticalStudents
+          .slice(0, 5)
+          .map((s) => [
+            s.student_id,
+            `${s.active_backlog_count} backlogs · CRITICAL`,
+            "Mentor sign-off required",
+            "Pending",
+          ])
+          .concat(
+            reviewStudents
+              .slice(0, 3)
+              .map((s) => [
+                s.student_id,
+                `${s.active_backlog_count} backlogs · REVIEW`,
+                "Structured remedial plan",
+                "Active",
+              ]),
+          );
       case "Alerts":
         return [
           criticalStudents.length > 0
-            ? ["Attempt pressure", `${criticalStudents.length} students`, "At or near maximum attempts", "Urgent"]
+            ? [
+                "Attempt pressure",
+                `${criticalStudents.length} students`,
+                "At or near maximum attempts",
+                "Urgent",
+              ]
             : null,
           reviewStudents.length > 0
-            ? ["Recovery needed", `${reviewStudents.length} students`, "Under review or intervention", "Review"]
+            ? [
+                "Recovery needed",
+                `${reviewStudents.length} students`,
+                "Under review or intervention",
+                "Review",
+              ]
             : null,
           dashboard.student_count > 0
-            ? ["Active backlogs", `${dashboard.active_backlog_count} total`, "Current institutional records", "Live"]
+            ? [
+                "Active backlogs",
+                `${dashboard.active_backlog_count} total`,
+                "Current institutional records",
+                "Live",
+              ]
             : null,
         ].filter(Boolean) as string[][];
       case "Examinations":
       case "Registrations":
       case "Eligibility":
-        return students.slice(0, 6).map((s) => [
-          s.student_id,
-          `${s.active_backlog_count} backlogs`,
-          s.status === "CRITICAL" ? "Eligibility at risk" : "Eligible to register",
-          s.status === "CRITICAL" ? "Review" : "Eligible",
-        ]);
+        return students
+          .slice(0, 6)
+          .map((s) => [
+            s.student_id,
+            `${s.active_backlog_count} backlogs`,
+            s.status === "CRITICAL"
+              ? "Eligibility at risk"
+              : "Eligible to register",
+            s.status === "CRITICAL" ? "Review" : "Eligible",
+          ]);
       default:
         return [];
     }
   })();
 
-  const rows = liveRows.length > 0 ? liveRows : (content?.rows as unknown as string[][] ?? []);
-  const canOpenStudent = activeTab === "Students" || activeTab === "Interventions";
+  const rows =
+    liveRows.length > 0
+      ? liveRows
+      : ((content?.rows as unknown as string[][]) ?? []);
+  const canOpenStudent =
+    activeTab === "Students" || activeTab === "Interventions";
 
-  const statusTone = (status: string): "danger" | "success" | "warning" | "neutral" => {
+  const statusTone = (
+    status: string,
+  ): "danger" | "success" | "warning" | "neutral" => {
     const s = status.toLowerCase();
-    if (["critical", "urgent", "action", "escalate", "restricted"].some((k) => s.includes(k))) return "danger";
-    if (["live", "eligible", "ready", "positive", "clear"].some((k) => s.includes(k))) return "success";
-    if (["review", "watch", "monitor", "pending", "high pressure", "warning"].some((k) => s.includes(k))) return "warning";
+    if (
+      ["critical", "urgent", "action", "escalate", "restricted"].some((k) =>
+        s.includes(k),
+      )
+    )
+      return "danger";
+    if (
+      ["live", "eligible", "ready", "positive", "clear"].some((k) =>
+        s.includes(k),
+      )
+    )
+      return "success";
+    if (
+      [
+        "review",
+        "watch",
+        "monitor",
+        "pending",
+        "high pressure",
+        "warning",
+      ].some((k) => s.includes(k))
+    )
+      return "warning";
     return "neutral";
   };
 
@@ -889,12 +1178,34 @@ function DashboardTabView({
   const summaryStats: Array<[string, string]> = (() => {
     if (!dashboard) return [];
     switch (activeTab) {
-      case "Students": return [["Total", String(dashboard.student_count)], ["Critical", String(dashboard.critical_case_count)], ["Interventions", String(dashboard.intervention_count)]];
-      case "Backlogs": return [["Active backlogs", String(dashboard.active_backlog_count)], ["Courses affected", String(dashboard.course_patterns.length)]];
-      case "Patterns": return [["Courses flagged", String(dashboard.course_patterns.length)], ["Critical students", String(dashboard.critical_case_count)]];
-      case "Interventions": return [["Total interventions", String(dashboard.intervention_count)], ["Critical cases", String(dashboard.critical_case_count)]];
-      case "Alerts": return [["Students affected", String(dashboard.student_count)], ["Critical", String(dashboard.critical_case_count)]];
-      default: return [["Records", String(rows.length)]];
+      case "Students":
+        return [
+          ["Total", String(dashboard.student_count)],
+          ["Critical", String(dashboard.critical_case_count)],
+          ["Interventions", String(dashboard.intervention_count)],
+        ];
+      case "Backlogs":
+        return [
+          ["Active backlogs", String(dashboard.active_backlog_count)],
+          ["Courses affected", String(dashboard.course_patterns.length)],
+        ];
+      case "Patterns":
+        return [
+          ["Courses flagged", String(dashboard.course_patterns.length)],
+          ["Critical students", String(dashboard.critical_case_count)],
+        ];
+      case "Interventions":
+        return [
+          ["Total interventions", String(dashboard.intervention_count)],
+          ["Critical cases", String(dashboard.critical_case_count)],
+        ];
+      case "Alerts":
+        return [
+          ["Students affected", String(dashboard.student_count)],
+          ["Critical", String(dashboard.critical_case_count)],
+        ];
+      default:
+        return [["Records", String(rows.length)]];
     }
   })();
 
@@ -905,8 +1216,12 @@ function DashboardTabView({
           <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <Settings size={24} className="text-slate-400" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Workspace settings</h2>
-          <p className="text-slate-500 text-sm">Profile, notification, and institution preferences will live here.</p>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">
+            Workspace settings
+          </h2>
+          <p className="text-slate-500 text-sm">
+            Profile, notification, and institution preferences will live here.
+          </p>
         </div>
       </div>
     );
@@ -922,9 +1237,15 @@ function DashboardTabView({
         </div>
         <div className="relative z-10 flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1.5">{content.eyebrow}</p>
-            <h1 className="text-xl font-bold text-white tracking-tight mb-1">{content.title}</h1>
-            <p className="text-sm text-indigo-100/80 max-w-lg leading-relaxed">{content.description}</p>
+            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1.5">
+              {content.eyebrow}
+            </p>
+            <h1 className="text-xl font-bold text-white tracking-tight mb-1">
+              {content.title}
+            </h1>
+            <p className="text-sm text-indigo-100/80 max-w-lg leading-relaxed">
+              {content.description}
+            </p>
           </div>
           <span className="flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -935,12 +1256,19 @@ function DashboardTabView({
         {summaryStats.length > 0 && (
           <div className="relative z-10 flex items-center gap-3 mt-4">
             {summaryStats.map(([label, value]) => (
-              <div key={label} className="group flex flex-col bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 rounded-xl px-4 py-2 backdrop-blur-md shadow-inner shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 cursor-default">
+              <div
+                key={label}
+                className="group flex flex-col bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 rounded-xl px-4 py-2 backdrop-blur-md shadow-inner shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 cursor-default"
+              >
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-300/80 group-hover:bg-white transition-colors"></span>
-                  <p className="text-[9px] font-bold text-indigo-200 group-hover:text-indigo-100 uppercase tracking-widest transition-colors">{label}</p>
+                  <p className="text-[9px] font-bold text-indigo-200 group-hover:text-indigo-100 uppercase tracking-widest transition-colors">
+                    {label}
+                  </p>
                 </div>
-                <p className="text-lg font-bold text-white leading-tight">{value}</p>
+                <p className="text-lg font-bold text-white leading-tight">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -952,7 +1280,12 @@ function DashboardTabView({
         {/* Table header */}
         <div className="grid grid-cols-4 px-8 py-3 bg-white/60 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-10">
           {["Signal", "Scope", "Context", "Status"].map((col) => (
-            <span key={col} className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{col}</span>
+            <span
+              key={col}
+              className="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+            >
+              {col}
+            </span>
           ))}
         </div>
 
@@ -961,8 +1294,12 @@ function DashboardTabView({
             <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
               <Activity size={22} className="text-indigo-400" />
             </div>
-            <h3 className="text-sm font-bold text-slate-700 mb-1">No records available</h3>
-            <p className="text-xs text-slate-400 max-w-xs">This view will populate when data is available from the backend.</p>
+            <h3 className="text-sm font-bold text-slate-700 mb-1">
+              No records available
+            </h3>
+            <p className="text-xs text-slate-400 max-w-xs">
+              This view will populate when data is available from the backend.
+            </p>
           </div>
         ) : (
           rows.map((row, idx) => (
@@ -977,9 +1314,15 @@ function DashboardTabView({
                   : "cursor-default hover:bg-slate-50/40"
               }`}
             >
-              <strong className={`text-sm font-semibold tracking-tight ${
-                canOpenStudent ? "text-indigo-700 group-hover:text-indigo-900" : "text-slate-800"
-              } font-mono`}>{row[0]}</strong>
+              <strong
+                className={`text-sm font-semibold tracking-tight ${
+                  canOpenStudent
+                    ? "text-indigo-700 group-hover:text-indigo-900"
+                    : "text-slate-800"
+                } font-mono`}
+              >
+                {row[0]}
+              </strong>
               <span className="text-sm text-slate-500">{row[1]}</span>
               <span className="text-sm text-slate-500">{row[2]}</span>
               <StatusBadge tone={statusTone(row[3])}>{row[3]}</StatusBadge>
@@ -1026,11 +1369,17 @@ function RoleHomeView({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Current signal card */}
       <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Current signal</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          Current signal
+        </p>
         <div className="flex items-end justify-between mb-4">
           <div>
-            <span className="text-3xl font-bold text-slate-800 tracking-tight">{dashboard.metrics[0][1]}</span>
-            <p className="text-sm font-semibold text-slate-600 mt-1">{dashboard.metrics[0][0]}</p>
+            <span className="text-3xl font-bold text-slate-800 tracking-tight">
+              {dashboard.metrics[0][1]}
+            </span>
+            <p className="text-sm font-semibold text-slate-600 mt-1">
+              {dashboard.metrics[0][0]}
+            </p>
           </div>
           <StatusBadge tone="success">{dashboard.metrics[0][2]}</StatusBadge>
         </div>
@@ -1041,12 +1390,16 @@ function RoleHomeView({
             style={{ width: role === "student" ? "78%" : "64%" }}
           />
         </div>
-        <p className="text-xs font-semibold text-slate-500 mt-2">{role === "student" ? "78%" : "64%"} complete</p>
+        <p className="text-xs font-semibold text-slate-500 mt-2">
+          {role === "student" ? "78%" : "64%"} complete
+        </p>
       </div>
 
       {/* Recommended actions card */}
       <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Recommended actions</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+          Recommended actions
+        </p>
         <div className="flex flex-col gap-2">
           {nextActions.map(([action, tab], index) => (
             <button
@@ -1058,11 +1411,85 @@ function RoleHomeView({
               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 text-xs font-bold group-hover:bg-indigo-200 transition-colors shrink-0">
                 0{index + 1}
               </span>
-              <span className="flex-1 text-sm font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">{action}</span>
-              <ArrowUpRight size={15} className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+              <span className="flex-1 text-sm font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">
+                {action}
+              </span>
+              <ArrowUpRight
+                size={15}
+                className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0"
+              />
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div
+      className="dashboard-skeleton px-8 pt-8 pb-8"
+      aria-label="Loading dashboard"
+      role="status"
+    >
+      <div className="skeleton-shimmer h-64 rounded-2xl bg-indigo-200/60" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        {["one", "two", "three", "four"].map((item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm"
+          >
+            <div className="skeleton-shimmer h-2.5 w-24 rounded-full" />
+            <div className="skeleton-shimmer h-8 w-20 rounded-lg mt-4" />
+            <div className="skeleton-shimmer h-2.5 w-32 rounded-full mt-3" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6">
+        {["one", "two"].map((item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-sm"
+          >
+            <div className="skeleton-shimmer h-2.5 w-28 rounded-full" />
+            <div className="skeleton-shimmer h-5 w-44 rounded-lg mt-4" />
+            <div className="skeleton-shimmer h-3 w-full rounded-full mt-6" />
+            <div className="skeleton-shimmer h-3 w-4/5 rounded-full mt-3" />
+            <div className="skeleton-shimmer h-3 w-3/5 rounded-full mt-3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TabSkeleton() {
+  return (
+    <div
+      className="flex-1 overflow-y-auto px-8 py-8"
+      aria-label="Loading section"
+      role="status"
+    >
+      <div className="skeleton-shimmer h-7 w-52 rounded-lg" />
+      <div className="skeleton-shimmer h-3 w-80 max-w-full rounded-full mt-3" />
+      <div className="rounded-2xl border border-white/70 bg-white/70 shadow-sm overflow-hidden mt-8">
+        <div className="grid grid-cols-4 gap-4 px-6 py-4 bg-slate-50/70">
+          {["one", "two", "three", "four"].map((item) => (
+            <div key={item} className="skeleton-shimmer h-2.5 rounded-full" />
+          ))}
+        </div>
+        {Array.from({ length: 5 }, (_, index) => (
+          <div
+            key={index}
+            className="grid grid-cols-4 gap-4 px-6 py-5 border-t border-slate-100/80"
+          >
+            <div className="skeleton-shimmer h-3 w-28 rounded-full" />
+            <div className="skeleton-shimmer h-3 w-20 rounded-full" />
+            <div className="skeleton-shimmer h-3 w-24 rounded-full" />
+            <div className="skeleton-shimmer h-6 w-16 rounded-lg" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1312,17 +1739,12 @@ export default function PrototypePage({
 
   return (
     <main
-      className={mode === "dashboard"
-        ? "flex h-screen overflow-hidden bg-slate-50/50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/60 via-slate-50 to-fuchsia-50/60 font-sans relative isolate"
-        : `workspace-page prototype-console`}
+      className={
+        mode === "dashboard"
+          ? "dashboard-shell flex h-screen overflow-hidden bg-slate-50/50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/60 via-slate-50 to-fuchsia-50/60 font-sans relative isolate"
+          : `workspace-page prototype-console`
+      }
     >
-      {mode === "dashboard" && (
-        <>
-          <div className="absolute top-0 -left-12 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob -z-10" />
-          <div className="absolute top-0 -right-12 w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000 -z-10" />
-          <div className="absolute -bottom-16 left-32 w-96 h-96 bg-fuchsia-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000 -z-10" />
-        </>
-      )}
       {mode === "dashboard" && (
         <DashboardSidebar
           role={role}
@@ -1332,873 +1754,980 @@ export default function PrototypePage({
         />
       )}
       {/* Main content area */}
-      <div className={mode === "dashboard" ? "flex-1 flex flex-col min-w-0 overflow-hidden h-full" : ""}>
-      {mode === "dashboard" ? (
-        <DashboardTopbar role={role} />
-      ) : (
-        <header className="workspace-header">
-          <div className="workspace-brand">
-            <button
-              className="icon-button"
-              onClick={onBack}
-              aria-label="Back to landing page"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <div className="workspace-product-lockup">
-                <Brand compact />
-                <span>EduRecover</span>
-              </div>
-              <span className="workspace-kicker">
-                <i />{" "}
-                {mode === "prototype"
-                  ? "Agent 35 prototype console"
-                  : role === "hod"
-                    ? "HOD command center"
-                    : role === "mentor"
-                      ? "Faculty workspace"
-                      : role === "student"
-                        ? "Student recovery"
-                        : role === "exam"
-                          ? "Examination operations"
-                          : "Placement readiness"}
-              </span>
-              <h1>
-                {mode === "prototype"
-                  ? "Backlog Monitoring Agent"
-                  : dashboard.title}
-              </h1>
-              <p>
-                {mode === "prototype"
-                  ? "Run the complete Agent 35 flow against a student record, inspect the reasoning, and deploy an approved intervention."
-                  : "A role-specific view of academic health, with Agent 35 available when a case needs deeper review."}
-              </p>
-            </div>
-          </div>
-          <div className="workspace-tools">
-            <button
-              className="workspace-button subtle"
-              onClick={() => setShowScanner(true)}
-              disabled={loading}
-            >
-              <QrCode size={16} /> Scan ID
-            </button>
-            <div className="student-search">
-              <Search size={15} />
-              <input
-                value={studentId}
-                onChange={(event) =>
-                  setStudentId(event.target.value.toUpperCase())
-                }
-                aria-label="Registration number"
-                placeholder="Registration no."
-              />
-            </div>
-            <button
-              className="workspace-button primary"
-              onClick={() => void fetchOrchestration(studentId)}
-              disabled={loading || !studentId}
-            >
-              {loading ? (
-                <RefreshCw className="spin" size={16} />
-              ) : (
-                <Activity size={16} />
-              )}
-              {loading ? "Analyzing" : "Run orchestrator"}
-            </button>
-          </div>
-        </header>
-      )}
-
-      {mode === "dashboard" && activeTab === "Dashboard" && (
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          {/* Hero overview card */}
-          <div className="px-8 pt-8 pb-6">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/90 via-purple-600/90 to-fuchsia-600/90 backdrop-blur-2xl border border-white/20 p-7 text-white shadow-[0_8px_32px_-12px_rgba(168,85,247,0.4)]">
-              {/* Background decoration */}
-              <div className="absolute inset-0 opacity-20">
-                <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/40 mix-blend-overlay filter blur-xl" />
-                <div className="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-indigo-300/40 mix-blend-overlay filter blur-xl" />
-              </div>
-              <div className="relative z-10 flex items-start justify-between gap-8">
-                <div className="max-w-xl">
-                  <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-2">{dashboard.greeting}</p>
-                  <h1 className="text-3xl font-bold tracking-tight text-white mb-3">{dashboard.title}</h1>
-                  <p className="text-indigo-100/90 text-sm leading-relaxed mb-8 max-w-md">{dashboard.description}</p>
-                  <button
-                    type="button"
-                    onClick={() => handleTabSelect(dashboardAction[1])}
-                    className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
-                  >
-                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
-                      <Sparkles size={14} className="text-indigo-100" />
-                    </span>
-                    <span className="flex flex-col text-left">
-                      <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">Recommended next step</small>
-                      <strong className="text-white text-sm leading-none drop-shadow-sm">{dashboardAction[0]}</strong>
-                    </span>
-                    <ArrowUpRight size={16} className="ml-1 opacity-70" />
-                  </button>
+      <div
+        className={
+          mode === "dashboard"
+            ? "flex-1 flex flex-col min-w-0 overflow-hidden h-full"
+            : ""
+        }
+      >
+        {mode === "dashboard" ? (
+          <DashboardTopbar role={role} />
+        ) : (
+          <header className="workspace-header">
+            <div className="workspace-brand">
+              <button
+                className="icon-button"
+                onClick={onBack}
+                aria-label="Back to landing page"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <div className="workspace-product-lockup">
+                  <Brand compact />
+                  <span>EduRecover</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-inner shadow-white/10 text-xs font-semibold px-3 py-1.5 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                    Live data
-                  </span>
-                </div>
+                <span className="workspace-kicker">
+                  <i />{" "}
+                  {mode === "prototype"
+                    ? "Academic recovery workspace"
+                    : role === "hod"
+                      ? "HOD command center"
+                      : role === "mentor"
+                        ? "Faculty workspace"
+                        : role === "student"
+                          ? "Student recovery"
+                          : role === "exam"
+                            ? "Examination operations"
+                            : "Placement readiness"}
+                </span>
+                <h1>
+                  {mode === "prototype"
+                    ? "Backlog monitoring workspace"
+                    : dashboard.title}
+                </h1>
+                <p>
+                  {mode === "prototype"
+                    ? "Review a student record, understand the contributing factors, and coordinate an approved intervention."
+                    : "A role-specific view of academic health, with detailed case review when a student needs support."}
+                </p>
               </div>
             </div>
-          </div>
-
-          {/* Metric cards */}
-          {liveMetrics.length > 0 && (
-            <div className="px-8 pb-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {liveMetrics.map(([label, value, detail], idx) => {
-                  const tones = ["warning", "danger", "neutral", "success"] as const;
-                  return (
-                    <StatCard
-                      key={label}
-                      label={label}
-                      value={value}
-                      detail={detail}
-                      tone={tones[idx % tones.length]}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {mode === "dashboard" &&
-            activeTab === "Dashboard" &&
-            role === "hod" &&
-            !data &&
-            !loading &&
-            !dashboardLoading &&
-            dashboardData && (
-              <div className="px-8 pb-6">
-                <HodCommandCenter
-                  dashboard={dashboardData}
-                  onSelectStudent={(selectedStudentId) => {
-                    setStudentId(selectedStudentId);
-                    setActiveTab("Students");
-                    void fetchOrchestration(selectedStudentId);
-                  }}
+            <div className="workspace-tools">
+              <button
+                className="workspace-button subtle"
+                onClick={() => setShowScanner(true)}
+                disabled={loading}
+              >
+                <QrCode size={16} /> Scan ID
+              </button>
+              <div className="student-search">
+                <Search size={15} />
+                <input
+                  value={studentId}
+                  onChange={(event) =>
+                    setStudentId(event.target.value.toUpperCase())
+                  }
+                  aria-label="Registration number"
+                  placeholder="Registration no."
                 />
               </div>
-            )}
-
-          {mode === "dashboard" && activeTab === "Dashboard" && onSwitchRole && (
-            <div className="px-8 pb-8">
-              <RecoveryJourney
-                role={role}
-                onSwitchRole={onSwitchRole}
-                onSelectTab={handleTabSelect}
-              />
+              <button
+                className="workspace-button primary"
+                onClick={() => void fetchOrchestration(studentId)}
+                disabled={loading || !studentId}
+              >
+                {loading ? (
+                  <RefreshCw className="spin" size={16} />
+                ) : (
+                  <Activity size={16} />
+                )}
+                {loading ? "Reviewing" : "Review student record"}
+              </button>
             </div>
-          )}
+          </header>
+        )}
 
-          {mode === "dashboard" &&
-            activeTab === "Dashboard" &&
-            role !== "hod" &&
-            !data &&
-            !loading && (
-              <div className="px-8 pb-8">
-                <RoleHomeView role={role} onSelectTab={handleTabSelect} />
+        {mode === "dashboard" && activeTab === "Dashboard" && (
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            {dashboardLoading ? (
+              <DashboardSkeleton />
+            ) : (
+              <div className="dashboard-reveal">
+                {/* Hero overview card */}
+                <div className="px-8 pt-8 pb-6">
+                  <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/90 via-purple-600/90 to-fuchsia-600/90 backdrop-blur-2xl border border-white/20 p-7 text-white shadow-[0_8px_32px_-12px_rgba(168,85,247,0.4)]">
+                    {/* Background decoration */}
+                    <div className="absolute inset-0 opacity-20">
+                      <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/40 mix-blend-overlay filter blur-xl" />
+                      <div className="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-indigo-300/40 mix-blend-overlay filter blur-xl" />
+                    </div>
+                    <div className="relative z-10 flex items-start justify-between gap-8">
+                      <div className="max-w-xl">
+                        <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-2">
+                          {dashboard.greeting}
+                        </p>
+                        <h1 className="text-3xl font-bold tracking-tight text-white mb-3">
+                          {dashboard.title}
+                        </h1>
+                        <p className="text-indigo-100/90 text-sm leading-relaxed mb-8 max-w-md">
+                          {dashboard.description}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleTabSelect(dashboardAction[1])}
+                          className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
+                        >
+                          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
+                            <Sparkles size={14} className="text-indigo-100" />
+                          </span>
+                          <span className="flex flex-col text-left">
+                            <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">
+                              Recommended next step
+                            </small>
+                            <strong className="text-white text-sm leading-none drop-shadow-sm">
+                              {dashboardAction[0]}
+                            </strong>
+                          </span>
+                          <ArrowUpRight size={16} className="ml-1 opacity-70" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-inner shadow-white/10 text-xs font-semibold px-3 py-1.5 rounded-full">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                          Live data
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric cards */}
+                {liveMetrics.length > 0 && (
+                  <div className="px-8 pb-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {liveMetrics.map(([label, value, detail], idx) => {
+                        const tones = [
+                          "warning",
+                          "danger",
+                          "neutral",
+                          "success",
+                        ] as const;
+                        return (
+                          <StatCard
+                            key={label}
+                            label={label}
+                            value={value}
+                            detail={detail}
+                            tone={tones[idx % tones.length]}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {mode === "dashboard" &&
+                  activeTab === "Dashboard" &&
+                  role === "hod" &&
+                  !data &&
+                  !loading &&
+                  !dashboardLoading &&
+                  dashboardData && (
+                    <div className="px-8 pb-6">
+                      <HodCommandCenter
+                        dashboard={dashboardData}
+                        onSelectStudent={(selectedStudentId) => {
+                          setStudentId(selectedStudentId);
+                          setActiveTab("Students");
+                          void fetchOrchestration(selectedStudentId);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                {mode === "dashboard" &&
+                  activeTab === "Dashboard" &&
+                  onSwitchRole && (
+                    <div className="px-8 pb-8">
+                      <RecoveryJourney
+                        role={role}
+                        onSwitchRole={onSwitchRole}
+                        onSelectTab={handleTabSelect}
+                      />
+                    </div>
+                  )}
+
+                {mode === "dashboard" &&
+                  activeTab === "Dashboard" &&
+                  role !== "hod" &&
+                  !data &&
+                  !loading && (
+                    <div className="px-8 pb-8">
+                      <RoleHomeView role={role} onSelectTab={handleTabSelect} />
+                    </div>
+                  )}
               </div>
             )}
-        </div>
-      )}
-
-      {/* Dashboard tab views (non-Dashboard tabs) */}
-      {mode === "dashboard" &&
-        activeTab !== "Dashboard" &&
-        !data &&
-        !loading &&
-        !dashboardLoading && (
-          <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
-            <DashboardTabView
-              activeTab={activeTab}
-              dashboard={dashboardData}
-              onSelectStudent={(selectedStudentId) => {
-                setStudentId(selectedStudentId);
-                void fetchOrchestration(selectedStudentId);
-              }}
-            />
           </div>
         )}
 
-      {/* Loading state for tab views */}
-      {mode === "dashboard" && activeTab !== "Dashboard" && !data && (loading || dashboardLoading) && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <RefreshCw size={18} className="text-indigo-500 animate-spin" />
-            </div>
-            <p className="text-sm font-semibold text-slate-500">Loading {activeTab.toLowerCase()}...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Student detail view (inside dashboard) */}
-      {mode === "dashboard" && data && evaluation && recommendation && (
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
-          {/* Header */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/40 filter blur-2xl" />
-            </div>
-            <div className="relative z-10 flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Student case</p>
-                <h1 className="text-2xl font-bold text-white mb-2 font-mono">{data.target_student_id}</h1>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    evaluation.promotion_status === "ELIGIBLE"
-                      ? "bg-emerald-400/20 text-emerald-100 border border-emerald-400/30"
-                      : "bg-rose-400/20 text-rose-100 border border-rose-400/30"
-                  }`}>
-                    {evaluation.promotion_status}
-                  </span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    evaluation.attempt_pressure === "CRITICAL"
-                      ? "bg-rose-400/20 text-rose-100 border border-rose-400/30"
-                      : evaluation.attempt_pressure === "HIGH"
-                        ? "bg-amber-400/20 text-amber-100 border border-amber-400/30"
-                        : "bg-slate-400/20 text-slate-100 border border-slate-400/30"
-                  }`}>
-                    {evaluation.attempt_pressure} pressure
-                  </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-400/20 text-violet-100 border border-violet-400/30">
-                    {recommendation.recoverability_segment}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setData(null); setStudentId(""); }}
-                className="text-indigo-200 hover:text-white transition-colors p-1"
-                aria-label="Close detail"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            {/* Stat row */}
-            <div className="relative z-10 grid grid-cols-3 gap-3 mt-5">
-              {[
-                ["Active backlogs", String(evaluation.active_backlog_count)],
-                ["Max allowed", String(evaluation.max_allowed_backlogs)],
-                ["Max attempts", String(evaluation.max_attempts ?? 3)],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5">
-                  <p className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">{label}</p>
-                  <p className="text-xl font-bold text-white">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-            {/* AI Reasoning */}
-            <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">AI Analysis · Agent 35</p>
-              <p className="text-sm text-slate-700 leading-relaxed">{recommendation.reasoning}</p>
-            </div>
-
-            {/* Recommended Actions */}
-            <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">Recommended Actions</p>
-              <ol className="flex flex-col gap-2">
-                {recommendation.recommended_actions.map((action, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-100 text-indigo-600 text-[10px] font-bold shrink-0 mt-0.5">{idx + 1}</span>
-                    <span className="text-sm text-slate-700 leading-relaxed">{action}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-
-          {/* Backlog Details Table */}
-          {evaluation.backlog_details.length > 0 && (
-            <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] overflow-hidden mb-5">
-              <div className="px-6 py-4 border-b border-slate-100">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Backlog Details</p>
-                <h3 className="text-sm font-bold text-slate-800 mt-0.5">{evaluation.backlog_details.length} active backlog{evaluation.backlog_details.length !== 1 ? "s" : ""} on record</h3>
-              </div>
-              <div className="grid grid-cols-4 px-6 py-2.5 bg-slate-50/60 border-b border-slate-100">
-                {["Course", "Attempts Made", "Remaining", "Status"].map((col) => (
-                  <span key={col} className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{col}</span>
-                ))}
-              </div>
-              {evaluation.backlog_details.map((b) => (
-                <div key={b.id ?? b.course_code} className="grid grid-cols-4 items-center px-6 py-3.5 border-b border-slate-100/60 hover:bg-indigo-50/30 transition-colors">
-                  <span className="text-sm font-semibold text-slate-800 font-mono">{b.course_code}</span>
-                  <span className="text-sm text-slate-600">{b.attempts_made}</span>
-                  <span className="text-sm text-slate-600">{b.attempts_remaining ?? "—"}</span>
-                  <StatusBadge tone={
-                    (b.attempts_remaining ?? 1) === 0 ? "danger" :
-                    (b.attempts_remaining ?? 1) === 1 ? "warning" : "neutral"
-                  }>{b.status}</StatusBadge>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Approve Intervention */}
-          {recommendation.human_approval_required && !approved && (role === "hod" || role === "mentor") && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1">Human approval required</p>
-                <p className="text-sm text-amber-800 font-semibold">Approve this recovery plan to trigger downstream pipeline</p>
-                <p className="text-xs text-amber-600 mt-1">This will notify the student, schedule mentor support, and activate remedial resources.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleApprove()}
-                disabled={approving}
-                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all duration-200 shrink-0 shadow-md shadow-amber-500/20"
-              >
-                {approving ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-                {approving ? "Approving..." : "Approve"}
-              </button>
-            </div>
-          )}
-
-          {approved && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Check size={16} className="text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-emerald-800">Intervention approved and pipeline deployed</p>
-                <p className="text-xs text-emerald-600">Student notified. Mentor support and remedial resources are now active.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Prototype sections (outside the flex-1 div since they are the only content) */}
-      {mode === "prototype" && (
-        <section className="workspace-toolbar">
-          <div className="profile-label">
-            <span>
-              {mode === "prototype"
-                ? "Agent 35 test profiles"
-                : "Quick profiles"}
-            </span>
-            <small>
-              {mode === "prototype"
-                ? "Pick a record to exercise the orchestration flow"
-                : "Use a demo record to explore the workflow"}
-            </small>
-          </div>
-          <div className="profile-pills">
-            {(
-              dashboardData?.students.map((student) => student.student_id) ?? []
-            ).map((id) => (
-              <button
-                key={id}
-                className={studentId === id ? "active" : ""}
-                onClick={() => {
-                  setStudentId(id);
-                  setData(null);
-                  setDispatchLogs([]);
+        {/* Dashboard tab views (non-Dashboard tabs) */}
+        {mode === "dashboard" &&
+          activeTab !== "Dashboard" &&
+          !data &&
+          !loading &&
+          !dashboardLoading && (
+            <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
+              <DashboardTabView
+                activeTab={activeTab}
+                dashboard={dashboardData}
+                onSelectStudent={(selectedStudentId) => {
+                  setStudentId(selectedStudentId);
+                  void fetchOrchestration(selectedStudentId);
                 }}
-              >
-                {id}
-              </button>
-            ))}
-          </div>
-          <button className="workspace-button ghost" onClick={onBack}>
-            <ArrowLeft size={15} /> Public site
-          </button>
-        </section>
-      )}
-
-
-      {error && (
-        <div className="workspace-error">
-          <AlertTriangle size={17} />
-          <span>{error}</span>
-          <button onClick={() => setError("")} aria-label="Dismiss error">
-            <X size={15} />
-          </button>
-        </div>
-      )}
-
-      {!data && !loading && mode === "prototype" && (
-        <section className="workspace-empty">
-          <div className="empty-icon">
-            <Gauge size={27} />
-          </div>
-          <span className="workspace-kicker">Ready for analysis</span>
-          <h2>Start with a student signal.</h2>
-          <p>
-            Choose a demo profile or scan an institutional ID to run Agent 35
-            and build an evidence-backed recovery plan.
-          </p>
-          <button
-            className="workspace-button primary"
-            onClick={() => void fetchOrchestration(studentId)}
-          >
-            <Sparkles size={16} /> Analyze {studentId}
-          </button>
-        </section>
-      )}
-      {loading && (
-        <section className="workspace-empty">
-          <RefreshCw className="spin empty-icon" size={27} />
-          <span className="workspace-kicker">Agent 35 is working</span>
-          <h2>Assembling the student context.</h2>
-          <p>
-            Retrieving results, applying regulations, and evaluating
-            recoverability.
-          </p>
-        </section>
-      )}
-
-      {mode === "prototype" && data && evaluation && recommendation && (
-        <section className="workspace-content">
-          {(() => {
-            const profile = {
-              name: data.target_student_id,
-              program: "Institutional record",
-              batch: "Batch unavailable",
-              semester: "Semester unavailable",
-              mentor: mentorId,
-            };
-            return (
-              <article className="student-context-card">
-                <div className="student-context-identity">
-                  <span className="student-context-avatar">
-                    <CircleUserRound size={25} />
-                  </span>
-                  <div>
-                    <span className="workspace-kicker">
-                      Student recovery case
-                    </span>
-                    <h2>{profile.name}</h2>
-                    <p>
-                      {profile.program} · {profile.batch}
-                    </p>
-                  </div>
-                </div>
-                <div className="student-context-facts">
-                  <span>
-                    <small>Semester</small>
-                    <strong>{profile.semester}</strong>
-                  </span>
-                  <span>
-                    <small>Assigned mentor</small>
-                    <strong>{profile.mentor}</strong>
-                  </span>
-                  <span>
-                    <small>Case owner</small>
-                    <strong>
-                      {role === "hod" ? "HOD review" : "Academic operations"}
-                    </strong>
-                  </span>
-                </div>
-              </article>
-            );
-          })()}
-          <div className="workspace-overview">
-            <div>
-              <span className="workspace-kicker">
-                Student evaluation profile
-              </span>
-              <h2>
-                {data.target_student_id}
-                <span> · academic recovery brief</span>
-              </h2>
+              />
             </div>
-            <div className="workspace-overview-actions">
+          )}
 
-              <StatusBadge tone={approved ? "success" : "warning"}>
-                {approved ? "Intervention approved" : "Human review required"}
-              </StatusBadge>
-            </div>
-          </div>
-          <div className="workspace-stats">
-            <StatCard
-              label="Active backlogs"
-              value={`${evaluation.active_backlog_count} / ${evaluation.max_allowed_backlogs}`}
-              detail="Current academic load"
-              tone="warning"
-            />
-            <StatCard
-              label="Promotion status"
-              value={evaluation.promotion_status}
-              detail="Rule engine result"
-              tone={
-                evaluation.promotion_status === "ELIGIBLE"
-                  ? "success"
-                  : "danger"
-              }
-            />
-            <StatCard
-              label="Attempt pressure"
-              value={evaluation.attempt_pressure}
-              detail="Regulation-aware signal"
-            />
-            <StatCard
-              label="Duration risk"
-              value={durationRisk}
-              detail="Completion runway"
-              tone={durationRisk === "HIGH" ? "danger" : "success"}
-            />
-          </div>
-          <div className="workspace-grid">
-            <div className="workspace-column">
-              <article className="workspace-card agent-checklist-card">
-                <div className="card-heading">
-                  <div>
-                    <span className="workspace-kicker">
-                      <Activity size={12} /> Agent 35 reasoning
-                    </span>
-                    <h3>Analysis complete</h3>
-                  </div>
-                  <StatusBadge tone="success">Evidence ready</StatusBadge>
-                </div>
-                <div className="agent-checklist">
-                  {[
-                    "Retrieved student profile",
-                    "Applied current regulation",
-                    "Calculated attempts and progression",
-                    "Checked results and supplementary feeds",
-                    "Classified recoverability",
-                  ].map((step) => (
-                    <div key={step}>
-                      <Check size={14} />
-                      <span>{step}</span>
-                      <small>Complete</small>
-                    </div>
-                  ))}
-                </div>
-                <div className="agent-next-state">
-                  <span>Next handoff</span>
-                  <strong>
-                    {approved
-                      ? "Intervention is active"
-                      : "Human approval required"}
-                  </strong>
-                </div>
-              </article>
-              <article className="workspace-card">
-                <div className="card-heading">
-                  <div>
-                    <span className="workspace-kicker">
-                      Fact · institutional record
-                    </span>
-                    <h3>Arrear register</h3>
-                  </div>
-                  <Archive size={18} />
-                </div>
-                {evaluation.backlog_details.length === 0 ? (
-                  <p className="muted-copy">
-                    No active backlogs found for this profile.
+        {/* Loading state for tab views */}
+        {mode === "dashboard" &&
+          activeTab !== "Dashboard" &&
+          !data &&
+          (loading || dashboardLoading) && <TabSkeleton />}
+
+        {/* Student detail view (inside dashboard) */}
+        {mode === "dashboard" && data && evaluation && recommendation && (
+          <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
+            {/* Header */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/40 filter blur-2xl" />
+              </div>
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">
+                    Student case
                   </p>
-                ) : (
-                  <div className="backlog-list">
-                    {evaluation.backlog_details.map((backlog) => (
-                      <div className="backlog-row" key={backlog.id}>
-                        <strong>{backlog.course_code}</strong>
-                        <span>
-                          {backlog.attempts_made} made ·{" "}
-                          {backlog.attempts_remaining ?? "-"} remaining
-                        </span>
-                        <StatusBadge tone="warning">
-                          {backlog.status}
-                        </StatusBadge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </article>
-              <article className="workspace-card">
-                <div className="card-heading">
-                  <div>
-                    <span className="workspace-kicker">
-                      Calculation · rule engine
+                  <h1 className="text-2xl font-bold text-white mb-2 font-mono">
+                    {data.target_student_id}
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        evaluation.promotion_status === "ELIGIBLE"
+                          ? "bg-emerald-400/20 text-emerald-100 border border-emerald-400/30"
+                          : "bg-rose-400/20 text-rose-100 border border-rose-400/30"
+                      }`}
+                    >
+                      {evaluation.promotion_status}
                     </span>
-                    <h3>Decision context</h3>
+                    <span
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        evaluation.attempt_pressure === "CRITICAL"
+                          ? "bg-rose-400/20 text-rose-100 border border-rose-400/30"
+                          : evaluation.attempt_pressure === "HIGH"
+                            ? "bg-amber-400/20 text-amber-100 border border-amber-400/30"
+                            : "bg-slate-400/20 text-slate-100 border border-slate-400/30"
+                      }`}
+                    >
+                      {evaluation.attempt_pressure} pressure
+                    </span>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-400/20 text-violet-100 border border-violet-400/30">
+                      {recommendation.recoverability_segment}
+                    </span>
                   </div>
-                  <ShieldCheck size={18} />
                 </div>
-                <div className="context-list">
-                  <div>
-                    <span>Registration number</span>
-                    <strong>{data.target_student_id}</strong>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setData(null);
+                    setStudentId("");
+                  }}
+                  className="text-indigo-200 hover:text-white transition-colors p-1"
+                  aria-label="Close detail"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              {/* Stat row */}
+              <div className="relative z-10 grid grid-cols-3 gap-3 mt-5">
+                {[
+                  ["Active backlogs", String(evaluation.active_backlog_count)],
+                  ["Max allowed", String(evaluation.max_allowed_backlogs)],
+                  ["Max attempts", String(evaluation.max_attempts ?? 3)],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5"
+                  >
+                    <p className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">
+                      {label}
+                    </p>
+                    <p className="text-xl font-bold text-white">{value}</p>
                   </div>
-                  <div>
-                    <span>Chronic failure pattern</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+              {/* AI Reasoning */}
+              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">
+                  Evidence review
+                </p>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {recommendation.reasoning}
+                </p>
+              </div>
+
+              {/* Recommended Actions */}
+              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">
+                  Recommended Actions
+                </p>
+                <ol className="flex flex-col gap-2">
+                  {recommendation.recommended_actions.map((action, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="flex items-center justify-center w-5 h-5 rounded-md bg-indigo-100 text-indigo-600 text-[10px] font-bold shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span className="text-sm text-slate-700 leading-relaxed">
+                        {action}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+
+            {/* Backlog Details Table */}
+            {evaluation.backlog_details.length > 0 && (
+              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] overflow-hidden mb-5">
+                <div className="px-6 py-4 border-b border-slate-100">
+                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                    Backlog Details
+                  </p>
+                  <h3 className="text-sm font-bold text-slate-800 mt-0.5">
+                    {evaluation.backlog_details.length} active backlog
+                    {evaluation.backlog_details.length !== 1 ? "s" : ""} on
+                    record
+                  </h3>
+                </div>
+                <div className="grid grid-cols-4 px-6 py-2.5 bg-slate-50/60 border-b border-slate-100">
+                  {["Course", "Attempts Made", "Remaining", "Status"].map(
+                    (col) => (
+                      <span
+                        key={col}
+                        className="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                      >
+                        {col}
+                      </span>
+                    ),
+                  )}
+                </div>
+                {evaluation.backlog_details.map((b) => (
+                  <div
+                    key={b.id ?? b.course_code}
+                    className="grid grid-cols-4 items-center px-6 py-3.5 border-b border-slate-100/60 hover:bg-indigo-50/30 transition-colors"
+                  >
+                    <span className="text-sm font-semibold text-slate-800 font-mono">
+                      {b.course_code}
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      {b.attempts_made}
+                    </span>
+                    <span className="text-sm text-slate-600">
+                      {b.attempts_remaining ?? "—"}
+                    </span>
                     <StatusBadge
                       tone={
-                        evaluation.active_backlog_count >= 3
-                          ? "warning"
-                          : "neutral"
+                        (b.attempts_remaining ?? 1) === 0
+                          ? "danger"
+                          : (b.attempts_remaining ?? 1) === 1
+                            ? "warning"
+                            : "neutral"
                       }
                     >
-                      {evaluation.active_backlog_count >= 3
-                        ? "Detected"
-                        : "None"}
+                      {b.status}
                     </StatusBadge>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {/* Approve Intervention */}
+            {recommendation.human_approval_required &&
+              !approved &&
+              (role === "hod" || role === "mentor") && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start justify-between gap-4">
                   <div>
-                    <span>Attempts remaining</span>
-                    <strong>
-                      {evaluation.backlog_details.reduce(
-                        (minimum, backlog) =>
-                          Math.min(minimum, backlog.attempts_remaining ?? 0),
-                        evaluation.max_attempts ?? 0,
-                      )}
-                    </strong>
+                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1">
+                      Human approval required
+                    </p>
+                    <p className="text-sm text-amber-800 font-semibold">
+                      Approve this recovery plan to trigger downstream pipeline
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      This will notify the student, schedule mentor support, and
+                      activate remedial resources.
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleApprove()}
+                    disabled={approving}
+                    className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all duration-200 shrink-0 shadow-md shadow-amber-500/20"
+                  >
+                    {approving ? (
+                      <RefreshCw size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                    {approving ? "Approving..." : "Approve"}
+                  </button>
                 </div>
-              </article>
-              {data.integration_feeds && (
-                <article className="workspace-card evidence-card">
+              )}
+
+            {approved && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <Check size={16} className="text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-emerald-800">
+                    Intervention approved and pipeline deployed
+                  </p>
+                  <p className="text-xs text-emerald-600">
+                    Student notified. Mentor support and remedial resources are
+                    now active.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Prototype sections (outside the flex-1 div since they are the only content) */}
+        {mode === "prototype" && (
+          <section className="workspace-toolbar">
+            <div className="profile-label">
+              <span>
+                {mode === "prototype" ? "Student records" : "Quick profiles"}
+              </span>
+              <small>
+                {mode === "prototype"
+                  ? "Choose a record to review the recovery context"
+                  : "Use a demo record to explore the workflow"}
+              </small>
+            </div>
+            <div className="profile-pills">
+              {(
+                dashboardData?.students.map((student) => student.student_id) ??
+                []
+              ).map((id) => (
+                <button
+                  key={id}
+                  className={studentId === id ? "active" : ""}
+                  onClick={() => {
+                    setStudentId(id);
+                    setData(null);
+                    setDispatchLogs([]);
+                  }}
+                >
+                  {id}
+                </button>
+              ))}
+            </div>
+            <button className="workspace-button ghost" onClick={onBack}>
+              <ArrowLeft size={15} /> Public site
+            </button>
+          </section>
+        )}
+
+        {error && (
+          <div className="workspace-error">
+            <AlertTriangle size={17} />
+            <span>{error}</span>
+            <button onClick={() => setError("")} aria-label="Dismiss error">
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
+        {!data && !loading && mode === "prototype" && (
+          <section className="workspace-empty">
+            <div className="empty-icon">
+              <Gauge size={27} />
+            </div>
+            <span className="workspace-kicker">Ready for analysis</span>
+            <h2>Start with a student signal.</h2>
+            <p>
+              Choose a demo profile or scan an institutional ID to review an
+              evidence-backed recovery plan.
+            </p>
+            <button
+              className="workspace-button primary"
+              onClick={() => void fetchOrchestration(studentId)}
+            >
+              <Sparkles size={16} /> Analyze {studentId}
+            </button>
+          </section>
+        )}
+        {loading && (
+          <section className="workspace-empty">
+            <RefreshCw className="spin empty-icon" size={27} />
+            <span className="workspace-kicker">
+              Preparing the student review
+            </span>
+            <h2>Assembling the student context.</h2>
+            <p>
+              Retrieving results, applying regulations, and evaluating
+              recoverability.
+            </p>
+          </section>
+        )}
+
+        {mode === "prototype" && data && evaluation && recommendation && (
+          <section className="workspace-content">
+            {(() => {
+              const profile = {
+                name: data.target_student_id,
+                program: "Institutional record",
+                batch: "Batch unavailable",
+                semester: "Semester unavailable",
+                mentor: mentorId,
+              };
+              return (
+                <article className="student-context-card">
+                  <div className="student-context-identity">
+                    <span className="student-context-avatar">
+                      <CircleUserRound size={25} />
+                    </span>
+                    <div>
+                      <span className="workspace-kicker">
+                        Student recovery case
+                      </span>
+                      <h2>{profile.name}</h2>
+                      <p>
+                        {profile.program} · {profile.batch}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="student-context-facts">
+                    <span>
+                      <small>Semester</small>
+                      <strong>{profile.semester}</strong>
+                    </span>
+                    <span>
+                      <small>Assigned mentor</small>
+                      <strong>{profile.mentor}</strong>
+                    </span>
+                    <span>
+                      <small>Case owner</small>
+                      <strong>
+                        {role === "hod" ? "HOD review" : "Academic operations"}
+                      </strong>
+                    </span>
+                  </div>
+                </article>
+              );
+            })()}
+            <div className="workspace-overview">
+              <div>
+                <span className="workspace-kicker">
+                  Student evaluation profile
+                </span>
+                <h2>
+                  {data.target_student_id}
+                  <span> · academic recovery brief</span>
+                </h2>
+              </div>
+              <div className="workspace-overview-actions">
+                <StatusBadge tone={approved ? "success" : "warning"}>
+                  {approved ? "Intervention approved" : "Human review required"}
+                </StatusBadge>
+              </div>
+            </div>
+            <div className="workspace-stats">
+              <StatCard
+                label="Active backlogs"
+                value={`${evaluation.active_backlog_count} / ${evaluation.max_allowed_backlogs}`}
+                detail="Current academic load"
+                tone="warning"
+              />
+              <StatCard
+                label="Promotion status"
+                value={evaluation.promotion_status}
+                detail="Rule engine result"
+                tone={
+                  evaluation.promotion_status === "ELIGIBLE"
+                    ? "success"
+                    : "danger"
+                }
+              />
+              <StatCard
+                label="Attempt pressure"
+                value={evaluation.attempt_pressure}
+                detail="Regulation-aware signal"
+              />
+              <StatCard
+                label="Duration risk"
+                value={durationRisk}
+                detail="Completion runway"
+                tone={durationRisk === "HIGH" ? "danger" : "success"}
+              />
+            </div>
+            <div className="workspace-grid">
+              <div className="workspace-column">
+                <article className="workspace-card agent-checklist-card">
                   <div className="card-heading">
                     <div>
                       <span className="workspace-kicker">
-                        Fact · connected systems
+                        <Activity size={12} /> Evidence and recommendation
                       </span>
-                      <h3>Evidence feeds</h3>
+                      <h3>Analysis complete</h3>
                     </div>
-                    <Activity size={18} />
+                    <StatusBadge tone="success">Evidence ready</StatusBadge>
                   </div>
-                  <div className="feed-block">
-                    <div className="feed-heading">
-                      <strong>Agent 34 · Results</strong>
-                      <StatusBadge tone="success">Institutional</StatusBadge>
-                    </div>
-                    {data.integration_feeds.agent_34_results.results.length >
-                    0 ? (
-                      data.integration_feeds.agent_34_results.results.map(
-                        (result) => (
-                          <div
-                            className="feed-row"
-                            key={`${result.course_code}-${result.term}`}
-                          >
-                            <span>{result.course_code}</span>
-                            <small>{result.term}</small>
-                            <StatusBadge
-                              tone={
-                                result.result === "PASS" ? "success" : "danger"
-                              }
-                            >
-                              {result.result}
-                            </StatusBadge>
-                          </div>
-                        ),
-                      )
-                    ) : (
-                      <p className="muted-copy">No result feed available.</p>
-                    )}
-                  </div>
-                  <div className="feed-block">
-                    <div className="feed-heading">
-                      <strong>Agent 30 · Supplementary</strong>
-                      <StatusBadge tone="success">Institutional</StatusBadge>
-                    </div>
-                    {data.integration_feeds.agent_30_supplementary
-                      .supplementary_exams.length > 0 ? (
-                      data.integration_feeds.agent_30_supplementary.supplementary_exams.map(
-                        (exam) => (
-                          <div
-                            className="feed-row feed-stack"
-                            key={exam.course_code}
-                          >
-                            <span>{exam.course_code}</span>
-                            <small>
-                              {exam.supplementary_available
-                                ? "Available"
-                                : "Unavailable"}{" "}
-                              ·{" "}
-                              {exam.fee_cleared ? "Fee cleared" : "Fee pending"}{" "}
-                              ·{" "}
-                              {exam.attendance_eligible
-                                ? "Attendance eligible"
-                                : "Attendance blocked"}
-                            </small>
-                          </div>
-                        ),
-                      )
-                    ) : (
-                      <p className="muted-copy">
-                        No supplementary feed available.
-                      </p>
-                    )}
-                  </div>
-                </article>
-              )}
-            </div>
-            <div className="workspace-column">
-              <article className="workspace-card recommendation-card">
-                <div className="card-heading">
-                  <div>
-                    <span className="workspace-kicker">
-                      <Sparkles size={12} /> AI recommendation
-                    </span>
-                    <h3>{recommendation.recoverability_segment}</h3>
-                  </div>
-                  <StatusBadge tone="warning">Approval required</StatusBadge>
-                </div>
-                <div className="reasoning-block">
-                  <span>Evidence-based reasoning</span>
-                  <p>{recommendation.reasoning}</p>
-                </div>
-                <div className="actions-block">
-                  <span>Recommended interventions</span>
-                  <ol>
-                    {recommendation.recommended_actions.map((action, index) => (
-                      <li key={action}>
-                        <b>0{index + 1}</b>
-                        {action}
-                      </li>
+                  <div className="agent-checklist">
+                    {[
+                      "Retrieved student profile",
+                      "Applied current regulation",
+                      "Calculated attempts and progression",
+                      "Checked results and supplementary feeds",
+                      "Classified recoverability",
+                    ].map((step) => (
+                      <div key={step}>
+                        <Check size={14} />
+                        <span>{step}</span>
+                        <small>Complete</small>
+                      </div>
                     ))}
-                  </ol>
-                </div>
-                <div className="approval-row">
-                  <div>
-                    <span>Human decision</span>
+                  </div>
+                  <div className="agent-next-state">
+                    <span>Next handoff</span>
                     <strong>
                       {approved
-                        ? `Approved by ${mentorId}`
-                        : "Awaiting mentor sign-off"}
+                        ? "Intervention is active"
+                        : "Human approval required"}
                     </strong>
-                    {!approved && (
-                      <select
-                        value={mentorId}
-                        onChange={(event) => setMentorId(event.target.value)}
-                      >
-                        <option value="FACULTY_099">Prof. S. Dhital</option>
-                        <option value="FACULTY_104">Dr. A. Sharma</option>
-                      </select>
-                    )}
-                  </div>
-                  <button
-                    className={`workspace-button ${approved ? "success" : "primary"}`}
-                    onClick={() => {
-                      if (showApprovalConfirm) {
-                        void handleApprove();
-                      } else {
-                        setShowApprovalConfirm(true);
-                      }
-                    }}
-                    disabled={approving || approved}
-                  >
-                    {approved ? <Check size={16} /> : <ShieldCheck size={16} />}
-                    {approving
-                      ? "Logging"
-                      : approved
-                        ? "Intervention approved"
-                        : showApprovalConfirm
-                          ? "Confirm & deploy"
-                          : "Approve & deploy"}
-                  </button>
-                  {!approved && showApprovalConfirm && (
-                    <button
-                      className="workspace-button ghost"
-                      type="button"
-                      onClick={() => setShowApprovalConfirm(false)}
-                      disabled={approving}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </article>
-              {(dispatchLogs.length > 0 || activityEvents.length > 0) && (
-                <article className="workspace-card activity-card">
-                  <div className="card-heading">
-                    <div>
-                      <span className="workspace-kicker">Agent activity</span>
-                      <h3>Downstream execution log</h3>
-                    </div>
-                    <Activity size={18} />
-                  </div>
-                  <div className="activity-log">
-                    {activityEvents.length > 0
-                      ? activityEvents.map((event) => (
-                          <p key={event.event_id}>
-                            <Check size={13} />
-                            <span>
-                              <strong>{event.agent_id}</strong> {event.message}
-                            </span>
-                            <small>{event.status}</small>
-                          </p>
-                        ))
-                      : dispatchLogs.map((log) => (
-                          <p key={log}>
-                            <Check size={13} />
-                            {log}
-                          </p>
-                        ))}
-                    <div ref={logsEndRef} />
                   </div>
                 </article>
-              )}
-              <article className="workspace-card export-card">
-                <div>
-                  <span className="workspace-kicker">Evidence package</span>
-                  <h3>Export this recovery brief</h3>
-                </div>
-                <div className="export-actions">
-                  <button onClick={() => exportData("json")}>
-                    <FileJson size={15} /> JSON
-                  </button>
-                  <button onClick={() => exportData("csv")}>
-                    <FileSpreadsheet size={15} /> CSV
-                  </button>
-                  <button onClick={() => exportData("txt")}>
-                    <FileText size={15} /> Report
-                  </button>
-                  <Download size={16} className="export-icon" />
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {showScanner && (
-        <div className="scanner-backdrop">
-          <div className="scanner-modal">
-            <div className="scanner-heading">
-              <div>
-                <span className="workspace-kicker">Institutional input</span>
-                <h2>Scan student ID</h2>
+                <article className="workspace-card">
+                  <div className="card-heading">
+                    <div>
+                      <span className="workspace-kicker">
+                        Fact · institutional record
+                      </span>
+                      <h3>Arrear register</h3>
+                    </div>
+                    <Archive size={18} />
+                  </div>
+                  {evaluation.backlog_details.length === 0 ? (
+                    <p className="muted-copy">
+                      No active backlogs found for this profile.
+                    </p>
+                  ) : (
+                    <div className="backlog-list">
+                      {evaluation.backlog_details.map((backlog) => (
+                        <div className="backlog-row" key={backlog.id}>
+                          <strong>{backlog.course_code}</strong>
+                          <span>
+                            {backlog.attempts_made} made ·{" "}
+                            {backlog.attempts_remaining ?? "-"} remaining
+                          </span>
+                          <StatusBadge tone="warning">
+                            {backlog.status}
+                          </StatusBadge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </article>
+                <article className="workspace-card">
+                  <div className="card-heading">
+                    <div>
+                      <span className="workspace-kicker">
+                        Calculation · rule engine
+                      </span>
+                      <h3>Decision context</h3>
+                    </div>
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div className="context-list">
+                    <div>
+                      <span>Registration number</span>
+                      <strong>{data.target_student_id}</strong>
+                    </div>
+                    <div>
+                      <span>Chronic failure pattern</span>
+                      <StatusBadge
+                        tone={
+                          evaluation.active_backlog_count >= 3
+                            ? "warning"
+                            : "neutral"
+                        }
+                      >
+                        {evaluation.active_backlog_count >= 3
+                          ? "Detected"
+                          : "None"}
+                      </StatusBadge>
+                    </div>
+                    <div>
+                      <span>Attempts remaining</span>
+                      <strong>
+                        {evaluation.backlog_details.reduce(
+                          (minimum, backlog) =>
+                            Math.min(minimum, backlog.attempts_remaining ?? 0),
+                          evaluation.max_attempts ?? 0,
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+                {data.integration_feeds && (
+                  <article className="workspace-card evidence-card">
+                    <div className="card-heading">
+                      <div>
+                        <span className="workspace-kicker">
+                          Fact · connected systems
+                        </span>
+                        <h3>Evidence feeds</h3>
+                      </div>
+                      <Activity size={18} />
+                    </div>
+                    <div className="feed-block">
+                      <div className="feed-heading">
+                        <strong>Agent 34 · Results</strong>
+                        <StatusBadge tone="success">Institutional</StatusBadge>
+                      </div>
+                      {data.integration_feeds.agent_34_results.results.length >
+                      0 ? (
+                        data.integration_feeds.agent_34_results.results.map(
+                          (result) => (
+                            <div
+                              className="feed-row"
+                              key={`${result.course_code}-${result.term}`}
+                            >
+                              <span>{result.course_code}</span>
+                              <small>{result.term}</small>
+                              <StatusBadge
+                                tone={
+                                  result.result === "PASS"
+                                    ? "success"
+                                    : "danger"
+                                }
+                              >
+                                {result.result}
+                              </StatusBadge>
+                            </div>
+                          ),
+                        )
+                      ) : (
+                        <p className="muted-copy">No result feed available.</p>
+                      )}
+                    </div>
+                    <div className="feed-block">
+                      <div className="feed-heading">
+                        <strong>Agent 30 · Supplementary</strong>
+                        <StatusBadge tone="success">Institutional</StatusBadge>
+                      </div>
+                      {data.integration_feeds.agent_30_supplementary
+                        .supplementary_exams.length > 0 ? (
+                        data.integration_feeds.agent_30_supplementary.supplementary_exams.map(
+                          (exam) => (
+                            <div
+                              className="feed-row feed-stack"
+                              key={exam.course_code}
+                            >
+                              <span>{exam.course_code}</span>
+                              <small>
+                                {exam.supplementary_available
+                                  ? "Available"
+                                  : "Unavailable"}{" "}
+                                ·{" "}
+                                {exam.fee_cleared
+                                  ? "Fee cleared"
+                                  : "Fee pending"}{" "}
+                                ·{" "}
+                                {exam.attendance_eligible
+                                  ? "Attendance eligible"
+                                  : "Attendance blocked"}
+                              </small>
+                            </div>
+                          ),
+                        )
+                      ) : (
+                        <p className="muted-copy">
+                          No supplementary feed available.
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                )}
               </div>
-              <button
-                className="icon-button"
-                onClick={() => setShowScanner(false)}
-                aria-label="Close scanner"
-              >
-                <X size={18} />
-              </button>
+              <div className="workspace-column">
+                <article className="workspace-card recommendation-card">
+                  <div className="card-heading">
+                    <div>
+                      <span className="workspace-kicker">
+                        <Sparkles size={12} /> AI recommendation
+                      </span>
+                      <h3>{recommendation.recoverability_segment}</h3>
+                    </div>
+                    <StatusBadge tone="warning">Approval required</StatusBadge>
+                  </div>
+                  <div className="reasoning-block">
+                    <span>Evidence-based reasoning</span>
+                    <p>{recommendation.reasoning}</p>
+                  </div>
+                  <div className="actions-block">
+                    <span>Recommended interventions</span>
+                    <ol>
+                      {recommendation.recommended_actions.map(
+                        (action, index) => (
+                          <li key={action}>
+                            <b>0{index + 1}</b>
+                            {action}
+                          </li>
+                        ),
+                      )}
+                    </ol>
+                  </div>
+                  <div className="approval-row">
+                    <div>
+                      <span>Human decision</span>
+                      <strong>
+                        {approved
+                          ? `Approved by ${mentorId}`
+                          : "Awaiting mentor sign-off"}
+                      </strong>
+                      {!approved && (
+                        <select
+                          value={mentorId}
+                          onChange={(event) => setMentorId(event.target.value)}
+                        >
+                          <option value="FACULTY_099">Prof. S. Dhital</option>
+                          <option value="FACULTY_104">Dr. A. Sharma</option>
+                        </select>
+                      )}
+                    </div>
+                    <button
+                      className={`workspace-button ${approved ? "success" : "primary"}`}
+                      onClick={() => {
+                        if (showApprovalConfirm) {
+                          void handleApprove();
+                        } else {
+                          setShowApprovalConfirm(true);
+                        }
+                      }}
+                      disabled={approving || approved}
+                    >
+                      {approved ? (
+                        <Check size={16} />
+                      ) : (
+                        <ShieldCheck size={16} />
+                      )}
+                      {approving
+                        ? "Logging"
+                        : approved
+                          ? "Intervention approved"
+                          : showApprovalConfirm
+                            ? "Confirm & deploy"
+                            : "Approve & deploy"}
+                    </button>
+                    {!approved && showApprovalConfirm && (
+                      <button
+                        className="workspace-button ghost"
+                        type="button"
+                        onClick={() => setShowApprovalConfirm(false)}
+                        disabled={approving}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </article>
+                {(dispatchLogs.length > 0 || activityEvents.length > 0) && (
+                  <article className="workspace-card activity-card">
+                    <div className="card-heading">
+                      <div>
+                        <span className="workspace-kicker">Agent activity</span>
+                        <h3>Downstream execution log</h3>
+                      </div>
+                      <Activity size={18} />
+                    </div>
+                    <div className="activity-log">
+                      {activityEvents.length > 0
+                        ? activityEvents.map((event) => (
+                            <p key={event.event_id}>
+                              <Check size={13} />
+                              <span>
+                                <strong>{event.agent_id}</strong>{" "}
+                                {event.message}
+                              </span>
+                              <small>{event.status}</small>
+                            </p>
+                          ))
+                        : dispatchLogs.map((log) => (
+                            <p key={log}>
+                              <Check size={13} />
+                              {log}
+                            </p>
+                          ))}
+                      <div ref={logsEndRef} />
+                    </div>
+                  </article>
+                )}
+                <article className="workspace-card export-card">
+                  <div>
+                    <span className="workspace-kicker">Evidence package</span>
+                    <h3>Export this recovery brief</h3>
+                  </div>
+                  <div className="export-actions">
+                    <button onClick={() => exportData("json")}>
+                      <FileJson size={15} /> JSON
+                    </button>
+                    <button onClick={() => exportData("csv")}>
+                      <FileSpreadsheet size={15} /> CSV
+                    </button>
+                    <button onClick={() => exportData("txt")}>
+                      <FileText size={15} /> Report
+                    </button>
+                    <Download size={16} className="export-icon" />
+                  </div>
+                </article>
+              </div>
             </div>
-            <div id="barcode-reader" />
-            <div className="scanner-footer">
-              <p>Align a barcode or QR code within the target frame.</p>
-              <button
-                className="workspace-button primary"
-                onClick={() => {
-                  setShowScanner(false);
-                  void fetchOrchestration(studentId);
-                }}
-              >
-                <Sparkles size={15} /> Use {studentId}
-              </button>
+          </section>
+        )}
+
+        {showScanner && (
+          <div className="scanner-backdrop">
+            <div className="scanner-modal">
+              <div className="scanner-heading">
+                <div>
+                  <span className="workspace-kicker">Institutional input</span>
+                  <h2>Scan student ID</h2>
+                </div>
+                <button
+                  className="icon-button"
+                  onClick={() => setShowScanner(false)}
+                  aria-label="Close scanner"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div id="barcode-reader" />
+              <div className="scanner-footer">
+                <p>Align a barcode or QR code within the target frame.</p>
+                <button
+                  className="workspace-button primary"
+                  onClick={() => {
+                    setShowScanner(false);
+                    void fetchOrchestration(studentId);
+                  }}
+                >
+                  <Sparkles size={15} /> Use {studentId}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      </div>{/* end of inner content wrapper */}
+        )}
+      </div>
+      {/* end of inner content wrapper */}
     </main>
   );
 }
