@@ -91,7 +91,7 @@ export default function AuthPage({
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
     // Use VITE_SITE_URL when set (allows dev vs prod separation).
-    // In dev: set VITE_SITE_URL=http://localhost:5174 in .env.development
+    // In dev: set VITE_SITE_URL=http://localhost:5173 in .env.development
     // In prod: set VITE_SITE_URL=https://your-domain.com in .env.production
     // Also add both URLs to Supabase Dashboard → Auth → URL Configuration → Redirect URLs
     const siteUrl =

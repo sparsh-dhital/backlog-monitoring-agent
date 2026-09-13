@@ -3,13 +3,21 @@ import type {
   OrchestrationData,
   ActivityEvent,
 } from "./types/agent";
+import { supabaseAuth } from "./supabaseClient";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  const {
+    data: { session },
+  } = await supabaseAuth.auth.getSession();
+  const headers = new Headers(init?.headers);
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
   try {
-    response = await fetch(`${API_URL}${path}`, init);
+    response = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
     throw new Error(
       `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,

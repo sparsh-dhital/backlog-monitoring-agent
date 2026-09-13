@@ -1,6 +1,6 @@
 import os
 from collections import Counter
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from rules_engine import evaluate_student_progression, orchestrate_agent_35_workflow
 from routers.integrations import router as integrations_router
 from routers.dispatch import router as dispatch_router, trigger_execution_pipeline
+from auth import require_user
 
 load_dotenv()
 
@@ -52,7 +53,7 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
-@app.get("/api/dashboard")
+@app.get("/api/dashboard", dependencies=[Depends(require_user)])
 def dashboard():
     try:
         backlogs = supabase.table("backlogs").select("*").execute().data or []
@@ -87,11 +88,11 @@ def dashboard():
         "course_patterns": [{"course_code": course, "count": count} for course, count in course_counts.most_common()],
     }
 
-@app.get("/api/orchestrate/{student_id}")
+@app.get("/api/orchestrate/{student_id}", dependencies=[Depends(require_user)])
 def run_orchestration(student_id: str):
     return orchestrate_agent_35_workflow(supabase, student_id)
 
-@app.post("/api/orchestrate/{student_id}")
+@app.post("/api/orchestrate/{student_id}", dependencies=[Depends(require_user)])
 def run_orchestration_custom(student_id: str, feeds: Optional[CustomFeeds] = None):
     """Saves external agent JSON directly into Supabase, then runs orchestration normally."""
     if feeds:
@@ -128,7 +129,7 @@ def run_orchestration_custom(student_id: str, feeds: Optional[CustomFeeds] = Non
     # Now run workflow strictly off Supabase data
     return orchestrate_agent_35_workflow(supabase, student_id)
 
-@app.post("/api/approve-intervention/{student_id}")
+@app.post("/api/approve-intervention/{student_id}", dependencies=[Depends(require_user)])
 def approve_intervention(student_id: str, background_tasks: BackgroundTasks, mentor_id: str = "FACULTY_099"):
     if not mentor_id.strip():
         raise HTTPException(status_code=400, detail="mentor_id is required")

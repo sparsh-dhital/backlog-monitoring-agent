@@ -1,10 +1,15 @@
 import time
 from datetime import datetime, timezone
 from uuid import uuid4
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import Dict, Any
+from auth import require_user
 
-router = APIRouter(prefix="/api/dispatch", tags=["Agent Dispatch"])
+router = APIRouter(
+    prefix="/api/dispatch",
+    tags=["Agent Dispatch"],
+    dependencies=[Depends(require_user)],
+)
 activity_store: Dict[str, list[dict[str, Any]]] = {}
 
 def record_activity(student_id: str, agent_id: str, status: str, message: str, request_id: str):
