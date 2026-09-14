@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { supabaseAuth } from "../supabaseClient";
 import { api } from "../api";
+import { isDevAuthAvailable, setDevSession } from "../devAuth";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
 import "../styles/auth.css";
@@ -45,6 +46,22 @@ export default function AuthPage({
   );
   const [registrationPhone, setRegistrationPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [devRole, setDevRole] = useState<UserRole>("student");
+  const [devStudentId, setDevStudentId] = useState("STU002");
+
+  /** Dev-only: skip Supabase entirely and open the chosen role's dashboard. */
+  const handleDevLogin = () => {
+    if (!isDevAuthAvailable()) return;
+    const studentId = devStudentId.trim().toUpperCase();
+    if (devRole === "student" && !studentId) {
+      setAuthMessage("Enter a student ID that exists in the backlogs table.");
+      return;
+    }
+    setDevSession({ role: devRole, studentId });
+    sessionStorage.setItem("edurecover-role", devRole);
+    sessionStorage.removeItem("edurecover-pending-role");
+    onContinue(devRole);
+  };
 
   const registrationRole =
     selectedRole === "student" || selectedRole === "mentor"
@@ -524,6 +541,47 @@ export default function AuthPage({
               <span>Microsoft 365</span>
             </button>
           </div>
+          {import.meta.env.DEV && isDevAuthAvailable() && (
+            <div className="auth-devbox">
+              <p className="auth-devbox-title">
+                <ShieldCheck size={14} aria-hidden="true" />
+                Local development test login
+              </p>
+              <p className="auth-devbox-note">
+                Institutional sign-in needs an @vignan.ac.in account or the
+                missing <code>profiles</code> table, so neither works here. This
+                shortcut exists only under <code>npm run dev</code> and only
+                while <code>ALLOW_DEV_AUTH_BYPASS=true</code> is set in
+                <code> backend/.env</code>. It is absent from production builds.
+              </p>
+              <div className="auth-devbox-row">
+                <select
+                  value={devRole}
+                  onChange={(event) =>
+                    setDevRole(event.target.value as UserRole)
+                  }
+                  aria-label="Test login role"
+                >
+                  {userRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+                {devRole === "student" && (
+                  <input
+                    value={devStudentId}
+                    onChange={(event) => setDevStudentId(event.target.value)}
+                    placeholder="Student ID (e.g. STU002)"
+                    aria-label="Test login student ID"
+                  />
+                )}
+                <button type="button" onClick={handleDevLogin}>
+                  Open dashboard
+                </button>
+              </div>
+            </div>
+          )}
           {authMessage && (
             <p className="auth-feedback" role="status">
               {authMessage}

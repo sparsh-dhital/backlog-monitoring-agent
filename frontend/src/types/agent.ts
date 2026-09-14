@@ -71,6 +71,14 @@ export interface DashboardData {
   course_patterns: Array<{ course_code: string; count: number }>;
 }
 
+export interface BacklogRow {
+  id: string;
+  student_id: string;
+  course_code: string;
+  attempts_made: number;
+  status: string;
+}
+
 export interface Identity {
   email: string | null;
   role: string | null;

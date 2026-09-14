@@ -41,6 +41,8 @@ import { api } from "../api";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import RecoverySimulator from "../components/RecoverySimulator";
 import DepartmentCharts from "../components/DepartmentCharts";
+import BacklogManager from "../components/BacklogManager";
+import StudentBacklogCharts from "../components/StudentBacklogCharts";
 import { supabaseAuth } from "../supabaseClient";
 
 const dashboardByRole = {
@@ -566,44 +568,66 @@ function HodCommandCenter({
             <Users size={16} className="text-slate-300" />
           </div>
           <div className="flex flex-col gap-3">
-            {[
-              {
-                dot: "bg-rose-500",
-                title: "Attempt pressure",
-                desc: "14 students have one attempt remaining.",
-                time: "2h ago",
-              },
-              {
-                dot: "bg-amber-500",
-                title: "Duration risk",
-                desc: "6 students are nearing maximum duration.",
-                time: "5h ago",
-              },
-              {
-                dot: "bg-emerald-500",
-                title: "Recovery milestone",
-                desc: "12 backlogs cleared this term.",
-                time: "Today",
-              },
-            ].map(({ dot, title, desc, time }) => (
-              <div
-                key={title}
-                className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
-              >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot}`}
-                />
-                <p className="flex-1 text-sm text-slate-600">
-                  <strong className="text-slate-800 font-semibold">
-                    {title}
-                  </strong>{" "}
-                  {desc}
-                </p>
-                <small className="text-xs text-slate-400 shrink-0 mt-0.5">
-                  {time}
-                </small>
-              </div>
-            ))}
+            {(() => {
+              // Derived from live dashboard data — no fabricated counts, and no
+              // "duration" claim, since the schema carries no admission date,
+              // semester of origin, or programme length to measure against.
+              const nearLimit = dashboard.students.filter(
+                (s) => s.max_attempts_made >= 2,
+              ).length;
+              const topCourse = dashboard.course_patterns[0];
+              const signals = [
+                nearLimit > 0 && {
+                  dot: "bg-rose-500",
+                  title: "Attempt pressure",
+                  desc: `${nearLimit} student${nearLimit === 1 ? "" : "s"} at or near the attempt limit.`,
+                },
+                dashboard.critical_case_count > 0 && {
+                  dot: "bg-rose-500",
+                  title: "Critical cases",
+                  desc: `${dashboard.critical_case_count} student${dashboard.critical_case_count === 1 ? "" : "s"} need human review.`,
+                },
+                topCourse && {
+                  dot: "bg-amber-500",
+                  title: "Failure concentration",
+                  desc: `${topCourse.course_code} accounts for ${topCourse.count} pending backlog${topCourse.count === 1 ? "" : "s"}.`,
+                },
+                dashboard.intervention_count > 0 && {
+                  dot: "bg-emerald-500",
+                  title: "Interventions active",
+                  desc: `${dashboard.intervention_count} recovery plan${dashboard.intervention_count === 1 ? "" : "s"} on record.`,
+                },
+              ].filter(Boolean) as Array<{
+                dot: string;
+                title: string;
+                desc: string;
+              }>;
+
+              if (signals.length === 0) {
+                return (
+                  <p className="text-sm text-slate-400 p-3">
+                    No active signals right now.
+                  </p>
+                );
+              }
+
+              return signals.map(({ dot, title, desc }) => (
+                <div
+                  key={title}
+                  className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                >
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dot}`}
+                  />
+                  <p className="flex-1 text-sm text-slate-600">
+                    <strong className="text-slate-800 font-semibold">
+                      {title}
+                    </strong>{" "}
+                    {desc}
+                  </p>
+                </div>
+              ));
+            })()}
           </div>
         </div>
       </div>
@@ -1382,6 +1406,8 @@ export default function PrototypePage({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [alertCount, setAlertCount] = useState(0);
+  // Bumped after every backlog mutation so dependent views re-read.
+  const [dataVersion, setDataVersion] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
 
@@ -1581,11 +1607,6 @@ export default function PrototypePage({
 
   const evaluation = data?.deterministic_evaluation;
   const recommendation = data?.ai_orchestration;
-  const durationRisk =
-    evaluation?.attempt_pressure === "HIGH" ||
-    evaluation?.attempt_pressure === "CRITICAL"
-      ? "HIGH"
-      : "LOW";
   const dashboard = dashboardByRole[role];
   const summaryEvaluation = studentSummary?.deterministic_evaluation;
 
@@ -1946,11 +1967,28 @@ export default function PrototypePage({
           </div>
         )}
 
+        {/* My backlogs: the record itself, editable, above the charts it feeds */}
+        {mode === "dashboard" && activeTab === "My backlogs" && (
+          <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
+            <div className="dashboard-reveal flex flex-col gap-5">
+              <BacklogManager
+                studentId={role === "student" ? undefined : studentId}
+                onChanged={() => setDataVersion((version) => version + 1)}
+              />
+              <StudentBacklogCharts
+                key={dataVersion}
+                studentId={role === "student" ? undefined : studentId}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Dashboard tab views (non-Dashboard tabs). The tab view owns its own
             request lifecycle, so it is not gated on the dashboard request. */}
         {mode === "dashboard" &&
           activeTab !== "Dashboard" &&
           activeTab !== "Simulator" &&
+          activeTab !== "My backlogs" &&
           !data &&
           !loading && (
             <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
@@ -2348,10 +2386,25 @@ export default function PrototypePage({
                 detail="Regulation-aware signal"
               />
               <StatCard
-                label="Duration risk"
-                value={durationRisk}
-                detail="Completion runway"
-                tone={durationRisk === "HIGH" ? "danger" : "success"}
+                label="Backlog headroom"
+                value={String(
+                  Math.max(
+                    0,
+                    evaluation.max_allowed_backlogs -
+                      evaluation.active_backlog_count,
+                  ),
+                )}
+                detail={`Room before promotion blocks (limit ${evaluation.max_allowed_backlogs})`}
+                tone={
+                  evaluation.active_backlog_count >=
+                  evaluation.max_allowed_backlogs
+                    ? "danger"
+                    : evaluation.max_allowed_backlogs -
+                          evaluation.active_backlog_count <=
+                        1
+                      ? "warning"
+                      : "success"
+                }
               />
             </div>
             <div className="workspace-grid">

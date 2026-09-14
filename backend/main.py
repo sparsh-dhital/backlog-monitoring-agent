@@ -62,6 +62,24 @@ class RegistrationLookup(BaseModel):
     role: Literal["student", "mentor"]
 
 
+class BacklogInput(BaseModel):
+    course_code: str
+    attempts_made: int = 0
+    status: Literal["PENDING", "CLEARED", "EXHAUSTED"] = "PENDING"
+    # Staff may file against any student; a student's own id comes from the token.
+    student_id: Optional[str] = None
+
+
+# Demo rows are tagged by course prefix so they can be cleared in one call
+# without touching anything a user entered for real.
+DEMO_PREFIX = "DEMO-"
+DEMO_SEED = [
+    ("DEMO-CS102", 2),
+    ("DEMO-MA101", 1),
+    ("DEMO-DBMS1", 3),
+]
+
+
 @app.post("/api/auth/registration-phone")
 def registration_phone(payload: RegistrationLookup):
     """Resolve a registration number to its stored phone for Supabase SMS OTP."""
@@ -154,6 +172,189 @@ def dashboard():
             for course, count in course_counts.most_common()
         ],
     }
+
+
+def _write_error(error: Exception, what: str) -> HTTPException:
+    """Turn a Postgres RLS refusal into something the user can act on.
+
+    The backend authenticates with the publishable key, so writes are subject
+    to row-level security exactly as a browser client would be.
+    """
+    message = str(error).lower()
+    if "row-level security" in message or "42501" in message:
+        return HTTPException(
+            status_code=403,
+            detail=(
+                f"The database rejected this write: row-level security has no "
+                f"INSERT policy for the {what} table. Add a policy in Supabase "
+                f"(or point the API at a service-role key) to enable it."
+            ),
+        )
+    return HTTPException(status_code=502, detail=f"{what.capitalize()} could not be saved")
+
+
+def _target_student(user, requested: Optional[str]) -> str:
+    """Which student a write applies to.
+
+    A student is pinned to their own record regardless of what the request
+    body asks for; staff may name any student.
+    """
+    role = user_role(user)
+    if role == "student":
+        own = user_student_id(user)
+        if not own:
+            raise HTTPException(
+                status_code=409,
+                detail="This student account is not linked to a student record.",
+            )
+        return own
+    if role in STAFF_ROLES:
+        target = (requested or "").strip()
+        if not target:
+            raise HTTPException(status_code=400, detail="student_id is required")
+        return target
+    raise HTTPException(status_code=403, detail="No role is assigned to this account.")
+
+
+@app.get("/api/backlogs")
+def list_backlogs(user=Depends(require_user), student_id: str = ""):
+    """Rows the caller may manage: their own if a student, any if staff."""
+    target = _target_student(user, student_id or None) if (
+        user_role(user) == "student" or student_id
+    ) else None
+    try:
+        query = supabase.table("backlogs").select("*")
+        if target:
+            query = query.eq("student_id", target)
+        elif user_role(user) not in STAFF_ROLES:
+            raise HTTPException(status_code=403, detail="Not permitted.")
+        rows = query.execute().data or []
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="Backlogs could not be loaded") from error
+    rows.sort(key=lambda row: (row.get("course_code") or ""))
+    return {"backlogs": rows, "total": len(rows)}
+
+
+@app.post("/api/backlogs", status_code=201)
+def create_backlog(payload: BacklogInput, user=Depends(require_user)):
+    course_code = payload.course_code.strip().upper()
+    if not course_code:
+        raise HTTPException(status_code=400, detail="Course code is required")
+    if payload.attempts_made < 0 or payload.attempts_made > 10:
+        raise HTTPException(
+            status_code=400, detail="Attempts made must be between 0 and 10"
+        )
+
+    target = _target_student(user, payload.student_id)
+    try:
+        existing = (
+            supabase.table("backlogs")
+            .select("id")
+            .eq("student_id", target)
+            .eq("course_code", course_code)
+            .execute()
+            .data
+            or []
+        )
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"{course_code} is already recorded for {target}.",
+            )
+        created = (
+            supabase.table("backlogs")
+            .insert({
+                "student_id": target,
+                "course_code": course_code,
+                "attempts_made": payload.attempts_made,
+                "status": payload.status,
+            })
+            .execute()
+            .data
+            or []
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise _write_error(error, "backlogs") from error
+    return {"backlog": created[0] if created else None}
+
+
+@app.post("/api/backlogs/demo", status_code=201)
+def seed_demo_backlogs(user=Depends(require_user), student_id: str = ""):
+    """Insert a few clearly-labelled sample rows the caller can remove again."""
+    target = _target_student(user, student_id or None)
+    try:
+        existing = {
+            row["course_code"]
+            for row in (
+                supabase.table("backlogs")
+                .select("course_code")
+                .eq("student_id", target)
+                .execute()
+                .data
+                or []
+            )
+        }
+        rows = [
+            {
+                "student_id": target,
+                "course_code": course,
+                "attempts_made": attempts,
+                "status": "PENDING",
+            }
+            for course, attempts in DEMO_SEED
+            if course not in existing
+        ]
+        created = (
+            supabase.table("backlogs").insert(rows).execute().data or [] if rows else []
+        )
+    except Exception as error:
+        raise _write_error(error, "backlogs") from error
+    return {"created": len(created), "skipped": len(DEMO_SEED) - len(created)}
+
+
+@app.delete("/api/backlogs/demo")
+def clear_demo_backlogs(user=Depends(require_user), student_id: str = ""):
+    target = _target_student(user, student_id or None)
+    try:
+        removed = (
+            supabase.table("backlogs")
+            .delete()
+            .eq("student_id", target)
+            .like("course_code", f"{DEMO_PREFIX}%")
+            .execute()
+            .data
+            or []
+        )
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="Sample rows could not be removed") from error
+    return {"deleted": len(removed)}
+
+
+@app.delete("/api/backlogs/{backlog_id}")
+def delete_backlog(backlog_id: str, user=Depends(require_user)):
+    try:
+        found = (
+            supabase.table("backlogs").select("*").eq("id", backlog_id).execute().data
+            or []
+        )
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="Backlog could not be read") from error
+    if not found:
+        raise HTTPException(status_code=404, detail="That backlog no longer exists.")
+
+    # A student may only delete rows on their own record.
+    if user_role(user) == "student" and found[0].get("student_id") != user_student_id(user):
+        raise HTTPException(status_code=403, detail="That record belongs to another student.")
+
+    try:
+        supabase.table("backlogs").delete().eq("id", backlog_id).execute()
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="Backlog could not be deleted") from error
+    return {"deleted": backlog_id}
 
 
 @app.get("/api/me")
@@ -371,13 +572,26 @@ def approve_intervention(student_id: str, background_tasks: BackgroundTasks, men
     if not mentor_id.strip():
         raise HTTPException(status_code=400, detail="mentor_id is required")
     try:
+        # Record the approval as an intervention. Approval means "support is
+        # under way", NOT "the backlog is gone" — a backlog is only cleared by
+        # passing the exam. Deliberately do NOT touch backlogs.status here:
+        #   * "INTERVENTION_ACTIVE" is outside the status domain
+        #     (PENDING|CLEARED|EXHAUSTED) and there is no CHECK constraint to
+        #     catch it, so the write would silently succeed;
+        #   * every progression calc filters on status == "PENDING"
+        #     (rules_engine.py, _pending_backlogs), so hiding the rows would
+        #     drop active_backlog_count to 0 and flip the most at-risk student
+        #     to promotion-eligible the instant a mentor approves help.
+        # Intervention state lives in the interventions table, which is where
+        # the dashboard already reads it from.
         supabase.table("interventions").insert({
-            "student_id": student_id, "risk_level": "HIGH", "recommended_action": "AI-Orchestrated Recovery Plan Approved",
-            "human_approved": True, "mentor_id": mentor_id
+            "student_id": student_id,
+            "risk_level": "HIGH",
+            "recommended_action": "AI-Orchestrated Recovery Plan Approved",
+            "human_approved": True,
+            "mentor_id": mentor_id,
         }).execute()
-        
-        supabase.table("backlogs").update({"status": "INTERVENTION_ACTIVE"}).eq("student_id", student_id).eq("status", "PENDING").execute()
-        
+
         payload = orchestrate_agent_35_workflow(supabase, student_id)
         background_tasks.add_task(trigger_execution_pipeline, student_id, payload)
         return {"status": "success", "message": "Intervention deployed."}

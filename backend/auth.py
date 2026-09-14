@@ -16,6 +16,53 @@ _auth_client: Client | None = (
     else None
 )
 
+VALID_ROLES = ("student", "mentor", "hod", "exam", "placement")
+STAFF_ROLES = ("mentor", "hod", "exam", "placement")
+
+# ── Local development test login ────────────────────────────────────────────
+# Off unless ALLOW_DEV_AUTH_BYPASS=true is present in backend/.env, which is
+# gitignored and never deployed. Read once at import so a running server cannot
+# be flipped open by a later environment change.
+#
+# It exists because the institutional flow (@vignan.ac.in OAuth, or
+# registration + SMS OTP against a `profiles` table that does not yet exist)
+# admits nobody on a developer machine. Never enable it on a deployed host:
+# it accepts a self-asserted role with no proof of identity whatsoever.
+_DEV_BYPASS = os.environ.get("ALLOW_DEV_AUTH_BYPASS", "").strip().lower() == "true"
+_DEV_TOKEN_PREFIX = "dev:"
+
+if _DEV_BYPASS:
+    print(
+        "[auth] ALLOW_DEV_AUTH_BYPASS=true — 'dev:<role>:<student_id>' bearer "
+        "tokens are accepted WITHOUT identity verification. Local use only."
+    )
+
+
+class _DevUser:
+    """Stands in for a Supabase user object, exposing only what the app reads."""
+
+    def __init__(self, role: str, student_id: str | None):
+        self.id = f"dev-{role}"
+        self.email = f"dev-{role}@localhost.test"
+        self.user_metadata = {"role": role}
+        if student_id:
+            self.user_metadata["student_id"] = student_id
+
+
+def _dev_user_from_token(token: str) -> "_DevUser | None":
+    """Parse 'dev:<role>:<student_id>'. Returns None if it is not one of ours."""
+    if not _DEV_BYPASS or not token.startswith(_DEV_TOKEN_PREFIX):
+        return None
+    parts = token.split(":", 2)
+    role = parts[1].strip().lower() if len(parts) > 1 else ""
+    if role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Dev token role must be one of: {', '.join(VALID_ROLES)}.",
+        )
+    student_id = parts[2].strip() if len(parts) > 2 else ""
+    return _DevUser(role, student_id or None)
+
 
 def require_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_auth_scheme),
@@ -26,6 +73,11 @@ def require_user(
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # When the bypass is disabled this returns None and a 'dev:' token simply
+    # falls through to Supabase, which rejects it like any other bad token.
+    dev_user = _dev_user_from_token(credentials.credentials)
+    if dev_user is not None:
+        return dev_user
     if _auth_client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -46,10 +98,6 @@ def require_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return response.user
-
-
-VALID_ROLES = ("student", "mentor", "hod", "exam", "placement")
-STAFF_ROLES = ("mentor", "hod", "exam", "placement")
 
 
 def user_role(user) -> str | None:

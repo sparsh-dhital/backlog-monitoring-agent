@@ -1,5 +1,6 @@
 import type {
   AlertFeed,
+  BacklogRow,
   CourseRow,
   DashboardData,
   ExamRegistrationFeed,
@@ -10,6 +11,7 @@ import type {
   StudentDirectory,
 } from "./types/agent";
 import { supabaseAuth } from "./supabaseClient";
+import { devBearerToken, getDevSession } from "./devAuth";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -20,12 +22,21 @@ const REQUEST_TIMEOUT_MS = 45000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
-  const {
-    data: { session },
-  } = await supabaseAuth.auth.getSession();
   const headers = new Headers(init?.headers);
-  if (session?.access_token) {
-    headers.set("Authorization", `Bearer ${session.access_token}`);
+
+  // import.meta.env.DEV is the literal `false` in a production build, so the
+  // whole dev branch is statically eliminated there — the token-attach path
+  // below cannot exist on a deployed site, not merely go unused.
+  const devSession = import.meta.env.DEV ? getDevSession() : null;
+  if (devSession) {
+    headers.set("Authorization", `Bearer ${devBearerToken(devSession)}`);
+  } else {
+    const {
+      data: { session },
+    } = await supabaseAuth.auth.getSession();
+    if (session?.access_token) {
+      headers.set("Authorization", `Bearer ${session.access_token}`);
+    }
   }
   const controller = new AbortController();
   const timeout = window.setTimeout(
@@ -97,6 +108,35 @@ export const api = {
     query.set("page_size", String(params.pageSize ?? 20));
     return request<StudentDirectory>(`/api/students?${query.toString()}`);
   },
+  backlogs: (studentId?: string) =>
+    request<{ backlogs: BacklogRow[]; total: number }>(
+      `/api/backlogs${studentId ? `?student_id=${encodeURIComponent(studentId)}` : ""}`,
+    ),
+  createBacklog: (input: {
+    course_code: string;
+    attempts_made: number;
+    status?: string;
+    student_id?: string;
+  }) =>
+    request<{ backlog: BacklogRow | null }>("/api/backlogs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+  deleteBacklog: (id: string) =>
+    request<{ deleted: string }>(`/api/backlogs/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+  seedDemoBacklogs: (studentId?: string) =>
+    request<{ created: number; skipped: number }>(
+      `/api/backlogs/demo${studentId ? `?student_id=${encodeURIComponent(studentId)}` : ""}`,
+      { method: "POST" },
+    ),
+  clearDemoBacklogs: (studentId?: string) =>
+    request<{ deleted: number }>(
+      `/api/backlogs/demo${studentId ? `?student_id=${encodeURIComponent(studentId)}` : ""}`,
+      { method: "DELETE" },
+    ),
   courses: () => request<{ courses: CourseRow[] }>("/api/courses"),
   alerts: () => request<AlertFeed>("/api/alerts"),
   interventions: () =>

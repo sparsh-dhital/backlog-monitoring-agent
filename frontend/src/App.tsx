@@ -13,6 +13,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
+import { clearDevSession, getDevSession } from "./devAuth";
 import "./App.css";
 
 const roleIds = new Set<UserRole>(userRoles.map((role) => role.id));
@@ -21,6 +22,7 @@ function clearLocalSession() {
   sessionStorage.removeItem("edurecover-role");
   sessionStorage.removeItem("edurecover-pending-role");
   sessionStorage.removeItem("edurecover-focus-student");
+  clearDevSession();
 }
 
 function SmoothScroll() {
@@ -101,7 +103,13 @@ function ProtectedDashboard() {
     "edurecover-role",
   ) as UserRole | null;
 
+  // A local dev test login has no Supabase session and stands in for one.
+  // import.meta.env.DEV is the literal `false` in production, so this whole
+  // expression folds to null there and the real Supabase check always runs.
+  const devRole = import.meta.env.DEV ? (getDevSession()?.role ?? null) : null;
+
   useEffect(() => {
+    if (devRole) return;
     let active = true;
     supabaseAuth.auth.getSession().then(({ data }) => {
       if (!active) return;
@@ -115,12 +123,12 @@ function ProtectedDashboard() {
     return () => {
       active = false;
     };
-  }, [navigate, role]);
+  }, [navigate, role, devRole]);
 
   if (!role || !roleIds.has(role as UserRole)) return <NotFoundPage />;
   if (sessionRole !== role)
     return <Navigate replace to={`/auth?requiredRole=${role}`} />;
-  if (!sessionChecked) return null;
+  if (!sessionChecked && !devRole) return null;
 
   const handleLogout = async () => {
     await supabaseAuth.auth.signOut();
