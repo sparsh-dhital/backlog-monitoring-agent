@@ -2,7 +2,6 @@
 .auth-page {
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
   color: #102754;
   background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 48%, #ffffff 100%);
 }
