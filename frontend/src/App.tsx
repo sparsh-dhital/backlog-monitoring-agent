@@ -74,7 +74,6 @@ function SiteLoader() {
   );
 }
 
-<<<<<<< HEAD
 function SiteThemeToggle() {
   const { pathname } = useLocation();
   if (pathname === "/" || pathname.startsWith("/dashboard/")) return null;
@@ -86,8 +85,6 @@ function SiteThemeToggle() {
   );
 }
 
-=======
->>>>>>> origin/Gaurav
 function AuthRoute() {
   const navigate = useNavigate();
   return (
@@ -146,11 +143,7 @@ function ProtectedDashboard() {
     return () => {
       active = false;
     };
-<<<<<<< HEAD
-  }, [demoRole, navigate, role]);
-=======
-  }, [navigate, role, devRole]);
->>>>>>> origin/Gaurav
+  }, [demoRole, navigate, role, devRole]);
 
   if (!role || !roleIds.has(role as UserRole)) return <NotFoundPage />;
   if (sessionRole !== role)
@@ -187,9 +180,8 @@ export default function App() {
   if (isBooting) return <SiteLoader />;
 
   return (
-    <>
+    <ThemeProvider>
       <SmoothScroll />
-<<<<<<< HEAD
       <SiteThemeToggle />
       <Suspense fallback={<SiteLoader />}>
         <Routes>
@@ -201,15 +193,5 @@ export default function App() {
         </Routes>
       </Suspense>
     </ThemeProvider>
-=======
-      <Routes>
-        <Route path="/" element={<LandingRoute />} />
-        <Route path="/auth" element={<AuthRoute />} />
-        <Route path="/prototype" element={<PrototypeRoute />} />
-        <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </>
->>>>>>> origin/Gaurav
   );
 }
