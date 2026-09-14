@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   Check,
   ClipboardCheck,
+  Code2,
   LayoutDashboard,
   LockKeyhole,
   Mail,
@@ -86,7 +87,7 @@ export default function AuthPage({
     setAuthenticating(false);
   };
 
-  const handleGitHubLogin = async () => {
+  const handleOAuthLogin = async (provider: "github" | "google") => {
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
@@ -98,7 +99,7 @@ export default function AuthPage({
       import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
       window.location.origin;
     const { error } = await supabaseAuth.auth.signInWithOAuth({
-      provider: "github",
+      provider,
       options: { redirectTo: `${siteUrl}/auth` },
     });
     if (error) {
@@ -282,10 +283,21 @@ export default function AuthPage({
           <div className="auth-providers">
             <button
               type="button"
-              onClick={() => void handleGitHubLogin()}
+              onClick={() => void handleOAuthLogin("github")}
               disabled={authenticating}
             >
-              <span className="provider-github">GH</span> GitHub
+              <Code2 size={16} aria-hidden="true" />
+              <span>GitHub</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleOAuthLogin("google")}
+              disabled={authenticating}
+            >
+              <span className="provider-google" aria-hidden="true">
+                G
+              </span>
+              <span>Google</span>
             </button>
           </div>
           {authMessage && (
