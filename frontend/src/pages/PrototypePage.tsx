@@ -44,6 +44,11 @@ import { api } from "../api";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import { supabaseAuth } from "../supabaseClient";
 import ThemeToggle from "../components/ThemeToggle";
+import VoiceAssistant from "../components/VoiceAssistant";
+import BacklogManager from "../components/BacklogManager";
+import RecoverySimulator from "../components/RecoverySimulator";
+import StudentBacklogCharts from "../components/StudentBacklogCharts";
+import DepartmentCharts from "../components/DepartmentCharts";
 
 const dashboardByRole = {
   student: {
@@ -112,6 +117,7 @@ const dashboardNavigation = {
   student: [
     ["Dashboard", Home],
     ["My backlogs", Archive],
+    ["Recovery simulator", Gauge],
     ["Recovery plan", ClipboardList],
     ["Exams", ClipboardCheck],
     ["Progress", LineChart],
@@ -120,8 +126,8 @@ const dashboardNavigation = {
   mentor: [
     ["Dashboard", Home],
     ["Students", UsersRound],
-    ["Interventions", HandHelping],
     ["Patterns", BarChart3],
+    ["Interventions", HandHelping],
     ["Alerts", Bell],
     ["Reports", FileText],
   ],
@@ -137,8 +143,8 @@ const dashboardNavigation = {
   ],
   exam: [
     ["Dashboard", Home],
-    ["Registrations", ClipboardCheck],
     ["Eligibility", ShieldCheck],
+    ["Registrations", ClipboardCheck],
     ["Fee clearance", FileText],
     ["Alerts", Bell],
     ["Reports", LineChart],
@@ -146,8 +152,8 @@ const dashboardNavigation = {
   placement: [
     ["Dashboard", Home],
     ["Students", UsersRound],
-    ["Readiness", BriefcaseBusiness],
     ["Backlog constraints", Archive],
+    ["Readiness", BriefcaseBusiness],
     ["Alerts", Bell],
     ["Reports", LineChart],
   ],
@@ -1791,7 +1797,11 @@ export default function PrototypePage({
         if (!active) return;
         setDashboardData(payload);
         setStudentId(
-          (current) => current || payload.students[0]?.student_id || "",
+          (current) =>
+            current ||
+            payload.student_id ||
+            payload.students[0]?.student_id ||
+            "",
         );
       })
       .catch((requestError) => {
@@ -2014,6 +2024,31 @@ export default function PrototypePage({
     setData(null);
     setDispatchLogs([]);
     setError("");
+  };
+
+  const handleVoiceCommand = async (command: string) => {
+    const normalized = command.toLowerCase();
+    if (normalized.includes("backlog")) {
+      handleTabSelect(role === "student" ? "My backlogs" : "Backlogs");
+      return "Opening backlog records.";
+    }
+    if (normalized.includes("recover") || normalized.includes("plan")) {
+      handleTabSelect(role === "student" ? "Recovery plan" : "Interventions");
+      return "Opening recovery planning.";
+    }
+    if (normalized.includes("notification") || normalized.includes("alert")) {
+      handleTabSelect(role === "student" ? "Notifications" : "Alerts");
+      return "Opening notifications.";
+    }
+    if (normalized.includes("student") || normalized.includes("case")) {
+      handleTabSelect("Students");
+      return "Opening student records.";
+    }
+    if (normalized.includes("dashboard") || normalized.includes("home")) {
+      handleTabSelect("Dashboard");
+      return "Opening the dashboard.";
+    }
+    return "Try saying backlog, recovery plan, notifications, students, or dashboard.";
   };
 
   return (
@@ -2269,6 +2304,15 @@ export default function PrototypePage({
 
                 {mode === "dashboard" &&
                   activeTab === "Dashboard" &&
+                  role !== "student" &&
+                  dashboardData && (
+                    <div className="px-8 pb-6">
+                      <DepartmentCharts dashboard={dashboardData} />
+                    </div>
+                  )}
+
+                {mode === "dashboard" &&
+                  activeTab === "Dashboard" &&
                   onSwitchRole && (
                     <div className="px-8 pb-8">
                       <RecoveryJourney
@@ -2301,6 +2345,21 @@ export default function PrototypePage({
           !dashboardLoading &&
           (activeTab === "Profile" ? (
             <ProfileView role={role} />
+          ) : activeTab === "My backlogs" && role === "student" ? (
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              {studentId ? (
+                <div className="flex flex-col gap-6 px-8 py-8">
+                  <BacklogManager studentId={studentId} />
+                  <StudentBacklogCharts studentId={studentId} />
+                </div>
+              ) : (
+                <TabSkeleton />
+              )}
+            </div>
+          ) : activeTab === "Recovery simulator" && role === "student" ? (
+            <div className="flex-1 overflow-y-auto scrollbar-thin">
+              <RecoverySimulator studentId={studentId || undefined} />
+            </div>
           ) : (
             <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
               <DashboardTabView
@@ -2530,6 +2589,10 @@ export default function PrototypePage({
               </div>
             )}
           </div>
+        )}
+
+        {mode === "dashboard" && (
+          <VoiceAssistant onCommand={handleVoiceCommand} />
         )}
 
         {/* Prototype sections (outside the flex-1 div since they are the only content) */}

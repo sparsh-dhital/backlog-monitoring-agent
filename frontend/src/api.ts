@@ -2,6 +2,7 @@ import type {
   DashboardData,
   OrchestrationData,
   ActivityEvent,
+  BacklogRow,
 } from "./types/agent";
 import { supabaseAuth } from "./supabaseClient";
 import type { UserRole } from "./types/roles";
@@ -69,6 +70,47 @@ export const api = {
     request<{ events: ActivityEvent[] }>(
       `/api/dispatch/activity/${encodeURIComponent(studentId)}`,
     ),
+  backlogs: (studentId?: string) => {
+    const query = studentId
+      ? `?student_id=${encodeURIComponent(studentId)}`
+      : "";
+    return request<{ backlogs: BacklogRow[]; total: number }>(
+      `/api/backlogs${query}`,
+    );
+  },
+  createBacklog: (payload: {
+    course_code: string;
+    attempts_made: number;
+    status: "PENDING" | "CLEARED" | "EXHAUSTED";
+    student_id?: string;
+  }) =>
+    request<{ backlog: BacklogRow | null }>("/api/backlogs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  deleteBacklog: (backlogId: string) =>
+    request<{ deleted: string }>(
+      `/api/backlogs/${encodeURIComponent(backlogId)}`,
+      { method: "DELETE" },
+    ),
+  seedDemoBacklogs: (studentId?: string) => {
+    const query = studentId
+      ? `?student_id=${encodeURIComponent(studentId)}`
+      : "";
+    return request<{ created: number; skipped: number }>(
+      `/api/backlogs/demo${query}`,
+      { method: "POST" },
+    );
+  },
+  clearDemoBacklogs: (studentId?: string) => {
+    const query = studentId
+      ? `?student_id=${encodeURIComponent(studentId)}`
+      : "";
+    return request<{ deleted: number }>(`/api/backlogs/demo${query}`, {
+      method: "DELETE",
+    });
+  },
   approve: (studentId: string, mentorId: string) =>
     request<{ status: string }>(
       `/api/approve-intervention/${encodeURIComponent(studentId)}?mentor_id=${encodeURIComponent(mentorId)}`,

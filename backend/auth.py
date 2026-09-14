@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client, create_client
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 _auth_scheme = HTTPBearer(auto_error=False)
 _supabase_url = os.environ.get("SUPABASE_URL")
@@ -73,7 +74,12 @@ def require_user(
     if demo_role and os.environ.get("DEMO_LOGIN_ENABLED", "false").lower() == "true":
         if demo_role not in _demo_roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid demo role")
-        return {"id": f"demo-{demo_role}", "role": demo_role, "demo": True}
+        return {
+            "id": f"demo-{demo_role}",
+            "role": demo_role,
+            "student_id": "STU002" if demo_role == "student" else None,
+            "demo": True,
+        }
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -109,16 +115,52 @@ def require_user(
 
 def user_role(user) -> str | None:
     """Role claim carried on the Supabase user's metadata."""
-    metadata = getattr(user, "user_metadata", None) or {}
+    metadata = user if isinstance(user, dict) else getattr(user, "user_metadata", None) or {}
     role = metadata.get("role")
     return role if role in VALID_ROLES else None
 
 
 def user_student_id(user) -> str | None:
     """The student record this account belongs to, if any."""
-    metadata = getattr(user, "user_metadata", None) or {}
+    metadata = user if isinstance(user, dict) else getattr(user, "user_metadata", None) or {}
     value = metadata.get("student_id")
     return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def user_email(user) -> str | None:
+    """Return the authenticated email for OAuth/profile matching."""
+    if isinstance(user, dict):
+        value = user.get("email")
+    else:
+        value = getattr(user, "email", None)
+    return value.strip().lower() if isinstance(value, str) and value.strip() else None
+
+
+def linked_student_id(user) -> str | None:
+    """Resolve a student metadata id, then fall back to the verified profile email."""
+    direct = user_student_id(user)
+    if direct or user_role(user) != "student":
+        return direct
+    email = user_email(user)
+    if not email:
+        return None
+    if _auth_client is not None:
+        try:
+            result = (
+                _auth_client.table(os.environ.get("REGISTRATION_TABLE", "profiles"))
+                .select("registration_number")
+                .eq("email", email)
+                .eq("role", "student")
+                .limit(1)
+                .execute()
+            )
+            record = (result.data or [None])[0]
+            registration_number = record.get("registration_number") if record else None
+            if isinstance(registration_number, str) and registration_number.strip():
+                return registration_number.strip()
+        except Exception:
+            pass
+    return email.split("@", 1)[0].strip().upper()
 
 
 def require_role(*allowed: str):
@@ -155,7 +197,7 @@ def require_student(user=Depends(require_user)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This view is for student accounts.",
         )
-    student_id = user_student_id(user)
+    student_id = linked_student_id(user)
     if not student_id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

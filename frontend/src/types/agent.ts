@@ -63,6 +63,7 @@ export interface DashboardStudent {
 }
 
 export interface DashboardData {
+  student_id?: string | null;
   student_count: number;
   active_backlog_count: number;
   critical_case_count: number;

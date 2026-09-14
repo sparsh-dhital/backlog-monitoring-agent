@@ -39,6 +39,7 @@ export default function AuthPage({
   const [authMessage, setAuthMessage] = useState("");
   const [authenticating, setAuthenticating] = useState(false);
   const [registrationPhone, setRegistrationPhone] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
   const isAllowedInstitutionEmail = (email: string) =>
@@ -92,7 +93,36 @@ export default function AuthPage({
         savedRole && userRoles.some((item) => item.id === savedRole)
           ? savedRole
           : selectedRole;
-      if (role) onContinue(role);
+      if (role) {
+        const pendingStudentId = sessionStorage.getItem(
+          "edurecover-pending-student-id",
+        );
+        const existingStudentId = data.session.user.user_metadata?.student_id;
+        const emailStudentId =
+          role === "student"
+            ? data.session.user.email?.split("@", 1)[0]?.trim().toUpperCase()
+            : undefined;
+        const { error: metadataError } = await supabaseAuth.auth.updateUser({
+          data: {
+            role,
+            ...(role === "student"
+              ? {
+                  student_id:
+                    pendingStudentId || existingStudentId || emailStudentId,
+                }
+              : {}),
+          },
+        });
+        if (metadataError) {
+          if (active) {
+            setAuthMessage(metadataError.message);
+            setAuthenticating(false);
+          }
+          return;
+        }
+        sessionStorage.removeItem("edurecover-pending-student-id");
+        onContinue(role);
+      }
     });
     return () => {
       active = false;
@@ -136,6 +166,15 @@ export default function AuthPage({
         if (error) throw error;
         if (!data.session)
           throw new Error("Verification did not create a session.");
+        const { error: metadataError } = await supabaseAuth.auth.updateUser({
+          data: {
+            role: selectedRole,
+            ...(selectedRole === "student"
+              ? { student_id: registrationNumber }
+              : {}),
+          },
+        });
+        if (metadataError) throw metadataError;
         sessionStorage.removeItem("edurecover-demo-role");
         sessionStorage.setItem("edurecover-role", selectedRole);
         sessionStorage.removeItem("edurecover-pending-role");
@@ -160,6 +199,12 @@ export default function AuthPage({
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
+    if (selectedRole === "student" && registrationNumber.trim()) {
+      sessionStorage.setItem(
+        "edurecover-pending-student-id",
+        registrationNumber.trim().toUpperCase(),
+      );
+    }
     const siteUrl =
       import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
       window.location.origin;
@@ -183,6 +228,7 @@ export default function AuthPage({
     setSelectedRole(role);
     setOtpSent(false);
     setRegistrationPhone("");
+    setRegistrationNumber("");
     setAuthMessage("");
   };
 
@@ -299,6 +345,10 @@ export default function AuthPage({
                 <input
                   required
                   name="registrationNumber"
+                  value={registrationNumber}
+                  onChange={(event) =>
+                    setRegistrationNumber(event.target.value)
+                  }
                   placeholder="Enter your registration number"
                 />
               </div>

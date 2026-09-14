@@ -19,8 +19,8 @@ from auth import (
     require_role,
     require_student,
     require_user,
+    linked_student_id,
     user_role,
-    user_student_id,
 )
 
 load_dotenv()
@@ -152,13 +152,28 @@ def _interventions() -> list[dict]:
         return []
 
 
-@app.get("/api/dashboard", dependencies=[Depends(require_role(*STAFF_ROLES))])
-def dashboard():
+@app.get("/api/dashboard")
+def dashboard(user=Depends(require_user)):
     pending = _pending_backlogs()
+    student_id = None
+    if user_role(user) == "student":
+        student_id = linked_student_id(user)
+        if not student_id:
+            raise HTTPException(
+                status_code=409,
+                detail="This student account is not linked to a student record.",
+            )
+        pending = [item for item in pending if item.get("student_id") == student_id]
+    elif user_role(user) not in STAFF_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This view requires one of: {', '.join(STAFF_ROLES)}.",
+        )
     students = _student_rows(pending)
     course_counts = Counter(item.get("course_code", "Unknown") for item in pending)
 
     return {
+        "student_id": student_id,
         "student_count": len(students),
         "active_backlog_count": len(pending),
         "critical_case_count": sum(item["status"] == "CRITICAL" for item in students),
@@ -201,7 +216,7 @@ def _target_student(user, requested: Optional[str]) -> str:
     """
     role = user_role(user)
     if role == "student":
-        own = user_student_id(user)
+        own = linked_student_id(user)
         if not own:
             raise HTTPException(
                 status_code=409,
@@ -347,7 +362,7 @@ def delete_backlog(backlog_id: str, user=Depends(require_user)):
         raise HTTPException(status_code=404, detail="That backlog no longer exists.")
 
     # A student may only delete rows on their own record.
-    if user_role(user) == "student" and found[0].get("student_id") != user_student_id(user):
+    if user_role(user) == "student" and found[0].get("student_id") != linked_student_id(user):
         raise HTTPException(status_code=403, detail="That record belongs to another student.")
 
     try:
@@ -361,9 +376,9 @@ def delete_backlog(backlog_id: str, user=Depends(require_user)):
 def me(user=Depends(require_user)):
     """Identity the front end trusts for routing, instead of sessionStorage."""
     return {
-        "email": getattr(user, "email", None),
+        "email": user.get("email") if isinstance(user, dict) else getattr(user, "email", None),
         "role": user_role(user),
-        "student_id": user_student_id(user),
+        "student_id": linked_student_id(user),
     }
 
 
@@ -523,8 +538,13 @@ def hindi_speech(request: TranslationRequest):
 def evaluate_student(student_id: str):
     return evaluate_student_progression(supabase, student_id)
 
-@app.get("/api/orchestrate/{student_id}", dependencies=[Depends(require_role(*STAFF_ROLES))])
-def run_orchestration(student_id: str):
+@app.get("/api/orchestrate/{student_id}")
+def run_orchestration(student_id: str, user=Depends(require_user)):
+    role = user_role(user)
+    if role not in STAFF_ROLES and not (
+        role == "student" and linked_student_id(user) == student_id
+    ):
+        raise HTTPException(status_code=403, detail="You cannot access this student record.")
     return orchestrate_agent_35_workflow(supabase, student_id)
 
 @app.post("/api/orchestrate/{student_id}", dependencies=[Depends(require_role(*STAFF_ROLES))])
