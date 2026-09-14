@@ -189,12 +189,6 @@ export default function LandingPage({
           aria-label="Academic command center preview"
         >
           <div className="visual-glow" />
-          <div className="campus-shape">
-            <span className="campus-window one" />
-            <span className="campus-window two" />
-            <span className="campus-window three" />
-            <span className="campus-roof" />
-          </div>
           <div className="dashboard-preview">
             <div className="preview-top">
               <div className="mini-brand">

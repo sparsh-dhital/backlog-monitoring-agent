@@ -41,17 +41,57 @@ export default function AuthPage({
 
   useEffect(() => {
     let active = true;
-    supabaseAuth.auth.getSession().then(({ data }) => {
+    void (async () => {
+      const { data } = await supabaseAuth.auth.getSession();
       if (!active || !data.session) return;
+
       const savedRole = sessionStorage.getItem(
         "edurecover-pending-role",
       ) as UserRole | null;
-      onContinue(
-        savedRole && userRoles.some((role) => role.id === savedRole)
-          ? savedRole
-          : selectedRole,
-      );
-    });
+      const existingRole = data.session.user.user_metadata?.role as
+        | UserRole
+        | undefined;
+
+      // OAuth sign-in carries no metadata, so an account returning from the
+      // provider would have no role and be refused by every API route.
+      // Stamp the role it signed up with the first time it lands here.
+      let effectiveRole =
+        existingRole && userRoles.some((role) => role.id === existingRole)
+          ? existingRole
+          : savedRole && userRoles.some((role) => role.id === savedRole)
+            ? savedRole
+            : selectedRole;
+
+      if (!existingRole) {
+        const { error } = await supabaseAuth.auth.updateUser({
+          data: { role: effectiveRole },
+        });
+        if (error) {
+          if (!active) return;
+          setAuthMessage(
+            `Signed in, but the account role could not be saved: ${error.message}`,
+          );
+          return;
+        }
+        // Refresh the token so the new claim reaches the API immediately.
+        await supabaseAuth.auth.refreshSession();
+      }
+
+      if (!active) return;
+      if (effectiveRole === "student") {
+        const { data: refreshed } = await supabaseAuth.auth.getUser();
+        if (!refreshed.user?.user_metadata?.student_id) {
+          setAuthMessage(
+            "This account has no student ID linked. Ask an administrator to set one, or sign up with a student ID.",
+          );
+          effectiveRole = "student";
+        }
+      }
+
+      sessionStorage.setItem("edurecover-role", effectiveRole);
+      sessionStorage.removeItem("edurecover-pending-role");
+      onContinue(effectiveRole);
+    })();
     return () => {
       active = false;
     };
@@ -59,15 +99,38 @@ export default function AuthPage({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "").trim();
+    const password = String(form.get("password") || "");
+    const studentId = String(form.get("student_id") || "")
+      .trim()
+      .toUpperCase();
+
+    // A student account is useless without the record it points at, so the
+    // link is required up front rather than discovered as an empty dashboard.
+    if (mode === "signup" && selectedRole === "student" && !studentId) {
+      setAuthMessage("Enter the student ID this account belongs to.");
+      return;
+    }
+
     setAuthenticating(true);
     setAuthMessage("");
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") || "");
-    const password = String(form.get("password") || "");
     const result =
       mode === "signin"
         ? await supabaseAuth.auth.signInWithPassword({ email, password })
-        : await supabaseAuth.auth.signUp({ email, password });
+        : await supabaseAuth.auth.signUp({
+            email,
+            password,
+            // The role travels with the account, so the API can authorize it.
+            options: {
+              data: {
+                role: selectedRole,
+                ...(selectedRole === "student"
+                  ? { student_id: studentId }
+                  : {}),
+              },
+            },
+          });
     if (result.error) {
       setAuthMessage(result.error.message);
       setAuthenticating(false);
@@ -80,9 +143,51 @@ export default function AuthPage({
       setAuthenticating(false);
       return;
     }
-    sessionStorage.setItem("edurecover-role", selectedRole);
+
+    // Trust the role stored on the account, never the picker — the picker is
+    // only a signup-time choice, and sessionStorage is user-editable.
+    const accountRole = result.data.user?.user_metadata?.role as
+      | UserRole
+      | undefined;
+    const effectiveRole =
+      accountRole && userRoles.some((role) => role.id === accountRole)
+        ? accountRole
+        : selectedRole;
+
+    if (mode === "signin" && accountRole && accountRole !== selectedRole) {
+      setAuthMessage(
+        `This account is registered as ${
+          userRoles.find((role) => role.id === accountRole)?.label ??
+          accountRole
+        }. Opening that workspace.`,
+      );
+    }
+
+    // Accounts created before roles existed carry no claim, so the API would
+    // refuse them. Adopt the selected role once, then refresh so the new claim
+    // is in the token the very next request uses.
+    if (!accountRole) {
+      const { error: claimError } = await supabaseAuth.auth.updateUser({
+        data: {
+          role: effectiveRole,
+          ...(effectiveRole === "student" && studentId
+            ? { student_id: studentId }
+            : {}),
+        },
+      });
+      if (claimError) {
+        setAuthMessage(
+          `Signed in, but the account role could not be saved: ${claimError.message}`,
+        );
+        setAuthenticating(false);
+        return;
+      }
+      await supabaseAuth.auth.refreshSession();
+    }
+
+    sessionStorage.setItem("edurecover-role", effectiveRole);
     sessionStorage.removeItem("edurecover-pending-role");
-    onContinue(selectedRole);
+    onContinue(effectiveRole);
     setAuthenticating(false);
   };
 
@@ -251,6 +356,26 @@ export default function AuthPage({
                 />
               </div>
             </label>
+            {selectedRole === "student" && (
+              <label>
+                <span>
+                  Your student ID
+                  {mode === "signin" && (
+                    <small> — only needed if not already linked</small>
+                  )}
+                </span>
+                <div className="auth-input">
+                  <UserRound size={17} />
+                  <input
+                    required={mode === "signup"}
+                    name="student_id"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="e.g. STU002"
+                  />
+                </div>
+              </label>
+            )}
             <div className="auth-form-meta">
               <label className="remember">
                 <input type="checkbox" /> <span>Remember me</span>

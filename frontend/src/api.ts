@@ -1,11 +1,22 @@
 import type {
+  AlertFeed,
+  CourseRow,
   DashboardData,
+  ExamRegistrationFeed,
+  Identity,
+  InterventionRow,
   OrchestrationData,
   ActivityEvent,
+  StudentDirectory,
 } from "./types/agent";
 import { supabaseAuth } from "./supabaseClient";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+/** A stalled backend accepts the socket but never answers, so requests need
+ *  their own deadline — otherwise the UI waits on a skeleton indefinitely.
+ *  Kept generous enough to survive a Render free-tier cold start. */
+const REQUEST_TIMEOUT_MS = 45000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -16,12 +27,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
   }
+  const controller = new AbortController();
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS,
+  );
   try {
-    response = await fetch(`${API_URL}${path}`, { ...init, headers });
-  } catch {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (requestError) {
+    if (
+      requestError instanceof DOMException &&
+      requestError.name === "AbortError"
+    ) {
+      throw new Error(
+        `The backend at ${API_URL} did not respond within ${REQUEST_TIMEOUT_MS / 1000}s. It may be stalled — restart the API server.`,
+        { cause: requestError },
+      );
+    }
     throw new Error(
       `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,
+      { cause: requestError },
     );
+  } finally {
+    window.clearTimeout(timeout);
   }
   const contentType = response.headers.get("content-type") || "";
   if (!response.ok || !contentType.includes("application/json")) {
@@ -41,6 +73,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  me: () => request<Identity>("/api/me"),
+  mySummary: () => request<OrchestrationData>("/api/me/summary"),
+  students: (params: {
+    search?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params.search) query.set("search", params.search);
+    if (params.status) query.set("status_filter", params.status);
+    query.set("page", String(params.page ?? 1));
+    query.set("page_size", String(params.pageSize ?? 20));
+    return request<StudentDirectory>(`/api/students?${query.toString()}`);
+  },
+  courses: () => request<{ courses: CourseRow[] }>("/api/courses"),
+  alerts: () => request<AlertFeed>("/api/alerts"),
+  interventions: () =>
+    request<{ interventions: InterventionRow[]; total: number }>(
+      "/api/interventions",
+    ),
+  examRegistrations: () =>
+    request<ExamRegistrationFeed>("/api/exam-registrations"),
   dashboard: () => request<DashboardData>("/api/dashboard"),
   orchestration: (studentId: string, customFeeds?: Record<string, unknown>) => {
     const path = `/api/orchestrate/${encodeURIComponent(studentId)}`;

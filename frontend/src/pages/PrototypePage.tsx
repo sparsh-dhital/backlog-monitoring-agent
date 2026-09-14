@@ -9,7 +9,6 @@ import {
   ArrowUpRight,
   BarChart3,
   Bell,
-  BriefcaseBusiness,
   Check,
   CircleAlert,
   CircleUserRound,
@@ -19,14 +18,13 @@ import {
   FileJson,
   FileSpreadsheet,
   FileText,
+  FlaskConical,
   Gauge,
   Home,
-  LineChart,
   QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
-  Settings,
   Sparkles,
   Users,
   UsersRound,
@@ -41,6 +39,8 @@ import type {
 import { userRoles, type UserRole } from "../types/roles";
 import { api } from "../api";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
+import RecoverySimulator from "../components/RecoverySimulator";
+import DepartmentCharts from "../components/DepartmentCharts";
 import { supabaseAuth } from "../supabaseClient";
 
 const dashboardByRole = {
@@ -49,71 +49,41 @@ const dashboardByRole = {
     greeting: "Good morning, Rahul.",
     description:
       "Here is what needs your attention, and the next step that keeps your degree on track.",
-    metrics: [
-      ["Active backlogs", "3", "Across two semesters"],
-      ["Attempts remaining", "2", "Regulation checked"],
-      ["At risk", "1", "Needs a decision"],
-      ["Recovery progress", "78%", "Up 12% this term"],
-    ],
   },
   mentor: {
     title: "My Students",
     greeting: "Good morning, mentor.",
     description:
       "A focused queue of students who need a conversation, an intervention, or a little more context.",
-    metrics: [
-      ["Students", "42", "Your current group"],
-      ["Need attention", "8", "Priority queue"],
-      ["Repeated failures", "5", "Patterns detected"],
-      ["Backlogs cleared", "12", "This term"],
-    ],
   },
   hod: {
     title: "Academic Command Center",
     greeting: "Good morning, HOD.",
     description:
       "See the department-wide picture, then open the cases behind the trend before they become harder to recover.",
-    metrics: [
-      ["Active backlogs", "214", "12% less last term"],
-      ["Students affected", "87", "8% less last term"],
-      ["Duration risk", "13", "Needs attention"],
-      ["Critical cases", "9", "Review required"],
-    ],
   },
   exam: {
     title: "Examination Operations",
     greeting: "Good morning, examination cell.",
     description:
       "Keep supplementary registration, eligibility, fee clearance and attempts together in one operational view.",
-    metrics: [
-      ["Eligible", "84", "Ready to register"],
-      ["Pending fee", "13", "Needs follow-up"],
-      ["Condonation", "4", "Under review"],
-      ["Detained", "2", "Requires action"],
-    ],
   },
   placement: {
     title: "Placement Readiness",
     greeting: "Good morning, placement cell.",
     description:
       "See which students are ready, which are recovering, and which backlog is blocking the next opportunity.",
-    metrics: [
-      ["Placement eligible", "438", "Current cohort"],
-      ["Backlog constrained", "31", "Needs recovery"],
-      ["Recovering", "18", "Intervention active"],
-      ["Ready after clearance", "12", "Near-term wins"],
-    ],
   },
 } as const;
 
+/* Every entry below resolves to a real endpoint. Tabs that had no data
+   source (Reports, Progress, Readiness, Notifications, Settings) were
+   removed rather than left rendering placeholder rows. */
 const dashboardNavigation = {
   student: [
     ["Dashboard", Home],
     ["My backlogs", Archive],
-    ["Recovery plan", Sparkles],
-    ["Exams", ClipboardCheck],
-    ["Progress", LineChart],
-    ["Notifications", Bell],
+    ["Simulator", FlaskConical],
   ],
   mentor: [
     ["Dashboard", Home],
@@ -121,7 +91,6 @@ const dashboardNavigation = {
     ["Interventions", Sparkles],
     ["Patterns", BarChart3],
     ["Alerts", Bell],
-    ["Reports", FileText],
   ],
   hod: [
     ["Dashboard", Home],
@@ -131,7 +100,6 @@ const dashboardNavigation = {
     ["Interventions", Sparkles],
     ["Examinations", ClipboardCheck],
     ["Alerts", Bell],
-    ["Reports", FileText],
   ],
   exam: [
     ["Dashboard", Home],
@@ -139,15 +107,11 @@ const dashboardNavigation = {
     ["Eligibility", ShieldCheck],
     ["Fee clearance", FileText],
     ["Alerts", Bell],
-    ["Reports", LineChart],
   ],
   placement: [
     ["Dashboard", Home],
-    ["Students", UsersRound],
-    ["Readiness", BriefcaseBusiness],
     ["Backlog constraints", Archive],
     ["Alerts", Bell],
-    ["Reports", LineChart],
   ],
 } as const;
 
@@ -156,11 +120,13 @@ function DashboardSidebar({
   activeTab,
   onSelect,
   onLogout,
+  alertCount,
 }: {
   role: UserRole;
   activeTab: string;
   onSelect: (tab: string) => void;
   onLogout: () => void;
+  alertCount: number;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
@@ -226,7 +192,7 @@ function DashboardSidebar({
                 }
               />
               <span className="flex-1 text-left">{label}</span>
-              {label === "Alerts" && (
+              {label === "Alerts" && alertCount > 0 && (
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     activeTab === label
@@ -234,7 +200,7 @@ function DashboardSidebar({
                       : "bg-rose-100 text-rose-600"
                   }`}
                 >
-                  3
+                  {alertCount}
                 </span>
               )}
             </button>
@@ -244,24 +210,6 @@ function DashboardSidebar({
 
       {/* Bottom */}
       <div className="dashboard-sidebar-actions px-3 py-3 border-t border-slate-100 flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onSelect("Settings")}
-          aria-current={activeTab === "Settings" ? "page" : undefined}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight transition-all duration-150 ${
-            activeTab === "Settings"
-              ? "bg-indigo-600 text-white"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-          }`}
-        >
-          <Settings
-            size={17}
-            className={
-              activeTab === "Settings" ? "text-indigo-200" : "text-slate-400"
-            }
-          />
-          <span>Settings</span>
-        </button>
         <button
           type="button"
           onClick={onLogout}
@@ -286,7 +234,7 @@ function DashboardSidebar({
           >
             <Icon size={19} />
             <span>{label === "Dashboard" ? "Overview" : label}</span>
-            {label === "Alerts" && <b>3</b>}
+            {label === "Alerts" && alertCount > 0 && <b>{alertCount}</b>}
           </button>
         ))}
         <button
@@ -316,20 +264,9 @@ function DashboardSidebar({
               >
                 <Icon size={17} />
                 <span>{label}</span>
-                {label === "Alerts" && <b>3</b>}
+                {label === "Alerts" && alertCount > 0 && <b>{alertCount}</b>}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => {
-                setMoreOpen(false);
-                onSelect("Settings");
-              }}
-              className={activeTab === "Settings" ? "is-active" : ""}
-            >
-              <Settings size={17} />
-              <span>Settings</span>
-            </button>
             <button type="button" onClick={onLogout}>
               <ArrowLeft size={17} />
               <span>Log out</span>
@@ -341,7 +278,19 @@ function DashboardSidebar({
   );
 }
 
-function DashboardTopbar({ role }: { role: UserRole }) {
+function DashboardTopbar({
+  role,
+  search,
+  onSearchChange,
+  alertCount,
+  onOpenAlerts,
+}: {
+  role: UserRole;
+  search: string;
+  onSearchChange: (value: string) => void;
+  alertCount: number;
+  onOpenAlerts: () => void;
+}) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
@@ -373,21 +322,38 @@ function DashboardTopbar({ role }: { role: UserRole }) {
         <Search size={15} className="text-slate-400 shrink-0" />
         <input
           aria-label="Search dashboard"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
           className="bg-transparent border-none outline-none text-sm text-slate-700 w-full placeholder:text-slate-400"
-          placeholder="Search students, courses, or IDs..."
+          placeholder="Search students or courses..."
         />
+        {search && (
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            aria-label="Clear search"
+            className="text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-4">
-        {/* Notification bell */}
+        {/* Notification bell — count comes from the live alert feed */}
         <button
           type="button"
-          aria-label="Notifications"
+          onClick={onOpenAlerts}
+          aria-label={`Notifications: ${alertCount} active`}
           className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-150"
         >
           <Bell size={19} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+          {alertCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full ring-2 ring-white">
+              {alertCount}
+            </span>
+          )}
         </button>
 
         <div className="w-px h-7 bg-slate-200" />
@@ -530,162 +496,10 @@ function HodCommandCenter({
         </span>
       </div>
 
-      {/* Top 3-column grid */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        {/* Bar chart card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Trend
-              </p>
-              <h3 className="text-sm font-bold text-slate-800">
-                Backlogs by course
-              </h3>
-            </div>
-            <ArrowUpRight size={16} className="text-slate-300" />
-          </div>
-          <div
-            className="flex items-end gap-2 h-24"
-            aria-label="Backlogs by course chart"
-          >
-            {dashboard.course_patterns.slice(0, 6).map((pattern, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center gap-1 flex-1"
-              >
-                <div
-                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all duration-500"
-                  style={{
-                    height: `${Math.min(100, pattern.count * 10)}%`,
-                    minHeight: 8,
-                  }}
-                />
-                <span className="text-[9px] text-slate-400 font-medium truncate w-full text-center">
-                  {pattern.course_code}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Failure patterns card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Pattern detection
-              </p>
-              <h3 className="text-sm font-bold text-slate-800">
-                Failure patterns
-              </h3>
-            </div>
-            <Sparkles size={16} className="text-violet-400" />
-          </div>
-          <div className="flex flex-col gap-3">
-            {dashboard.course_patterns.map((pattern) => (
-              <div
-                key={pattern.course_code}
-                className="flex items-center gap-3"
-              >
-                <span className="text-[10px] font-mono font-bold text-slate-500 w-14 shrink-0">
-                  {pattern.course_code}
-                </span>
-                <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-rose-400 to-orange-400 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, pattern.count * 10)}%` }}
-                  />
-                </div>
-                <span className="text-xs font-bold text-slate-700 w-5 text-right">
-                  {pattern.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recoverability card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Assessment
-              </p>
-              <h3 className="text-sm font-bold text-slate-800">
-                Recoverability
-              </h3>
-            </div>
-            <Gauge size={16} className="text-slate-300" />
-          </div>
-          {/* Donut ring visual */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
-              <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9"
-                  fill="none"
-                  stroke="#f1f5f9"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9"
-                  fill="none"
-                  stroke="#6366f1"
-                  strokeWidth="3"
-                  strokeDasharray="54 46"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9"
-                  fill="none"
-                  stroke="#a78bfa"
-                  strokeWidth="3"
-                  strokeDasharray="32 68"
-                  strokeDashoffset="-54"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9"
-                  fill="none"
-                  stroke="#f97316"
-                  strokeWidth="3"
-                  strokeDasharray="14 86"
-                  strokeDashoffset="-86"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-xl font-extrabold text-slate-900 leading-none">
-                  {dashboard.active_backlog_count}
-                </span>
-                <span className="text-[9px] text-slate-400">Total</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 text-xs">
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />{" "}
-                Routine 54%
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-violet-400" />{" "}
-                Structured 32%
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />{" "}
-                Intensive 14%
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Validated chart suite — replaces the earlier placeholder visuals,
+          whose donut carried hardcoded percentages rather than real data. */}
+      <div className="mb-4">
+        <DepartmentCharts dashboard={dashboard} />
       </div>
 
       {/* Bottom 2-column grid */}
@@ -797,539 +611,499 @@ function HodCommandCenter({
   );
 }
 
-const tabContent = {
+type Tone = "danger" | "success" | "warning" | "neutral";
+
+interface TabRow {
+  key: string;
+  cells: string[];
+  tone: Tone;
+  studentId?: string;
+}
+
+const tabMeta: Record<
+  string,
+  { eyebrow: string; title: string; description: string; columns: string[] }
+> = {
   Students: {
     eyebrow: "Student directory",
     title: "Students needing context",
     description:
-      "Move from department signals to the student record behind the signal.",
-    rows: [
-      ["Rahul Sharma", "CSE · 2026", "3 active backlogs", "Critical"],
-      ["Priya Rao", "CSE · 2026", "2 active backlogs", "Review"],
-      ["Kiran Das", "IT · 2026", "1 active backlog", "Recovering"],
-      ["Ananya Singh", "CSE · 2025", "2 active backlogs", "Duration risk"],
-    ],
+      "Every student carrying a pending backlog, straight from the records.",
+    columns: ["Student", "Backlogs", "Attempts", "Status"],
   },
   Backlogs: {
     eyebrow: "Arrear register",
     title: "Backlog portfolio",
     description:
-      "Understand volume, repeated failures, and the cases closest to a missed recovery window.",
-    rows: [
-      [
-        "Data Structures",
-        "41 students",
-        "3.2 average attempts",
-        "High pressure",
-      ],
-      ["DBMS", "52 students", "2.1 average attempts", "Watch"],
-      ["Mathematics", "68 students", "1.8 average attempts", "Monitor"],
-      ["Operating Systems", "29 students", "1.6 average attempts", "Stable"],
-    ],
+      "Volume and repeated-failure pressure per course, across all pending arrears.",
+    columns: ["Course", "Students", "Average attempts", "Pressure"],
   },
   Patterns: {
     eyebrow: "Academic intelligence",
     title: "Patterns worth acting on",
-    description:
-      "The platform surfaces recurring failure and duration signals for human review.",
-    rows: [
-      [
-        "Repeated core-course failure",
-        "23 students",
-        "Data Structures + DBMS",
-        "Escalate",
-      ],
-      ["Attempt pressure", "14 students", "One attempt remaining", "Urgent"],
-      ["Duration pressure", "13 students", "Two semesters remaining", "Review"],
-      [
-        "Recovery momentum",
-        "12 students",
-        "Backlogs cleared this term",
-        "Positive",
-      ],
-    ],
+    description: "Courses where attempt pressure is concentrating.",
+    columns: ["Course", "Backlogs", "Peak attempts", "Signal"],
   },
   Interventions: {
     eyebrow: "Human decisions",
-    title: "Intervention queue",
-    description:
-      "Review recommendations, assign ownership, and track whether support is working.",
-    rows: [
-      ["Rahul Sharma", "Structured remedial", "Mentor sign-off", "Pending"],
-      ["Kiran Das", "Mentor meeting", "In progress", "Active"],
-      ["Priya Rao", "Supplementary registration", "Exam cell", "Ready"],
-    ],
+    title: "Intervention record",
+    description: "Approved recovery plans and who signed them off.",
+    columns: ["Student", "Action", "Mentor", "Status"],
+  },
+  Alerts: {
+    eyebrow: "Signals",
+    title: "Live alerts",
+    description: "Derived from current attempt and promotion thresholds.",
+    columns: ["Signal", "Scope", "Detail", "Severity"],
   },
   Examinations: {
     eyebrow: "Examination operations",
-    title: "Eligibility and attempts",
-    description:
-      "Keep registration, fee clearance, and regulation checks in one operational view.",
-    rows: [
-      ["Eligible to register", "84 students", "Next supplementary", "Ready"],
-      ["Pending fee clearance", "13 students", "Payment follow-up", "Action"],
-      ["Condonation review", "4 students", "HOD decision", "Review"],
-      ["Detained / debarred", "3 students", "Regulation check", "Restricted"],
-    ],
-  },
-  Alerts: {
-    eyebrow: "Signals and notifications",
-    title: "Recent alerts",
-    description:
-      "A focused stream of changes that may require a decision or a student conversation.",
-    rows: [
-      ["Attempt pressure", "14 students", "One attempt remaining", "2h ago"],
-      ["Duration risk", "6 students", "Near maximum duration", "5h ago"],
-      ["Recovery milestone", "12 students", "Backlog cleared", "Today"],
-    ],
-  },
-  Reports: {
-    eyebrow: "Evidence package",
-    title: "Academic reports",
-    description:
-      "Export a clear record of facts, calculations, recommendations, and outcomes.",
-    rows: [
-      [
-        "Department recovery report",
-        "August 2026",
-        "214 active backlogs",
-        "Export",
-      ],
-      [
-        "Intervention effectiveness",
-        "Term to date",
-        "72% clearance rate",
-        "Export",
-      ],
-      [
-        "Regulation compliance",
-        "Academic Regulation 2025",
-        "All cohorts",
-        "Export",
-      ],
-    ],
-  },
-  "My backlogs": {
-    eyebrow: "My academic record",
-    title: "Active backlogs",
-    description:
-      "See each course, attempt, and the next action available to you.",
-    rows: [
-      ["Data Structures", "2 attempts", "One attempt remaining", "Urgent"],
-      ["DBMS", "1 attempt", "Supplementary eligible", "Ready"],
-      ["Mathematics", "1 attempt", "Recovery plan active", "In progress"],
-    ],
-  },
-  "Recovery plan": {
-    eyebrow: "Recommended next steps",
-    title: "My recovery plan",
-    description:
-      "A clear sequence of actions built from your academic record and regulation checks.",
-    rows: [
-      ["Register for supplementary exam", "18 Sept", "Data Structures", "Next"],
-      ["Attend remedial class", "This week", "Core programming", "Scheduled"],
-      ["Meet your mentor", "20 Sept", "Review progress", "Pending"],
-    ],
-  },
-  Exams: {
-    eyebrow: "Exam opportunities",
-    title: "Supplementary exams",
-    description:
-      "Track eligibility, registration windows, and fee clearance for your next attempt.",
-    rows: [
-      ["Data Structures", "Attempt 3", "Registration open", "Eligible"],
-      ["DBMS", "Attempt 2", "Fee paid", "Registered"],
-      ["Mathematics", "Attempt 2", "Window opens soon", "Watch"],
-    ],
-  },
-  Progress: {
-    eyebrow: "Recovery journey",
-    title: "Progress over time",
-    description:
-      "Follow your backlog movement, completed interventions, and upcoming milestones.",
-    rows: [
-      ["Backlog clearance", "78%", "Up 12% this term", "Positive"],
-      ["Mentor actions", "4 of 5", "One meeting pending", "Active"],
-      ["Next milestone", "1 course", "Clear before placement review", "Focus"],
-    ],
-  },
-  Notifications: {
-    eyebrow: "Your notifications",
-    title: "Recent updates",
-    description:
-      "Important changes from examinations, mentors, and your recovery plan.",
-    rows: [
-      [
-        "Supplementary registration",
-        "Exam cell",
-        "Registration window is open",
-        "New",
-      ],
-      ["Mentor follow-up", "Prof. S. Dhital", "Meeting requested", "Action"],
-      [
-        "Recovery milestone",
-        "Academic support",
-        "Plan updated with evidence",
-        "Read",
-      ],
-    ],
+    title: "Registrations and eligibility",
+    description: "Fee clearance and eligibility for the current window.",
+    columns: ["Student", "Course", "Fee", "Eligibility"],
   },
   Registrations: {
-    eyebrow: "Registration desk",
+    eyebrow: "Examination operations",
     title: "Supplementary registrations",
-    description:
-      "Monitor registration status, attempt number, fees, and exceptions across the cohort.",
-    rows: [
-      ["Rahul Sharma", "Data Structures", "Attempt 3", "Paid"],
-      ["Priya Rao", "DBMS", "Attempt 2", "Pending fee"],
-      ["Kiran Das", "Mathematics", "Attempt 2", "Eligible"],
-    ],
+    description: "Every registration on record for the current window.",
+    columns: ["Student", "Course", "Fee", "Eligibility"],
   },
   Eligibility: {
-    eyebrow: "Regulation checks",
-    title: "Eligibility review",
-    description:
-      "See which students satisfy the current regulation and which cases require review.",
-    rows: [
-      ["Eligible", "84 students", "All criteria met", "Ready"],
-      ["Review required", "4 students", "Condonation needed", "Review"],
-      ["Restricted", "3 students", "Detained or debarred", "Action"],
-    ],
+    eyebrow: "Examination operations",
+    title: "Eligibility checks",
+    description: "Who may sit the next attempt, and who is blocked.",
+    columns: ["Student", "Course", "Fee", "Eligibility"],
   },
   "Fee clearance": {
-    eyebrow: "Finance checkpoint",
-    title: "Fee clearance",
-    description:
-      "Keep registration decisions aligned with payment status and the next exam window.",
-    rows: [
-      ["Paid", "71 students", "Registration can proceed", "Clear"],
-      ["Pending", "13 students", "Reminder required", "Action"],
-      ["Exception", "2 students", "Manual review", "Review"],
-    ],
-  },
-  Readiness: {
-    eyebrow: "Placement readiness",
-    title: "Student readiness",
-    description:
-      "Understand how backlog status affects placement preparation and opportunity access.",
-    rows: [
-      ["Ready", "438 students", "No blocking backlog", "Eligible"],
-      ["Recovering", "18 students", "Intervention active", "Track"],
-      ["Constrained", "31 students", "Backlog affects opportunities", "Review"],
-    ],
+    eyebrow: "Examination operations",
+    title: "Outstanding fees",
+    description: "Registrations still awaiting payment clearance.",
+    columns: ["Student", "Course", "Fee", "Eligibility"],
   },
   "Backlog constraints": {
-    eyebrow: "Placement constraints",
+    eyebrow: "Placement readiness",
     title: "Backlog-constrained students",
-    description:
-      "Coordinate recovery visibility with placement timelines without making placement decisions automatically.",
-    rows: [
-      ["DBMS clearance", "12 students", "Next hiring window", "Priority"],
-      ["Duration pressure", "8 students", "Final placement cycle", "Urgent"],
-      ["Recovery active", "11 students", "Mentor follow-up", "Track"],
-    ],
+    description: "Students whose pending arrears affect placement eligibility.",
+    columns: ["Student", "Backlogs", "Attempts", "Status"],
   },
-} as const;
+  "My backlogs": {
+    eyebrow: "My record",
+    title: "My pending backlogs",
+    description: "Every subject still open against your enrolment.",
+    columns: ["Course", "Attempts made", "Attempts left", "Status"],
+  },
+};
+
+const statusTone = (status: string): Tone => {
+  const value = status.toLowerCase();
+  if (
+    ["critical", "urgent", "high", "blocked", "debarred", "restricted"].some(
+      (key) => value.includes(key),
+    )
+  )
+    return "danger";
+  if (
+    ["eligible", "cleared", "stable", "approved", "active"].some((key) =>
+      value.includes(key),
+    )
+  )
+    return "success";
+  if (["review", "watch", "warning", "pending"].some((key) => value.includes(key)))
+    return "warning";
+  return "neutral";
+};
+
+/** Every tab resolves to one real request; nothing here is seeded with mock rows. */
+async function loadTab(
+  tab: string,
+  options: { search: string; status: string; page: number },
+): Promise<{ rows: TabRow[]; pageCount: number; total: number }> {
+  switch (tab) {
+    case "Students":
+    case "Backlog constraints": {
+      const payload = await api.students({
+        search: options.search,
+        status: options.status,
+        page: options.page,
+        pageSize: 15,
+      });
+      return {
+        pageCount: payload.page_count,
+        total: payload.total,
+        rows: payload.students.map((student) => ({
+          key: student.student_id,
+          studentId: student.student_id,
+          cells: [
+            student.student_id,
+            `${student.active_backlog_count} pending`,
+            `${student.max_attempts_made} max attempts`,
+            student.status,
+          ],
+          tone: statusTone(student.status),
+        })),
+      };
+    }
+    case "Backlogs": {
+      const { courses } = await api.courses();
+      return {
+        pageCount: 1,
+        total: courses.length,
+        rows: courses.map((course) => ({
+          key: course.course_code,
+          cells: [
+            course.course_code,
+            `${course.student_count} student${course.student_count === 1 ? "" : "s"}`,
+            `${course.average_attempts} average`,
+            course.pressure,
+          ],
+          tone: statusTone(course.pressure),
+        })),
+      };
+    }
+    case "Patterns": {
+      const { courses } = await api.courses();
+      const pressured = courses.filter((course) => course.pressure !== "STABLE");
+      return {
+        pageCount: 1,
+        total: pressured.length,
+        rows: pressured.map((course) => ({
+          key: course.course_code,
+          cells: [
+            course.course_code,
+            `${course.backlog_count} backlog${course.backlog_count === 1 ? "" : "s"}`,
+            `${course.max_attempts_made} peak`,
+            course.pressure === "HIGH" ? "Escalate" : "Review",
+          ],
+          tone: course.pressure === "HIGH" ? "danger" : "warning",
+        })),
+      };
+    }
+    case "Interventions": {
+      const { interventions } = await api.interventions();
+      return {
+        pageCount: 1,
+        total: interventions.length,
+        rows: interventions.map((record, index) => ({
+          key: record.id ?? `${record.student_id}-${index}`,
+          studentId: record.student_id,
+          cells: [
+            record.student_id,
+            record.recommended_action ?? "Recovery plan",
+            record.mentor_id ?? "Unassigned",
+            record.human_approved ? "Approved" : "Pending",
+          ],
+          tone: record.human_approved ? "success" : "warning",
+        })),
+      };
+    }
+    case "Alerts": {
+      const { alerts } = await api.alerts();
+      return {
+        pageCount: 1,
+        total: alerts.length,
+        rows: alerts.map((alert) => ({
+          key: alert.id,
+          cells: [
+            alert.title,
+            `${alert.student_ids.length} student${alert.student_ids.length === 1 ? "" : "s"}`,
+            alert.detail,
+            alert.severity,
+          ],
+          tone: alert.severity === "CRITICAL" ? "danger" : "warning",
+        })),
+      };
+    }
+    case "Examinations":
+    case "Registrations":
+    case "Eligibility":
+    case "Fee clearance": {
+      const payload = await api.examRegistrations();
+      const rows =
+        tab === "Fee clearance"
+          ? payload.registrations.filter((row) => !row.fee_cleared)
+          : payload.registrations;
+      return {
+        pageCount: 1,
+        total: rows.length,
+        rows: rows.map((row, index) => ({
+          key: row.id ?? `${row.student_id}-${row.course_code}-${index}`,
+          studentId: row.student_id,
+          cells: [
+            row.student_id,
+            row.course_code,
+            row.fee_cleared ? "Cleared" : "Pending",
+            row.eligibility_status ?? "Unknown",
+          ],
+          tone: row.fee_cleared
+            ? statusTone(row.eligibility_status ?? "")
+            : "warning",
+        })),
+      };
+    }
+    case "My backlogs": {
+      const payload = await api.mySummary();
+      const details = payload.deterministic_evaluation.backlog_details;
+      return {
+        pageCount: 1,
+        total: details.length,
+        rows: details.map((item) => ({
+          key: item.id ?? item.course_code,
+          cells: [
+            item.course_code,
+            `${item.attempts_made} made`,
+            `${item.attempts_remaining ?? 0} left`,
+            item.status,
+          ],
+          tone: (item.attempts_remaining ?? 0) <= 0 ? "danger" : statusTone(item.status),
+        })),
+      };
+    }
+    default:
+      return { rows: [], pageCount: 1, total: 0 };
+  }
+}
 
 function DashboardTabView({
   activeTab,
   onSelectStudent,
-  dashboard,
+  search,
 }: {
   activeTab: string;
   onSelectStudent: (studentId: string) => void;
-  dashboard: DashboardData | null;
+  search: string;
 }) {
-  const content = tabContent[activeTab as keyof typeof tabContent];
+  const meta = tabMeta[activeTab];
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
+  const [result, setResult] = useState<{
+    key: string;
+    rows: TabRow[];
+    total: number;
+    pageCount: number;
+  } | null>(null);
+  const [failure, setFailure] = useState<{ key: string; message: string } | null>(
+    null,
+  );
 
-  // Derive live rows from backend data for each tab
-  const liveRows: string[][] = (() => {
-    if (!dashboard) return [];
-    const { students, course_patterns } = dashboard;
-    const criticalStudents = students.filter((s) => s.status === "CRITICAL");
-    const reviewStudents = students.filter((s) => s.status === "REVIEW");
+  const supportsFilters =
+    activeTab === "Students" || activeTab === "Backlog constraints";
 
-    switch (activeTab) {
-      case "Students":
-        return students.map((s) => [
-          s.student_id,
-          `${s.active_backlog_count} active backlogs`,
-          `${s.max_attempts_made} max attempts made`,
-          s.status,
-        ]);
-      case "Backlogs":
-        return course_patterns.map((p) => [
-          p.course_code,
-          `${p.count} student${p.count !== 1 ? "s" : ""} affected`,
-          "Pending backlog volume",
-          p.count >= 5 ? "High pressure" : p.count >= 3 ? "Watch" : "Stable",
-        ]);
-      case "Patterns":
-        return course_patterns
-          .slice(0, 6)
-          .map((p) => [
-            p.course_code,
-            `${p.count} repeated failures`,
-            p.count >= 5 ? "Multiple attempt pressure" : "Pattern detected",
-            p.count >= 5 ? "Escalate" : "Review",
-          ]);
-      case "Interventions":
-        return criticalStudents
-          .slice(0, 5)
-          .map((s) => [
-            s.student_id,
-            `${s.active_backlog_count} backlogs · CRITICAL`,
-            "Mentor sign-off required",
-            "Pending",
-          ])
-          .concat(
-            reviewStudents
-              .slice(0, 3)
-              .map((s) => [
-                s.student_id,
-                `${s.active_backlog_count} backlogs · REVIEW`,
-                "Structured remedial plan",
-                "Active",
-              ]),
-          );
-      case "Alerts":
-        return [
-          criticalStudents.length > 0
-            ? [
-                "Attempt pressure",
-                `${criticalStudents.length} students`,
-                "At or near maximum attempts",
-                "Urgent",
-              ]
-            : null,
-          reviewStudents.length > 0
-            ? [
-                "Recovery needed",
-                `${reviewStudents.length} students`,
-                "Under review or intervention",
-                "Review",
-              ]
-            : null,
-          dashboard.student_count > 0
-            ? [
-                "Active backlogs",
-                `${dashboard.active_backlog_count} total`,
-                "Current institutional records",
-                "Live",
-              ]
-            : null,
-        ].filter(Boolean) as string[][];
-      case "Examinations":
-      case "Registrations":
-      case "Eligibility":
-        return students
-          .slice(0, 6)
-          .map((s) => [
-            s.student_id,
-            `${s.active_backlog_count} backlogs`,
-            s.status === "CRITICAL"
-              ? "Eligibility at risk"
-              : "Eligible to register",
-            s.status === "CRITICAL" ? "Review" : "Eligible",
-          ]);
-      default:
-        return [];
-    }
-  })();
+  // Changing the slice resets paging. Adjusting during render (rather than in
+  // an effect) avoids a second render pass with a stale page number.
+  const sliceKey = `${activeTab}|${search}|${statusFilter}`;
+  const [lastSlice, setLastSlice] = useState(sliceKey);
+  let activePage = page;
+  if (sliceKey !== lastSlice) {
+    setLastSlice(sliceKey);
+    setPage(1);
+    activePage = 1;
+  }
 
-  const rows =
-    liveRows.length > 0
-      ? liveRows
-      : ((content?.rows as unknown as string[][]) ?? []);
-  const canOpenStudent =
-    activeTab === "Students" || activeTab === "Interventions";
+  const requestKey = `${sliceKey}|${activePage}|${reloadToken}`;
+  // Derived, so nothing is set synchronously inside the effect. The previous
+  // rows stay on screen while a refetch is in flight — no skeleton flash.
+  const settled = result?.key === requestKey || failure?.key === requestKey;
+  const loading = !settled;
+  const error = failure?.key === requestKey ? failure.message : "";
+  const rows = result?.key === requestKey ? result.rows : (result?.rows ?? []);
+  const total = result?.key === requestKey ? result.total : (result?.total ?? 0);
+  const pageCount = result?.pageCount ?? 1;
 
-  const statusTone = (
-    status: string,
-  ): "danger" | "success" | "warning" | "neutral" => {
-    const s = status.toLowerCase();
-    if (
-      ["critical", "urgent", "action", "escalate", "restricted"].some((k) =>
-        s.includes(k),
-      )
-    )
-      return "danger";
-    if (
-      ["live", "eligible", "ready", "positive", "clear"].some((k) =>
-        s.includes(k),
-      )
-    )
-      return "success";
-    if (
-      [
-        "review",
-        "watch",
-        "monitor",
-        "pending",
-        "high pressure",
-        "warning",
-      ].some((k) => s.includes(k))
-    )
-      return "warning";
-    return "neutral";
-  };
+  useEffect(() => {
+    if (!meta) return;
+    let active = true;
+    loadTab(activeTab, { search, status: statusFilter, page: activePage })
+      .then((payload) => {
+        if (!active) return;
+        setResult({ key: requestKey, ...payload });
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setFailure({
+          key: requestKey,
+          message:
+            requestError instanceof Error
+              ? requestError.message
+              : "This view could not be loaded.",
+        });
+      });
+    return () => {
+      active = false;
+    };
+  }, [meta, activeTab, search, statusFilter, activePage, requestKey]);
 
-  // Derive tab-level summary stats
-  const summaryStats: Array<[string, string]> = (() => {
-    if (!dashboard) return [];
-    switch (activeTab) {
-      case "Students":
-        return [
-          ["Total", String(dashboard.student_count)],
-          ["Critical", String(dashboard.critical_case_count)],
-          ["Interventions", String(dashboard.intervention_count)],
-        ];
-      case "Backlogs":
-        return [
-          ["Active backlogs", String(dashboard.active_backlog_count)],
-          ["Courses affected", String(dashboard.course_patterns.length)],
-        ];
-      case "Patterns":
-        return [
-          ["Courses flagged", String(dashboard.course_patterns.length)],
-          ["Critical students", String(dashboard.critical_case_count)],
-        ];
-      case "Interventions":
-        return [
-          ["Total interventions", String(dashboard.intervention_count)],
-          ["Critical cases", String(dashboard.critical_case_count)],
-        ];
-      case "Alerts":
-        return [
-          ["Students affected", String(dashboard.student_count)],
-          ["Critical", String(dashboard.critical_case_count)],
-        ];
-      default:
-        return [["Records", String(rows.length)]];
-    }
-  })();
-
-  if (!content) {
+  if (!meta) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <Settings size={24} className="text-slate-400" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">
-            Workspace settings
-          </h2>
-          <p className="text-slate-500 text-sm">
-            Profile, notification, and institution preferences will live here.
-          </p>
-        </div>
+      <div className="flex-1 px-8 py-8">
+        <p className="text-sm text-slate-500">
+          This section is not available for your role.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Gradient page header */}
-      <div className="px-8 pt-7 pb-5 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/40 filter blur-2xl" />
-          <div className="absolute bottom-0 left-16 w-32 h-32 rounded-full bg-indigo-300/40 filter blur-2xl" />
+    <div className="flex-1 px-8 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
+            {meta.eyebrow}
+          </p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+            {meta.title}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1 max-w-xl">
+            {meta.description}
+          </p>
         </div>
-        <div className="relative z-10 flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1.5">
-              {content.eyebrow}
-            </p>
-            <h1 className="text-xl font-bold text-white tracking-tight mb-1">
-              {content.title}
-            </h1>
-            <p className="text-sm text-indigo-100/80 max-w-lg leading-relaxed">
-              {content.description}
-            </p>
-          </div>
-          <span className="flex items-center gap-2 bg-white/10 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            {liveRows.length > 0 ? "Live data" : "Reference view"}
-          </span>
-        </div>
-        {/* Stat pills */}
-        {summaryStats.length > 0 && (
-          <div className="relative z-10 flex items-center gap-3 mt-4">
-            {summaryStats.map(([label, value]) => (
-              <div
-                key={label}
-                className="group flex flex-col bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 rounded-xl px-4 py-2 backdrop-blur-md shadow-inner shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 cursor-default"
-              >
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-300/80 group-hover:bg-white transition-colors"></span>
-                  <p className="text-[9px] font-bold text-indigo-200 group-hover:text-indigo-100 uppercase tracking-widest transition-colors">
-                    {label}
-                  </p>
-                </div>
-                <p className="text-lg font-bold text-white leading-tight">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Table */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {/* Table header */}
-        <div className="grid grid-cols-4 px-8 py-3 bg-white/60 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-10">
-          {["Signal", "Scope", "Context", "Status"].map((col) => (
-            <span
-              key={col}
-              className="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+        <div className="flex items-center gap-2">
+          {supportsFilters && (
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              aria-label="Filter by status"
+              className="px-3 py-1.5 rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600"
             >
-              {col}
+              <option value="">All statuses</option>
+              <option value="CRITICAL">Critical only</option>
+              <option value="REVIEW">Review only</option>
+            </select>
+          )}
+          {!loading && !error && (
+            <span className="text-xs font-semibold text-slate-400">
+              {total} record{total === 1 ? "" : "s"}
             </span>
-          ))}
+          )}
         </div>
-
-        {rows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
-              <Activity size={22} className="text-indigo-400" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-700 mb-1">
-              No records available
-            </h3>
-            <p className="text-xs text-slate-400 max-w-xs">
-              This view will populate when data is available from the backend.
-            </p>
-          </div>
-        ) : (
-          rows.map((row, idx) => (
-            <button
-              key={`${row[0]}-${idx}`}
-              type="button"
-              onClick={() => canOpenStudent && onSelectStudent(row[0])}
-              disabled={!canOpenStudent}
-              className={`w-full grid grid-cols-4 items-center px-8 py-4 border-b border-slate-100/60 text-left transition-all duration-150 ${
-                canOpenStudent
-                  ? "hover:bg-indigo-50/60 cursor-pointer group"
-                  : "cursor-default hover:bg-slate-50/40"
-              }`}
-            >
-              <strong
-                className={`text-sm font-semibold tracking-tight ${
-                  canOpenStudent
-                    ? "text-indigo-700 group-hover:text-indigo-900"
-                    : "text-slate-800"
-                } font-mono`}
-              >
-                {row[0]}
-              </strong>
-              <span className="text-sm text-slate-500">{row[1]}</span>
-              <span className="text-sm text-slate-500">{row[2]}</span>
-              <StatusBadge tone={statusTone(row[3])}>{row[3]}</StatusBadge>
-            </button>
-          ))
-        )}
       </div>
+
+      {loading && <TabRowsSkeleton columns={meta.columns.length} />}
+
+      {!loading && error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6">
+          <p className="text-sm font-semibold text-rose-700">{error}</p>
+          <button
+            type="button"
+            onClick={() => setReloadToken((token) => token + 1)}
+            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors"
+          >
+            <RefreshCw size={13} /> Try again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && rows.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white/60 p-10 text-center">
+          <p className="text-sm font-semibold text-slate-700">
+            Nothing to show here.
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            {search || statusFilter
+              ? "No records match the current filters."
+              : "No records exist for this view yet."}
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && rows.length > 0 && (
+        <>
+          <div className="rounded-2xl border border-white/70 bg-white/60 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-4 gap-4 px-8 py-4 bg-slate-50/70">
+              {meta.columns.map((column) => (
+                <span
+                  key={column}
+                  className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                >
+                  {column}
+                </span>
+              ))}
+            </div>
+            {rows.map((row) => {
+              const clickable = Boolean(row.studentId);
+              return (
+                <button
+                  key={row.key}
+                  type="button"
+                  disabled={!clickable}
+                  onClick={() => row.studentId && onSelectStudent(row.studentId)}
+                  className={`w-full grid grid-cols-4 items-center px-8 py-4 border-t border-slate-100/60 text-left transition-all duration-150 ${
+                    clickable
+                      ? "hover:bg-indigo-50/60 cursor-pointer group"
+                      : "cursor-default"
+                  }`}
+                >
+                  <strong
+                    className={`text-sm font-semibold tracking-tight font-mono ${
+                      clickable
+                        ? "text-indigo-700 group-hover:text-indigo-900"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {row.cells[0]}
+                  </strong>
+                  <span className="text-sm text-slate-500">{row.cells[1]}</span>
+                  <span className="text-sm text-slate-500">{row.cells[2]}</span>
+                  <StatusBadge tone={row.tone}>{row.cells[3]}</StatusBadge>
+                </button>
+              );
+            })}
+          </div>
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="px-3 py-1.5 rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600 disabled:opacity-40 hover:bg-white transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-xs font-semibold text-slate-500">
+                Page {page} of {pageCount}
+              </span>
+              <button
+                type="button"
+                disabled={page >= pageCount}
+                onClick={() =>
+                  setPage((current) => Math.min(pageCount, current + 1))
+                }
+                className="px-3 py-1.5 rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600 disabled:opacity-40 hover:bg-white transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TabRowsSkeleton({ columns }: { columns: number }) {
+  return (
+    <div
+      className="rounded-2xl border border-white/70 bg-white/70 shadow-sm overflow-hidden"
+      role="status"
+      aria-label="Loading records"
+    >
+      <div className="grid grid-cols-4 gap-4 px-8 py-4 bg-slate-50/70">
+        {Array.from({ length: columns }, (_, index) => (
+          <div key={index} className="skeleton-shimmer h-2.5 rounded-full" />
+        ))}
+      </div>
+      {Array.from({ length: 6 }, (_, index) => (
+        <div
+          key={index}
+          className="grid grid-cols-4 gap-4 px-8 py-5 border-t border-slate-100/80"
+        >
+          <div className="skeleton-shimmer h-3 w-28 rounded-full" />
+          <div className="skeleton-shimmer h-3 w-20 rounded-full" />
+          <div className="skeleton-shimmer h-3 w-24 rounded-full" />
+          <div className="skeleton-shimmer h-6 w-16 rounded-lg" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -1337,37 +1111,108 @@ function DashboardTabView({
 function RoleHomeView({
   role,
   onSelectTab,
+  dashboard,
+  studentSummary,
 }: {
   role: UserRole;
   onSelectTab: (tab: string) => void;
+  dashboard: DashboardData | null;
+  studentSummary: OrchestrationData | null;
 }) {
-  const dashboard = dashboardByRole[role];
-  const nextActions = {
-    student: [
-      ["Register for the next supplementary attempt", "Exams"],
-      ["Review your Data Structures recovery plan", "Recovery plan"],
-      ["Confirm your mentor meeting", "Notifications"],
-    ],
-    mentor: [
-      ["Review the 8 students needing attention", "Students"],
-      ["Prepare the next mentor conversation", "Interventions"],
-      ["Track active interventions", "Reports"],
-    ],
-    exam: [
-      ["Follow up on pending fee clearance", "Fee clearance"],
-      ["Review condonation cases", "Eligibility"],
-      ["Open the next supplementary window", "Registrations"],
-    ],
-    placement: [
-      ["Review backlog-constrained students", "Backlog constraints"],
-      ["Track recovery milestones", "Readiness"],
-      ["Prepare placement readiness report", "Reports"],
-    ],
-    hod: [],
-  }[role];
+  const evaluation = studentSummary?.deterministic_evaluation;
+
+  // Headline signal, derived from records rather than a fixed string.
+  const signal =
+    role === "student"
+      ? {
+          value: String(evaluation?.active_backlog_count ?? 0),
+          label: "Active backlogs",
+          detail: evaluation
+            ? `Limit is ${evaluation.max_allowed_backlogs}`
+            : "No record loaded",
+          tone:
+            (evaluation?.active_backlog_count ?? 0) >
+            (evaluation?.max_allowed_backlogs ?? 4)
+              ? ("danger" as const)
+              : ("success" as const),
+        }
+      : {
+          value: String(dashboard?.critical_case_count ?? 0),
+          label: "Critical cases",
+          detail: `${dashboard?.student_count ?? 0} students affected`,
+          tone:
+            (dashboard?.critical_case_count ?? 0) > 0
+              ? ("danger" as const)
+              : ("success" as const),
+        };
+
+  // Progress: a student's headroom under the promotion limit; for staff, the
+  // share of affected students who are not yet critical.
+  const progress =
+    role === "student"
+      ? evaluation && evaluation.max_allowed_backlogs > 0
+        ? Math.round(
+            Math.max(
+              0,
+              (evaluation.max_allowed_backlogs -
+                evaluation.active_backlog_count) /
+                evaluation.max_allowed_backlogs,
+            ) * 100,
+          )
+        : 0
+      : dashboard && dashboard.student_count > 0
+        ? Math.round(
+            ((dashboard.student_count - dashboard.critical_case_count) /
+              dashboard.student_count) * 100,
+          )
+        : 0;
+
+  const progressLabel =
+    role === "student" ? "headroom to the backlog limit" : "of cases stable";
+
+  // Recommended actions reflect what the data actually shows.
+  const nextActions: Array<[string, string]> = [];
+  if (role === "student") {
+    const pressured = evaluation?.backlog_details.filter(
+      (item) => (item.attempts_remaining ?? 0) <= 1,
+    ).length;
+    if (evaluation?.active_backlog_count)
+      nextActions.push([
+        `Review your ${evaluation.active_backlog_count} pending backlog${evaluation.active_backlog_count === 1 ? "" : "s"}`,
+        "My backlogs",
+      ]);
+    if (pressured)
+      nextActions.push([
+        `${pressured} subject${pressured === 1 ? " is" : "s are"} near the attempt limit`,
+        "My backlogs",
+      ]);
+    nextActions.push(["Model a recovery plan in the simulator", "Simulator"]);
+  } else {
+    if (dashboard?.critical_case_count)
+      nextActions.push([
+        `Review ${dashboard.critical_case_count} critical student${dashboard.critical_case_count === 1 ? "" : "s"}`,
+        role === "exam" ? "Eligibility" : "Students",
+      ]);
+    if (dashboard?.course_patterns.length)
+      nextActions.push([
+        `${dashboard.course_patterns[0].course_code} drives the most backlogs`,
+        role === "hod" ? "Backlogs" : "Patterns",
+      ]);
+    if (dashboard?.intervention_count !== undefined)
+      nextActions.push([
+        `${dashboard.intervention_count} intervention${dashboard.intervention_count === 1 ? "" : "s"} on record`,
+        "Interventions",
+      ]);
+  }
+
+  const visibleActions = nextActions.filter(([, tab]) =>
+    (dashboardNavigation[role] as readonly (readonly [string, unknown])[]).some(
+      ([label]) => label === tab,
+    ),
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-      {/* Current signal card */}
       <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
           Current signal
@@ -1375,56 +1220,61 @@ function RoleHomeView({
         <div className="flex items-end justify-between mb-4">
           <div>
             <span className="text-3xl font-bold text-slate-800 tracking-tight">
-              {dashboard.metrics[0][1]}
+              {signal.value}
             </span>
             <p className="text-sm font-semibold text-slate-600 mt-1">
-              {dashboard.metrics[0][0]}
+              {signal.label}
             </p>
           </div>
-          <StatusBadge tone="success">{dashboard.metrics[0][2]}</StatusBadge>
+          <StatusBadge tone={signal.tone}>{signal.detail}</StatusBadge>
         </div>
-        {/* Progress bar */}
         <div className="w-full h-2 bg-white/50 rounded-full overflow-hidden shadow-inner shadow-black/5">
           <div
             className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500 shadow-md shadow-indigo-500/20"
-            style={{ width: role === "student" ? "78%" : "64%" }}
+            style={{ width: `${progress}%` }}
           />
         </div>
         <p className="text-xs font-semibold text-slate-500 mt-2">
-          {role === "student" ? "78%" : "64%"} complete
+          {progress}% {progressLabel}
         </p>
       </div>
 
-      {/* Recommended actions card */}
       <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
           Recommended actions
         </p>
-        <div className="flex flex-col gap-2">
-          {nextActions.map(([action, tab], index) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => onSelectTab(tab)}
-              className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 text-left transition-all duration-150 group"
-            >
-              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 text-xs font-bold group-hover:bg-indigo-200 transition-colors shrink-0">
-                0{index + 1}
-              </span>
-              <span className="flex-1 text-sm font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">
-                {action}
-              </span>
-              <ArrowUpRight
-                size={15}
-                className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0"
-              />
-            </button>
-          ))}
-        </div>
+        {visibleActions.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Nothing needs your attention right now.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {visibleActions.map(([action, tab], index) => (
+              <button
+                key={action}
+                type="button"
+                onClick={() => onSelectTab(tab)}
+                className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 text-left transition-all duration-150 group"
+              >
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 text-xs font-bold group-hover:bg-indigo-200 transition-colors shrink-0">
+                  0{index + 1}
+                </span>
+                <span className="flex-1 text-sm font-medium text-slate-700 group-hover:text-indigo-700 transition-colors">
+                  {action}
+                </span>
+                <ArrowUpRight
+                  size={15}
+                  className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0"
+                />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 function DashboardSkeleton() {
   return (
@@ -1522,25 +1372,63 @@ export default function PrototypePage({
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null,
   );
+  const [studentSummary, setStudentSummary] = useState<OrchestrationData | null>(
+    null,
+  );
   const [dashboardLoading, setDashboardLoading] = useState(
     mode === "dashboard",
   );
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [alertCount, setAlertCount] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
 
+  // Debounce so a request does not fire on every keystroke.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  // Live alert count drives both the bell badge and the sidebar badge.
   useEffect(() => {
     if (mode !== "dashboard") return;
     let active = true;
     api
-      .dashboard()
+      .alerts()
       .then((payload) => {
-        if (!active) return;
-        setDashboardData(payload);
-        setStudentId(
-          (current) => current || payload.students[0]?.student_id || "",
-        );
+        if (active) setAlertCount(payload.unread_count);
       })
+      .catch(() => {
+        if (active) setAlertCount(0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mode, activeTab]);
+
+  useEffect(() => {
+    if (mode !== "dashboard") return;
+    let active = true;
+
+    // Students read their own record; department aggregates are staff-only.
+    const load =
+      role === "student"
+        ? api.mySummary().then((payload) => {
+            if (!active) return;
+            setStudentSummary(payload);
+            setStudentId(payload.target_student_id);
+          })
+        : api.dashboard().then((payload) => {
+            if (!active) return;
+            setDashboardData(payload);
+            setStudentId(
+              (current) => current || payload.students[0]?.student_id || "",
+            );
+          });
+
+    load
       .catch((requestError) => {
         if (active)
           setError(
@@ -1555,7 +1443,7 @@ export default function PrototypePage({
     return () => {
       active = false;
     };
-  }, [mode]);
+  }, [mode, role]);
 
   const refreshActivity = useCallback(async (targetId: string) => {
     try {
@@ -1699,37 +1587,79 @@ export default function PrototypePage({
       ? "HIGH"
       : "LOW";
   const dashboard = dashboardByRole[role];
-  const liveMetrics: Array<[string, string, string]> = dashboardData
-    ? [
-        [
-          "Active backlogs",
-          String(dashboardData.active_backlog_count),
-          "Current institutional records",
-        ],
-        [
-          "Students affected",
-          String(dashboardData.student_count),
-          "Students with pending backlogs",
-        ],
-        [
-          "Critical cases",
-          String(dashboardData.critical_case_count),
-          "Requires human review",
-        ],
-        [
-          "Interventions",
-          String(dashboardData.intervention_count),
-          "Recorded in the system",
-        ],
-      ]
-    : [];
-  const dashboardAction = {
-    student: ["Review recovery plan", "Recovery plan"],
-    mentor: ["Open priority students", "Students"],
-    hod: ["Review critical cases", "Students"],
-    exam: ["Review registrations", "Registrations"],
-    placement: ["Review readiness constraints", "Backlog constraints"],
-  }[role];
+  const summaryEvaluation = studentSummary?.deterministic_evaluation;
+
+  // Every tile below is computed from a response; none are literals.
+  const liveMetrics: Array<[string, string, string]> =
+    role === "student"
+      ? summaryEvaluation
+        ? [
+            [
+              "Active backlogs",
+              String(summaryEvaluation.active_backlog_count),
+              `Limit is ${summaryEvaluation.max_allowed_backlogs}`,
+            ],
+            [
+              "Attempt pressure",
+              summaryEvaluation.attempt_pressure,
+              `Max ${summaryEvaluation.max_attempts ?? 3} attempts per subject`,
+            ],
+            [
+              "Promotion",
+              summaryEvaluation.promotion_status === "ELIGIBLE"
+                ? "Eligible"
+                : "Review",
+              "Against current regulation",
+            ],
+            [
+              "Subjects at risk",
+              String(
+                summaryEvaluation.backlog_details.filter(
+                  (item) => (item.attempts_remaining ?? 0) <= 1,
+                ).length,
+              ),
+              "One attempt or fewer remaining",
+            ],
+          ]
+        : []
+      : dashboardData
+        ? [
+            [
+              "Active backlogs",
+              String(dashboardData.active_backlog_count),
+              "Current institutional records",
+            ],
+            [
+              "Students affected",
+              String(dashboardData.student_count),
+              "Students with pending backlogs",
+            ],
+            [
+              "Critical cases",
+              String(dashboardData.critical_case_count),
+              "Requires human review",
+            ],
+            [
+              "Interventions",
+              String(dashboardData.intervention_count),
+              "Recorded in the system",
+            ],
+          ]
+        : [];
+
+  const dashboardAction: [string, string] =
+    role === "student"
+      ? ["Model my recovery", "Simulator"]
+      : role === "exam"
+        ? ["Review registrations", "Registrations"]
+        : role === "placement"
+          ? ["Review constrained students", "Backlog constraints"]
+          : [
+              dashboardData?.critical_case_count
+                ? `Review ${dashboardData.critical_case_count} critical case${dashboardData.critical_case_count === 1 ? "" : "s"}`
+                : "Open the student directory",
+              "Students",
+            ];
   const handleTabSelect = (tab: string) => {
     setActiveTab(tab);
     setData(null);
@@ -1751,6 +1681,7 @@ export default function PrototypePage({
           activeTab={activeTab}
           onSelect={handleTabSelect}
           onLogout={onBack}
+          alertCount={alertCount}
         />
       )}
       {/* Main content area */}
@@ -1762,7 +1693,13 @@ export default function PrototypePage({
         }
       >
         {mode === "dashboard" ? (
-          <DashboardTopbar role={role} />
+          <DashboardTopbar
+            role={role}
+            search={search}
+            onSearchChange={setSearch}
+            alertCount={alertCount}
+            onOpenAlerts={() => handleTabSelect("Alerts")}
+          />
         ) : (
           <header className="workspace-header">
             <div className="workspace-brand">
@@ -1864,24 +1801,55 @@ export default function PrototypePage({
                         <p className="text-indigo-100/90 text-sm leading-relaxed mb-8 max-w-md">
                           {dashboard.description}
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => handleTabSelect(dashboardAction[1])}
-                          className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
-                        >
-                          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
-                            <Sparkles size={14} className="text-indigo-100" />
-                          </span>
-                          <span className="flex flex-col text-left">
-                            <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">
-                              Recommended next step
-                            </small>
-                            <strong className="text-white text-sm leading-none drop-shadow-sm">
-                              {dashboardAction[0]}
-                            </strong>
-                          </span>
-                          <ArrowUpRight size={16} className="ml-1 opacity-70" />
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleTabSelect(dashboardAction[1])}
+                            className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
+                          >
+                            <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
+                              <Sparkles size={14} className="text-indigo-100" />
+                            </span>
+                            <span className="flex flex-col text-left">
+                              <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">
+                                Recommended next step
+                              </small>
+                              <strong className="text-white text-sm leading-none drop-shadow-sm">
+                                {dashboardAction[0]}
+                              </strong>
+                            </span>
+                            <ArrowUpRight
+                              size={16}
+                              className="ml-1 opacity-70"
+                            />
+                          </button>
+                          {role === "student" && (
+                            <button
+                              type="button"
+                              onClick={() => handleTabSelect("Simulator")}
+                              className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
+                            >
+                              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
+                                <FlaskConical
+                                  size={14}
+                                  className="text-indigo-100"
+                                />
+                              </span>
+                              <span className="flex flex-col text-left">
+                                <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">
+                                  What-if simulator
+                                </small>
+                                <strong className="text-white text-sm leading-none drop-shadow-sm">
+                                  Predict my recovery
+                                </strong>
+                              </span>
+                              <ArrowUpRight
+                                size={16}
+                                className="ml-1 opacity-70"
+                              />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-inner shadow-white/10 text-xs font-semibold px-3 py-1.5 rounded-full">
@@ -1955,7 +1923,12 @@ export default function PrototypePage({
                   !data &&
                   !loading && (
                     <div className="px-8 pb-8">
-                      <RoleHomeView role={role} onSelectTab={handleTabSelect} />
+                      <RoleHomeView
+                        role={role}
+                        onSelectTab={handleTabSelect}
+                        dashboard={dashboardData}
+                        studentSummary={studentSummary}
+                      />
                     </div>
                   )}
               </div>
@@ -1963,16 +1936,27 @@ export default function PrototypePage({
           </div>
         )}
 
-        {/* Dashboard tab views (non-Dashboard tabs) */}
+        {/* What-if recovery simulator. It carries its own fallback case, so it
+            renders immediately rather than waiting on the dashboard request. */}
+        {mode === "dashboard" && activeTab === "Simulator" && (
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="dashboard-reveal">
+              <RecoverySimulator studentId={studentId || undefined} />
+            </div>
+          </div>
+        )}
+
+        {/* Dashboard tab views (non-Dashboard tabs). The tab view owns its own
+            request lifecycle, so it is not gated on the dashboard request. */}
         {mode === "dashboard" &&
           activeTab !== "Dashboard" &&
+          activeTab !== "Simulator" &&
           !data &&
-          !loading &&
-          !dashboardLoading && (
+          !loading && (
             <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
               <DashboardTabView
                 activeTab={activeTab}
-                dashboard={dashboardData}
+                search={debouncedSearch}
                 onSelectStudent={(selectedStudentId) => {
                   setStudentId(selectedStudentId);
                   void fetchOrchestration(selectedStudentId);
@@ -1981,11 +1965,12 @@ export default function PrototypePage({
             </div>
           )}
 
-        {/* Loading state for tab views */}
+        {/* Loading the student detail drill-down from a tab row */}
         {mode === "dashboard" &&
           activeTab !== "Dashboard" &&
+          activeTab !== "Simulator" &&
           !data &&
-          (loading || dashboardLoading) && <TabSkeleton />}
+          loading && <TabSkeleton />}
 
         {/* Student detail view (inside dashboard) */}
         {mode === "dashboard" && data && evaluation && recommendation && (

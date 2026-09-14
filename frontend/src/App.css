@@ -30,12 +30,17 @@ select:focus-visible {
 
 .landing-page {
   overflow: hidden;
-  background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+  background: #0c1830;
   color: var(--navy);
   --muted: #475569;
   --navy: #0f172a;
 }
 .site-nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
   height: 74px;
   max-width: 1240px;
   margin: auto;
@@ -49,7 +54,7 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  color: var(--navy);
+  color: white;
   text-decoration: none;
   font-size: 15px;
   font-weight: 800;
@@ -101,7 +106,7 @@ select:focus-visible {
 }
 .nav-links a,
 .link-button {
-  color: #667696;
+  color: #eef3ff;
   text-decoration: none;
   border: 0;
   background: transparent;
@@ -173,19 +178,33 @@ select:focus-visible {
 }
 
 .hero-section {
-  max-width: 1240px;
-  min-height: 600px;
+  position: relative;
+  max-width: none;
+  min-height: 100vh;
   margin: auto;
-  padding: 78px 28px 72px;
+  padding: 148px max(28px, calc((100vw - 1184px) / 2)) 82px;
   display: grid;
   grid-template-columns: 0.86fr 1.14fr;
   align-items: center;
   gap: 28px;
+  isolation: isolate;
+  overflow: hidden;
+  background: #172b4d url("/campus.jpg") center / cover no-repeat;
+}
+.hero-section::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(90deg, #07142ae6 0%, #0d2142b8 45%, #07142a88 100%);
 }
 .hero-copy {
   position: relative;
   z-index: 2;
   max-width: 520px;
+}
+.hero-copy h1 {
+  color: white;
 }
 .eyebrow {
   display: flex;
@@ -227,7 +246,7 @@ h2 em {
 .hero-copy > p {
   max-width: 470px;
   margin-bottom: 28px;
-  color: var(--muted);
+  color: #e2eaff;
   font-size: 14px;
   line-height: 1.75;
   font-weight: 500;
@@ -242,7 +261,7 @@ h2 em {
   align-items: center;
   gap: 12px;
   margin-top: 38px;
-  color: #8792ab;
+  color: #e2eaff;
   font-size: 10px;
   font-weight: 700;
 }
@@ -274,7 +293,8 @@ h2 em {
 }
 
 .hero-visual {
-  position: relative;
+  position: static;
+  z-index: 1;
   min-height: 470px;
   display: flex;
   align-items: center;
@@ -286,65 +306,23 @@ h2 em {
   border-radius: 50%;
   background: radial-gradient(circle, #dae1ff 0%, #eff2ff 50%, transparent 72%);
 }
-.campus-shape {
+.campus-photo {
   position: absolute;
-  right: 1%;
-  bottom: 0;
-  width: 87%;
-  height: 72%;
-  opacity: 0.55;
-  border-radius: 44% 56% 0 0;
-  background: linear-gradient(130deg, #bed0f4, #f5d5d2 53%, #c8d1fb);
-  clip-path: polygon(
-    10% 100%,
-    13% 42%,
-    28% 42%,
-    31% 26%,
-    40% 26%,
-    44% 40%,
-    63% 40%,
-    68% 13%,
-    86% 30%,
-    100% 34%,
-    100% 100%
-  );
-}
-.campus-window {
-  position: absolute;
-  width: 8px;
-  height: 13px;
-  border-radius: 2px;
-  background: #ffffff99;
-  box-shadow:
-    20px 0 #ffffff99,
-    40px 0 #ffffff99,
-    60px 0 #ffffff99,
-    80px 0 #ffffff99;
-}
-.campus-window.one {
-  right: 35%;
-  top: 40%;
-}
-.campus-window.two {
-  right: 25%;
-  top: 55%;
-}
-.campus-window.three {
-  right: 49%;
-  top: 60%;
-}
-.campus-roof {
-  position: absolute;
-  right: 10%;
-  top: 7%;
-  width: 60px;
-  height: 35px;
-  background: #f6b5aa;
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 1;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
 }
 .dashboard-preview {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(100%, 520px);
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.7);
