@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import type { Html5QrcodeScanner as Html5QrcodeScannerType } from "html5-qrcode";
 import {
   Activity,
   Archive,
@@ -457,7 +457,7 @@ function DashboardTopbar({
             <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
           </button>
           {notificationsOpen && (
-            <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
+            <div className="dashboard-notifications absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div>
                   <h2 className="text-sm font-bold text-slate-800">Alerts</h2>
@@ -538,7 +538,7 @@ function DashboardTopbar({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:shadow-indigo-200 transition-all duration-200">
             <CircleUserRound size={19} />
           </div>
-          <div className="flex flex-col leading-tight">
+          <div className="dashboard-profile-copy flex flex-col leading-tight">
             <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
               {profileName || roleLabel}
             </span>
@@ -1849,38 +1849,64 @@ export default function PrototypePage({
 
   useEffect(() => {
     if (!showScanner) return;
-    const scanner = new Html5QrcodeScanner(
-      "barcode-reader",
-      {
-        fps: 15,
-        qrbox: { width: 340, height: 110 },
-        rememberLastUsedCamera: true,
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.EAN_13,
-        ],
-      },
-      false,
-    );
-    scanner.render(
-      (decodedText) => {
-        scanner.clear().catch(() => undefined);
-        setShowScanner(false);
-        const scannedId = decodedText.trim().toUpperCase();
-        setStudentId(scannedId);
-        void fetchOrchestration(scannedId);
-      },
-      () => undefined,
-    );
+    let active = true;
+    let scanner: Html5QrcodeScannerType | null = null;
+    void import("html5-qrcode")
+      .then(({ Html5QrcodeScanner, Html5QrcodeSupportedFormats }) => {
+        if (!active) return;
+        scanner = new Html5QrcodeScanner(
+          "barcode-reader",
+          {
+            fps: 10,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const size = Math.floor(
+                Math.min(viewfinderWidth, viewfinderHeight) * 0.72,
+              );
+              return { width: size, height: size };
+            },
+            rememberLastUsedCamera: false,
+            disableFlip: false,
+            showTorchButtonIfSupported: true,
+            showZoomSliderIfSupported: true,
+            videoConstraints: {
+              facingMode: { ideal: "environment" },
+            },
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.EAN_13,
+            ],
+          },
+          false,
+        );
+        scanner.render(
+          (decodedText) => {
+            scanner?.clear().catch(() => undefined);
+            setShowScanner(false);
+            const scannedId = decodedText.trim().toUpperCase();
+            setStudentId(scannedId);
+            void fetchOrchestration(scannedId);
+          },
+          () => undefined,
+        );
+      })
+      .catch((scannerError: unknown) => {
+        if (!active) return;
+        setError(
+          scannerError instanceof Error
+            ? scannerError.message
+            : "Unable to start the camera scanner. Check camera permissions and use HTTPS or localhost.",
+        );
+      });
     return () => {
-      scanner.clear().catch(() => undefined);
+      active = false;
+      scanner?.clear().catch(() => undefined);
     };
   }, [fetchOrchestration, showScanner]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    logsEndRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
   }, [dispatchLogs]);
 
   const handleApprove = async () => {
@@ -2173,6 +2199,54 @@ export default function PrototypePage({
                     </div>
                   </div>
                 )}
+
+                {/* Demo Student Profile Pills */}
+                {mode === "dashboard" &&
+                  !data &&
+                  !loading &&
+                  !dashboardLoading &&
+                  dashboardData &&
+                  dashboardData.students.length > 0 && (
+                    <div className="px-8 pb-6">
+                      <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+                        <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-4">
+                          Available Students (Demo)
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          {dashboardData.students.slice(0, 3).map((student) => (
+                            <button
+                              key={student.student_id}
+                              type="button"
+                              onClick={() => {
+                                setStudentId(student.student_id);
+                                void fetchOrchestration(student.student_id);
+                              }}
+                              className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-100 hover:border-indigo-300 bg-indigo-50/60 hover:bg-indigo-100/80 transition-all duration-200 hover:shadow-md hover:shadow-indigo-200/40 hover:-translate-y-0.5"
+                            >
+                              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-200 text-indigo-700 font-bold text-xs shrink-0">
+                                {student.student_id.slice(-2)}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-xs font-bold text-slate-800 font-mono">
+                                  {student.student_id}
+                                </p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                  {student.active_backlog_count} backlog
+                                  {student.active_backlog_count !== 1
+                                    ? "s"
+                                    : ""}
+                                </p>
+                              </div>
+                              <ArrowRight
+                                size={14}
+                                className="text-slate-400 group-hover:text-indigo-600 transition-colors ml-1"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 {mode === "dashboard" &&
                   activeTab === "Dashboard" &&
@@ -2971,7 +3045,10 @@ export default function PrototypePage({
               </div>
               <div id="barcode-reader" />
               <div className="scanner-footer">
-                <p>Align a barcode or QR code within the target frame.</p>
+                <p>
+                  Align a clear barcode or QR code inside the frame. Use the
+                  rear camera and good lighting for best detection.
+                </p>
                 <button
                   className="workspace-button primary"
                   onClick={() => {

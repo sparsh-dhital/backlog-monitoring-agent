@@ -6,17 +6,18 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Lenis from "lenis";
-import AuthPage from "./pages/AuthPage";
-import LandingPage from "./pages/LandingPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import PrototypePage from "./pages/PrototypePage";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
 import { ThemeProvider } from "./theme";
 import ThemeToggle from "./components/ThemeToggle";
 import "./App.css";
+
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+const PrototypePage = lazy(() => import("./pages/PrototypePage"));
 
 const roleIds = new Set<UserRole>(userRoles.map((role) => role.id));
 
@@ -31,18 +32,7 @@ function SmoothScroll() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (pathname === "/auth") {
-      const lenisClasses = [
-        "lenis",
-        "lenis-smooth",
-        "lenis-scrolling",
-        "lenis-stopped",
-        "lenis-locked",
-      ];
-      document.documentElement.classList.remove(...lenisClasses);
-      document.body.classList.remove(...lenisClasses);
-      return;
-    }
+    if (pathname !== "/") return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotion.matches) return;
 
@@ -185,13 +175,15 @@ export default function App() {
     <ThemeProvider>
       <SmoothScroll />
       <SiteThemeToggle />
-      <Routes>
-        <Route path="/" element={<LandingRoute />} />
-        <Route path="/auth" element={<AuthRoute />} />
-        <Route path="/prototype" element={<PrototypeRoute />} />
-        <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <Suspense fallback={<SiteLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingRoute />} />
+          <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/prototype" element={<PrototypeRoute />} />
+          <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </ThemeProvider>
   );
 }

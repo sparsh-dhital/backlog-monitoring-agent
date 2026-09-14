@@ -2,7 +2,7 @@
 .auth-page {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
   color: #102754;
   background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 48%, #ffffff 100%);
 }
@@ -84,9 +84,8 @@
   align-items: center;
   gap: clamp(50px, 9vw, 150px);
   max-width: 1200px;
-  min-height: calc(100vh - 84px);
   margin: auto;
-  padding: 44px 34px 80px;
+  padding: 36px 34px 38px;
 }
 .auth-story {
   max-width: 530px;
@@ -642,6 +641,12 @@
 }
 .auth-panel {
   animation: auth-enter 0.7s 0.2s both;
+}
+@media (max-width: 1040px) {
+  .auth-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 0.8fr);
+    gap: 42px;
+  }
 }
 @media (max-width: 900px) {
   .auth-layout {
