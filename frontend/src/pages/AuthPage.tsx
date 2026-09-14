@@ -7,10 +7,9 @@ import {
   Check,
   ClipboardCheck,
   Code2,
+  Info,
   LayoutDashboard,
   LockKeyhole,
-  Mail,
-  ShieldCheck,
   Activity,
   UserRound,
   UsersRound,
@@ -36,27 +35,39 @@ export default function AuthPage({
   onBack: () => void;
   onContinue: (role: UserRole) => void;
 }) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [selectedRole, setSelectedRole] = useState<UserRole>("hod");
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [authMessage, setAuthMessage] = useState("");
   const [authenticating, setAuthenticating] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<"account" | "registration">(
-    "account",
-  );
   const [registrationPhone, setRegistrationPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
-  const registrationRole =
-    selectedRole === "student" || selectedRole === "mentor"
-      ? selectedRole
-      : null;
-  const isAllowedInstitutionEmail = (email: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    return normalizedEmail.endsWith("@vignan.ac.in");
-  };
+  const isAllowedInstitutionEmail = (email: string) =>
+    email.trim().toLowerCase().endsWith("@vignan.ac.in");
 
   useEffect(() => {
     let active = true;
+    const resetCancelledOAuth = () => {
+      setAuthenticating(false);
+      setAuthMessage(
+        "Login revoked or cancelled by the user. You can try again.",
+      );
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) resetCancelledOAuth();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    const callbackParams = new URLSearchParams(window.location.search);
+    const callbackHash = new URLSearchParams(
+      window.location.hash.replace(/^#/, ""),
+    );
+    const callbackError =
+      callbackParams.get("error") || callbackHash.get("error");
+    if (callbackError === "access_denied") {
+      resetCancelledOAuth();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     supabaseAuth.auth.getSession().then(async ({ data }) => {
       if (!active || !data.session) return;
       const provider = data.session.user.app_metadata?.provider;
@@ -68,7 +79,7 @@ export default function AuthPage({
         await supabaseAuth.auth.signOut();
         if (active) {
           setAuthMessage(
-            "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
+            "Login is restricted to @vignan.ac.in accounts for GitHub and Microsoft 365.",
           );
           setAuthenticating(false);
         }
@@ -77,134 +88,113 @@ export default function AuthPage({
       const savedRole = sessionStorage.getItem(
         "edurecover-pending-role",
       ) as UserRole | null;
-      onContinue(
-        savedRole && userRoles.some((role) => role.id === savedRole)
+      const role =
+        savedRole && userRoles.some((item) => item.id === savedRole)
           ? savedRole
-          : selectedRole,
-      );
+          : selectedRole;
+      if (role) onContinue(role);
     });
     return () => {
       active = false;
+      window.removeEventListener("pageshow", handlePageShow);
     };
   }, [onContinue, selectedRole]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (loginMethod === "registration") {
-      if (!registrationRole) {
-        setAuthMessage(
-          "Registration login is available for students and teachers only.",
-        );
-        return;
-      }
-      const form = new FormData(event.currentTarget);
-      const registrationNumber = String(
-        form.get("registrationNumber") || "",
-      ).trim();
-      const otp = String(form.get("otp") || "").trim();
-      setAuthenticating(true);
-      setAuthMessage("");
-      try {
-        if (!otpSent) {
-          const { phone } = await api.registrationPhone(
-            registrationNumber,
-            registrationRole,
-          );
-          const { error } = await supabaseAuth.auth.signInWithOtp({
-            phone,
-            options: { channel: "sms" },
-          });
-          if (error) throw error;
-          setRegistrationPhone(phone);
-          setOtpSent(true);
-          setAuthMessage(
-            "A verification code was sent to your registered phone.",
-          );
-        } else {
-          const { data, error } = await supabaseAuth.auth.verifyOtp({
-            phone: registrationPhone,
-            token: otp,
-            type: "sms",
-          });
-          if (error) throw error;
-          if (!data.session)
-            throw new Error("Verification did not create a session.");
-          sessionStorage.setItem("edurecover-role", registrationRole);
-          sessionStorage.removeItem("edurecover-pending-role");
-          onContinue(registrationRole);
-        }
-      } catch (error) {
-        setAuthMessage(
-          error instanceof Error
-            ? error.message
-            : "Unable to send the verification code.",
-        );
-      } finally {
-        setAuthenticating(false);
-      }
+    if (!selectedRole) {
+      setAuthMessage("Select a workspace role before signing in.");
       return;
     }
+    const form = new FormData(event.currentTarget);
+    const registrationNumber = String(
+      form.get("registrationNumber") || "",
+    ).trim();
+    const otp = String(form.get("otp") || "").trim();
     setAuthenticating(true);
     setAuthMessage("");
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") || "");
-    if (!isAllowedInstitutionEmail(email)) {
+    try {
+      if (!otpSent) {
+        const { phone } = await api.registrationPhone(
+          registrationNumber,
+          selectedRole,
+        );
+        const { error } = await supabaseAuth.auth.signInWithOtp({
+          phone,
+          options: { channel: "sms" },
+        });
+        if (error) throw error;
+        setRegistrationPhone(phone);
+        setOtpSent(true);
+        setAuthMessage("OTP sent to your registered mobile number.");
+      } else {
+        const { data, error } = await supabaseAuth.auth.verifyOtp({
+          phone: registrationPhone,
+          token: otp,
+          type: "sms",
+        });
+        if (error) throw error;
+        if (!data.session)
+          throw new Error("Verification did not create a session.");
+        sessionStorage.removeItem("edurecover-demo-role");
+        sessionStorage.setItem("edurecover-role", selectedRole);
+        sessionStorage.removeItem("edurecover-pending-role");
+        onContinue(selectedRole);
+      }
+    } catch (error) {
       setAuthMessage(
-        "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
+        error instanceof Error
+          ? error.message
+          : "Unable to send the verification code.",
       );
+    } finally {
       setAuthenticating(false);
-      return;
     }
-    setAuthMessage(
-      "Vignan accounts must continue with Microsoft 365 or GitHub login.",
-    );
-    setAuthenticating(false);
   };
 
   const handleOAuthLogin = async (provider: "github" | "azure") => {
+    if (!selectedRole) {
+      setAuthMessage("Select a workspace role before signing in.");
+      return;
+    }
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
-    // Use VITE_SITE_URL when set (allows dev vs prod separation).
-    // In dev: set VITE_SITE_URL=http://localhost:5173 in .env.development
-    // In prod: set VITE_SITE_URL=https://your-domain.com in .env.production
-    // Also add both URLs to Supabase Dashboard → Auth → URL Configuration → Redirect URLs
     const siteUrl =
       import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
       window.location.origin;
-    const { error } = await supabaseAuth.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${siteUrl}/auth` },
-    });
-    if (error) {
-      setAuthMessage(error.message);
+    try {
+      const { error } = await supabaseAuth.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${siteUrl}/auth` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setAuthMessage(
+        error instanceof Error
+          ? error.message
+          : "Login revoked or cancelled by the user. You can try again.",
+      );
       setAuthenticating(false);
     }
   };
 
   const handleRoleChange = (role: UserRole) => {
     setSelectedRole(role);
-    if (role !== "student" && role !== "mentor") {
-      setLoginMethod("account");
-      setOtpSent(false);
-    }
+    setOtpSent(false);
+    setRegistrationPhone("");
+    setAuthMessage("");
   };
 
-  const handlePasswordRecovery = async () => {
-    const email = window.prompt("Enter your account email");
-    if (!email?.trim()) return;
-    setAuthenticating(true);
-    setAuthMessage("");
-    const { error } = await supabaseAuth.auth.resetPasswordForEmail(
-      email.trim(),
-      { redirectTo: `${window.location.origin}/auth` },
-    );
-    setAuthMessage(
-      error
-        ? error.message
-        : "Password reset instructions have been sent to your email.",
-    );
-    setAuthenticating(false);
+  const handleDemoLogin = () => {
+    if (!selectedRole) {
+      setAuthMessage("Select a workspace role before using demo login.");
+      return;
+    }
+    sessionStorage.setItem("edurecover-demo-role", selectedRole);
+    sessionStorage.setItem("edurecover-role", selectedRole);
+    sessionStorage.removeItem("edurecover-pending-role");
+    onContinue(selectedRole);
   };
 
   return (
@@ -213,14 +203,12 @@ export default function AuthPage({
       <div className="auth-atmosphere auth-atmosphere-two" />
       <header className="auth-nav">
         <button className="auth-back" onClick={onBack}>
-          <ArrowLeft size={17} /> Back to website
+          <ArrowLeft size={16} /> <span>Back to home</span>
         </button>
-        <a className="brand" href="#auth-top">
+        <a className="brand" href="/" aria-label="EduRecover home">
           <Brand />
         </a>
-        <span className="auth-secure">
-          <ShieldCheck size={15} /> Secure institution access
-        </span>
+        <span className="auth-nav-spacer" aria-hidden="true" />
       </header>
 
       <section className="auth-layout" id="auth-top">
@@ -280,165 +268,74 @@ export default function AuthPage({
         </div>
 
         <div className="auth-panel">
-          <div className="auth-tabs">
-            <button
-              className={mode === "signin" ? "active" : ""}
-              onClick={() => {
-                setMode("signin");
-                setLoginMethod("account");
-                setOtpSent(false);
-                setAuthMessage("");
-              }}
-            >
-              Sign in
-            </button>
-            <button
-              className={mode === "signup" ? "active" : ""}
-              onClick={() => {
-                setMode("signup");
-                setLoginMethod("account");
-                setOtpSent(false);
-                setAuthMessage("");
-              }}
-            >
-              Sign up
-            </button>
-          </div>
           <div className="auth-heading">
-            <span className="auth-kicker">
-              {mode === "signin" ? "Welcome back" : "Create your account"}
-            </span>
-            <h2>
-              {mode === "signin"
-                ? "Continue where you left off."
-                : "Bring your institution together."}
-            </h2>
+            <span className="auth-kicker">Secure sign in</span>
+            <h2>Continue where you left off.</h2>
             <p>
-              {mode === "signin"
-                ? "Use your institutional credentials to access your workspace."
-                : "Start with your institutional email. You can invite your team later."}
+              Enter your registration number and get an OTP sent to your
+              registered mobile number.
             </p>
           </div>
-          {mode === "signin" && (
-            <div
-              className="auth-login-methods"
-              role="tablist"
-              aria-label="Login method"
-            >
-              <button
-                type="button"
-                className={loginMethod === "account" ? "active" : ""}
-                onClick={() => {
-                  setLoginMethod("account");
-                  setOtpSent(false);
-                  setAuthMessage("");
-                }}
-              >
-                Email and password
-              </button>
-              <button
-                type="button"
-                className={loginMethod === "registration" ? "active" : ""}
-                onClick={() => {
-                  setLoginMethod("registration");
-                  setAuthMessage("");
-                }}
-                disabled={!registrationRole}
-              >
-                Student / teacher SMS
-              </button>
-            </div>
+          {!selectedRole && (
+            <p className="auth-role-prompt" role="status">
+              <span className="auth-role-prompt-icon">
+                <Info size={15} aria-hidden="true" />
+              </span>
+              <span className="auth-role-prompt-copy">
+                <strong>Workspace selection required</strong>
+                <small>Choose a role to continue to login.</small>
+              </span>
+            </p>
           )}
           <form className="auth-form" onSubmit={handleSubmit}>
-            {loginMethod === "registration" && mode === "signin" ? (
-              <>
-                <label>
-                  <span>
-                    {selectedRole === "mentor" ? "Teacher" : "Student"}{" "}
-                    registration number
-                  </span>
-                  <div className="auth-input">
-                    <UserRound size={17} />
-                    <input
-                      required
-                      name="registrationNumber"
-                      placeholder="Enter your registration number"
-                    />
-                  </div>
-                </label>
-                {otpSent && (
-                  <label>
-                    <span>SMS verification code</span>
-                    <div className="auth-input">
-                      <LockKeyhole size={17} />
-                      <input
-                        required
-                        name="otp"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        placeholder="Enter the 6-digit code"
-                      />
-                    </div>
-                  </label>
-                )}
-              </>
-            ) : (
-              <>
-                <label>
-                  <span>Institutional email or ID</span>
-                  <div className="auth-input">
-                    <Mail size={17} />
-                    <input
-                      required
-                      name="email"
-                      type="email"
-                      placeholder="you@university.edu"
-                    />
-                  </div>
-                </label>
-                <label>
-                  <span>Password</span>
-                  <div className="auth-input">
-                    <LockKeyhole size={17} />
-                    <input
-                      required
-                      name="password"
-                      type="password"
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </label>
-              </>
-            )}
-            <div className="auth-form-meta">
-              <label className="remember">
-                <input type="checkbox" /> <span>Remember me</span>
+            <label>
+              <span>
+                {selectedRole
+                  ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Registration Number`
+                  : "Select a workspace role first"}
+              </span>
+              <div className="auth-input">
+                <UserRound size={17} />
+                <input
+                  required
+                  name="registrationNumber"
+                  placeholder="Enter your registration number"
+                />
+              </div>
+            </label>
+            {otpSent && (
+              <label>
+                <span>OTP verification code</span>
+                <div className="auth-input">
+                  <LockKeyhole size={17} />
+                  <input
+                    required
+                    name="otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="Enter the 6-digit code"
+                  />
+                </div>
               </label>
-              <button
-                type="button"
-                onClick={() => void handlePasswordRecovery()}
-                disabled={authenticating}
-              >
-                Forgot password?
-              </button>
-            </div>
+            )}
             <button
               className="auth-submit"
               type="submit"
-              disabled={authenticating}
+              disabled={authenticating || !selectedRole}
             >
               {authenticating
                 ? "Connecting..."
-                : mode === "signin" && loginMethod === "registration"
-                  ? otpSent
-                    ? "Verify SMS code"
-                    : "Send SMS code"
-                  : mode === "signin"
-                    ? "Sign in to workspace"
-                    : "Create account"}
+                : otpSent
+                  ? "Verify OTP"
+                  : "Get OTP"}
               <ArrowRight size={17} />
             </button>
           </form>
+          {authMessage && (
+            <p className="auth-feedback" role="status">
+              {authMessage}
+            </p>
+          )}
           <div className="auth-divider">
             <span>or continue with</span>
           </div>
@@ -446,8 +343,8 @@ export default function AuthPage({
             <button
               type="button"
               onClick={() => void handleOAuthLogin("github")}
-              disabled={authenticating}
-              title="Only @vignan.ac.in accounts can use GitHub login"
+              disabled={authenticating || !selectedRole}
+              title="Use your @vignan.ac.in GitHub account"
             >
               <Code2 size={16} aria-hidden="true" />
               <span>GitHub</span>
@@ -455,8 +352,8 @@ export default function AuthPage({
             <button
               type="button"
               onClick={() => void handleOAuthLogin("azure")}
-              disabled={authenticating}
-              title="Only @vignan.ac.in accounts can use Microsoft 365 login"
+              disabled={authenticating || !selectedRole}
+              title="Use your @vignan.ac.in Microsoft 365 account"
             >
               <span className="provider-microsoft" aria-hidden="true">
                 M
@@ -464,11 +361,6 @@ export default function AuthPage({
               <span>Microsoft 365</span>
             </button>
           </div>
-          {authMessage && (
-            <p className="auth-feedback" role="status">
-              {authMessage}
-            </p>
-          )}
           <div className="demo-heading">
             <div>
               <span>Workspace role</span>
@@ -499,6 +391,16 @@ export default function AuthPage({
               );
             })}
           </div>
+          <button
+            className="demo-submit"
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={authenticating || !selectedRole}
+          >
+            {selectedRole
+              ? `Demo login as ${selectedRole.toUpperCase()}`
+              : "Select a role for demo login"}
+          </button>
           <p className="auth-note">
             By continuing, you agree to EduRecover's responsible practice and
             human oversight principles.

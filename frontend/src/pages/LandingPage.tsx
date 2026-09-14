@@ -16,15 +16,13 @@ import {
   ClipboardCheck,
   MessageCircle,
   Mail,
-  Moon,
   Radar,
   ScanSearch,
   ShieldCheck,
-  Sun,
   UserCheck,
 } from "lucide-react";
 import Brand from "../components/Brand";
-import { useTheme } from "../theme-context";
+import ThemeToggle from "../components/ThemeToggle";
 
 const workflowSteps = [
   ["01", "Detect", "Spot a change in a student's academic signal."],
@@ -133,7 +131,6 @@ export default function LandingPage({
 }) {
   const [activeWorkflow, setActiveWorkflow] = useState(0);
   const [activeRole, setActiveRole] = useState(0);
-  const { darkMode, toggleDarkMode } = useTheme();
   return (
     <main className="landing-page">
       <nav className="site-nav">
@@ -150,18 +147,7 @@ export default function LandingPage({
           <button className="link-button" onClick={onPrototype}>
             Prototype
           </button>
-          <button
-            type="button"
-            className="theme-toggle navbar-theme-toggle"
-            onClick={toggleDarkMode}
-            aria-label={
-              darkMode ? "Switch to light mode" : "Switch to dark mode"
-            }
-            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? <Sun size={15} /> : <Moon size={15} />}
-            <span>{darkMode ? "Light" : "Dark"}</span>
-          </button>
+          <ThemeToggle className="navbar-theme-toggle" />
           <button className="primary-button small" onClick={onEnter}>
             Get started <ArrowUpRight size={15} />
           </button>

@@ -8,7 +8,6 @@ import {
 } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Lenis from "lenis";
-import { Moon, Sun } from "lucide-react";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -16,7 +15,7 @@ import PrototypePage from "./pages/PrototypePage";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
 import { ThemeProvider } from "./theme";
-import { useTheme } from "./theme-context";
+import ThemeToggle from "./components/ThemeToggle";
 import "./App.css";
 
 const roleIds = new Set<UserRole>(userRoles.map((role) => role.id));
@@ -24,11 +23,26 @@ const roleIds = new Set<UserRole>(userRoles.map((role) => role.id));
 function clearLocalSession() {
   sessionStorage.removeItem("edurecover-role");
   sessionStorage.removeItem("edurecover-pending-role");
+  sessionStorage.removeItem("edurecover-demo-role");
   sessionStorage.removeItem("edurecover-focus-student");
 }
 
 function SmoothScroll() {
+  const { pathname } = useLocation();
+
   useEffect(() => {
+    if (pathname === "/auth") {
+      const lenisClasses = [
+        "lenis",
+        "lenis-smooth",
+        "lenis-scrolling",
+        "lenis-stopped",
+        "lenis-locked",
+      ];
+      document.documentElement.classList.remove(...lenisClasses);
+      document.body.classList.remove(...lenisClasses);
+      return;
+    }
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (reduceMotion.matches) return;
 
@@ -42,7 +56,7 @@ function SmoothScroll() {
     });
 
     return () => lenis.destroy();
-  }, []);
+  }, [pathname]);
 
   return null;
 }
@@ -68,28 +82,15 @@ function SiteLoader() {
   );
 }
 
-function ThemeToggle({ floating = false }: { floating?: boolean }) {
-  const { darkMode, toggleDarkMode } = useTheme();
-  return (
-    <button
-      type="button"
-      onClick={toggleDarkMode}
-      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-      className={
-        floating ? "theme-toggle theme-toggle-floating" : "theme-toggle"
-      }
-    >
-      {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-      <span>{darkMode ? "Light" : "Dark"}</span>
-    </button>
-  );
-}
-
 function SiteThemeToggle() {
   const { pathname } = useLocation();
   if (pathname === "/" || pathname.startsWith("/dashboard/")) return null;
-  return <ThemeToggle floating />;
+  return (
+    <ThemeToggle
+      floating
+      className={`theme-toggle-floating${pathname === "/auth" ? " theme-toggle-auth" : ""}`}
+    />
+  );
 }
 
 function AuthRoute() {
@@ -128,12 +129,13 @@ function ProtectedDashboard() {
   const sessionRole = sessionStorage.getItem(
     "edurecover-role",
   ) as UserRole | null;
+  const demoRole = sessionStorage.getItem("edurecover-demo-role");
 
   useEffect(() => {
     let active = true;
     supabaseAuth.auth.getSession().then(({ data }) => {
       if (!active) return;
-      if (!data.session) {
+      if (!data.session && demoRole !== role) {
         clearLocalSession();
         navigate(`/auth?requiredRole=${role || "hod"}`, { replace: true });
         return;
@@ -143,7 +145,7 @@ function ProtectedDashboard() {
     return () => {
       active = false;
     };
-  }, [navigate, role]);
+  }, [demoRole, navigate, role]);
 
   if (!role || !roleIds.has(role as UserRole)) return <NotFoundPage />;
   if (sessionRole !== role)

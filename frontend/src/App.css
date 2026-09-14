@@ -703,7 +703,7 @@ h2 em {
   margin-top: 56px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(255,255,255,0.75);
+  background: rgba(255, 255, 255, 0.75);
   box-shadow: 0 4px 24px rgba(79, 70, 229, 0.06);
   overflow: hidden;
 }
@@ -5084,44 +5084,117 @@ main.flex {
 }
 
 .theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 10px;
-  border: 1px solid #d7e3f2;
-  border-radius: 10px;
-  color: #526481;
-  background: #ffffffc7;
+  position: relative;
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #dbe5f2;
+  border-radius: 13px;
+  color: #f59e0b;
+  background: rgba(226, 232, 255, 0.58);
+  box-shadow:
+    0 8px 20px rgba(31, 72, 125, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 800;
+  overflow: hidden;
   transition:
     border-color 0.2s,
     background 0.2s,
     color 0.2s,
-    transform 0.2s;
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .theme-toggle:hover {
-  transform: translateY(-1px);
-  border-color: #9bb9df;
-  color: #275cc9;
-  background: white;
+  transform: translateY(-2px);
+  border-color: #b8cbe3;
+  color: #2563eb;
+  background: rgba(226, 232, 255, 0.82);
+  box-shadow:
+    0 12px 24px rgba(31, 72, 125, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.theme-toggle:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.24);
+  outline-offset: 3px;
+}
+
+.theme-toggle-icon {
+  position: relative;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+}
+
+.theme-toggle-icon svg {
+  position: absolute;
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-toggle-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle-moon {
+  opacity: 0;
+  transform: rotate(-70deg) scale(0.5);
+}
+
+.theme-toggle.is-dark {
+  border-color: #3b4c67;
+  color: #f8c45c;
+  background: #18263b;
+  box-shadow:
+    0 8px 20px rgba(2, 8, 23, 0.22),
+    inset 0 1px 0 rgba(148, 163, 184, 0.1);
+}
+
+.theme-toggle.is-dark:hover {
+  border-color: #5d7394;
+  color: #fde68a;
+  background: #223450;
+  box-shadow:
+    0 12px 24px rgba(2, 8, 23, 0.3),
+    inset 0 1px 0 rgba(148, 163, 184, 0.14);
+}
+
+.theme-toggle.is-dark .theme-toggle-sun {
+  opacity: 0;
+  transform: rotate(70deg) scale(0.5);
+}
+
+.theme-toggle.is-dark .theme-toggle-moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
 }
 
 .theme-toggle-floating {
-  position: fixed;
-  top: 18px;
-  right: 22px;
-  z-index: 60;
   box-shadow: 0 10px 24px #315b871c;
 }
 
+.theme-toggle-portal {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 2147483647;
+  display: block;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+.theme-toggle-portal .theme-toggle {
+  pointer-events: auto;
+}
+
 .navbar-theme-toggle {
-  min-height: 34px;
-  padding: 0 9px;
+  flex: 0 0 40px;
 }
 
 html.dark,
@@ -5139,16 +5212,41 @@ body.dark .prototype-console {
   background: #0f172a;
 }
 
-body.dark .theme-toggle {
-  border-color: #334155;
-  color: #cbd5e1;
-  background: #172338;
+body.dark .auth-nav {
+  border-bottom-color: rgba(71, 85, 105, 0.5);
+  background: transparent;
 }
 
-body.dark .theme-toggle:hover {
-  border-color: #64748b;
+body.dark .auth-back {
+  border-color: #475569;
+  color: #cbd5e1;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+body.dark .auth-back:hover {
+  border-color: #7c93b5;
   color: #f8fafc;
-  background: #24334d;
+  background: rgba(51, 65, 85, 0.9);
+}
+
+body.dark .auth-role-prompt {
+  border-color: #3c506d;
+  color: #b9c9e4;
+  background: rgba(30, 50, 78, 0.62);
+}
+
+body.dark .auth-role-prompt-icon {
+  border-color: #506888;
+  color: #8fb3e8;
+  background: rgba(51, 65, 85, 0.5);
+}
+
+body.dark .auth-role-prompt-copy strong {
+  color: #dbeafe;
+}
+
+body.dark .auth-role-prompt-copy small {
+  color: #9fb2d0;
 }
 
 body.dark .dashboard-shell {
@@ -5244,30 +5342,16 @@ body.dark .auth-divider::after {
 
 @media (max-width: 680px) {
   .theme-toggle-floating {
+    box-shadow: 0 8px 18px #315b8722;
+  }
+
+  .theme-toggle-portal {
     top: 12px;
     right: 14px;
   }
 
-  main.dashboard-shell .dashboard-topbar .theme-toggle span {
-    display: none;
-  }
-
-  main.dashboard-shell .dashboard-topbar .theme-toggle {
-    width: 34px;
-    padding: 0;
-  }
-
   .landing-page .nav-actions {
     gap: 8px;
-  }
-
-  .landing-page .navbar-theme-toggle span {
-    display: none;
-  }
-
-  .landing-page .navbar-theme-toggle {
-    width: 34px;
-    padding: 0;
   }
 }
 

@@ -4,6 +4,7 @@ import type {
   ActivityEvent,
 } from "./types/agent";
 import { supabaseAuth } from "./supabaseClient";
+import type { UserRole } from "./types/roles";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
@@ -16,6 +17,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
   }
+  const demoRole = sessionStorage.getItem("edurecover-demo-role");
+  if (demoRole) headers.set("X-Demo-Role", demoRole);
   try {
     response = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
@@ -41,7 +44,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  registrationPhone: (registrationNumber: string, role: "student" | "mentor") =>
+  registrationPhone: (registrationNumber: string, role: UserRole) =>
     request<{ phone: string }>("/api/auth/registration-phone", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

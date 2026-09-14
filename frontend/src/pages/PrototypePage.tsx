@@ -23,14 +23,12 @@ import {
   Home,
   Lightbulb,
   LineChart,
-  Moon,
   ClipboardList,
   QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
   Settings,
-  Sun,
   Users,
   UsersRound,
   X,
@@ -45,7 +43,7 @@ import { userRoles, type UserRole } from "../types/roles";
 import { api } from "../api";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import { supabaseAuth } from "../supabaseClient";
-import { useTheme } from "../theme-context";
+import ThemeToggle from "../components/ThemeToggle";
 
 const dashboardByRole = {
   student: {
@@ -357,7 +355,6 @@ function DashboardTopbar({
   onProfile: () => void;
 }) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
-  const { darkMode, toggleDarkMode } = useTheme();
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -446,16 +443,7 @@ function DashboardTopbar({
 
       {/* Actions */}
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={toggleDarkMode}
-          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          className="theme-toggle"
-        >
-          {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-          <span>{darkMode ? "Light" : "Dark"}</span>
-        </button>
+        <ThemeToggle />
         {/* Notification bell */}
         <div className="relative">
           <button

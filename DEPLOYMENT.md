@@ -7,7 +7,7 @@ Create a Render Web Service from this repository, or use the root `render.yaml` 
 - Root directory: `backend`
 - Build command: `pip install -r requirements-render.txt`
 - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Environment variables: `SUPABASE_URL`, `SUPABASE_KEY`, `GROQ_API_KEY`, `CORS_ORIGINS`
+- Environment variables: `SUPABASE_URL`, `SUPABASE_KEY`, `GROQ_API_KEY`, `CORS_ORIGINS`, `DEMO_LOGIN_ENABLED=true` for the hackathon demo bypass
 
 Set `CORS_ORIGINS` to the exact Vercel frontend origin, without a trailing slash:
 

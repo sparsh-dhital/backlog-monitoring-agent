@@ -14,3 +14,5 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: DEMO_LOGIN_ENABLED
+        value: "true"

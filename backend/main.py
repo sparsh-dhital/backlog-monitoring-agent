@@ -48,7 +48,7 @@ class CustomFeeds(BaseModel):
 
 class RegistrationLookup(BaseModel):
     registration_number: str
-    role: Literal["student", "mentor"]
+    role: Literal["student", "mentor", "hod", "exam", "placement"]
 
 
 @app.post("/api/auth/registration-phone")

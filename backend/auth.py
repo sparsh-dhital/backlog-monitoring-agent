@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client, create_client
 
@@ -15,11 +15,18 @@ _auth_client: Client | None = (
     if _supabase_url and _supabase_key
     else None
 )
+_demo_roles = {"student", "mentor", "hod", "exam", "placement"}
 
 
 def require_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(_auth_scheme),
 ):
+    demo_role = request.headers.get("X-Demo-Role")
+    if demo_role and os.environ.get("DEMO_LOGIN_ENABLED", "false").lower() == "true":
+        if demo_role not in _demo_roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid demo role")
+        return {"id": f"demo-{demo_role}", "role": demo_role, "demo": True}
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
