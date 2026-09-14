@@ -99,7 +99,9 @@ export default function BacklogManager({
     } catch (error) {
       // Backend messages (duplicate course, bad range) surface inline.
       setFormError(
-        error instanceof Error ? error.message : "That backlog could not be saved.",
+        error instanceof Error
+          ? error.message
+          : "That backlog could not be saved.",
       );
     } finally {
       setBusy("");
@@ -116,7 +118,9 @@ export default function BacklogManager({
       refresh();
     } catch (error) {
       setFormError(
-        error instanceof Error ? error.message : "That row could not be deleted.",
+        error instanceof Error
+          ? error.message
+          : "That row could not be deleted.",
       );
     } finally {
       setBusy("");
@@ -146,7 +150,9 @@ export default function BacklogManager({
       refresh();
     } catch (error) {
       setFormError(
-        error instanceof Error ? error.message : "That action could not be completed.",
+        error instanceof Error
+          ? error.message
+          : "That action could not be completed.",
       );
     } finally {
       setBusy("");
@@ -171,7 +177,8 @@ export default function BacklogManager({
             Add or remove subjects
           </h3>
           <p className="text-sm text-slate-500 mt-1">
-            Every change is written to the database and the charts update with it.
+            Every change is written to the database and the charts update with
+            it.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -252,12 +259,13 @@ export default function BacklogManager({
 
       {/* Rows */}
       {loading && (
-        <div className="flex flex-col gap-2" role="status" aria-label="Loading records">
+        <div
+          className="flex flex-col gap-2"
+          role="status"
+          aria-label="Loading records"
+        >
           {["a", "b", "c"].map((key) => (
-            <div
-              key={key}
-              className="skeleton-shimmer h-12 rounded-xl"
-            />
+            <div key={key} className="skeleton-shimmer h-12 rounded-xl" />
           ))}
         </div>
       )}
@@ -277,11 +285,12 @@ export default function BacklogManager({
 
       {!loading && !loadError && rows.length === 0 && (
         <div className="rounded-xl border border-slate-200 bg-white/60 p-8 text-center">
-          <p className="text-sm font-semibold text-slate-700">
-            No backlog records yet.
+          <p className="text-sm font-semibold text-emerald-700">
+            Congratulations, you have no backlogs.
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            Add one above, or drop in a few sample rows to see the charts fill in.
+            No backlog records were found for your student account. Add one
+            above only if you need to record a new subject.
           </p>
         </div>
       )}
@@ -304,9 +313,12 @@ export default function BacklogManager({
                   </span>
                 )}
                 <span className="text-sm text-slate-500 flex-1">
-                  {row.attempts_made} attempt{row.attempts_made === 1 ? "" : "s"} made
+                  {row.attempts_made} attempt
+                  {row.attempts_made === 1 ? "" : "s"} made
                 </span>
-                <StatusBadge tone={statusTone(row.status)}>{row.status}</StatusBadge>
+                <StatusBadge tone={statusTone(row.status)}>
+                  {row.status}
+                </StatusBadge>
                 <button
                   type="button"
                   onClick={() => void handleDelete(row)}

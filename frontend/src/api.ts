@@ -11,9 +11,23 @@ const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeoutId = window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 10000);
   const {
     data: { session },
-  } = await supabaseAuth.auth.getSession();
+  } = await Promise.race([
+    supabaseAuth.auth.getSession(),
+    new Promise<never>((_, reject) =>
+      window.setTimeout(
+        () => reject(new Error("The session lookup took too long.")),
+        10000,
+      ),
+    ),
+  ]);
   const headers = new Headers(init?.headers);
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
@@ -21,11 +35,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const demoRole = sessionStorage.getItem("edurecover-demo-role");
   if (demoRole) headers.set("X-Demo-Role", demoRole);
   try {
-    response = await fetch(`${API_URL}${path}`, { ...init, headers });
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers,
+      signal: init?.signal ?? controller.signal,
+    });
   } catch {
+    if (init?.signal?.aborted) throw new Error("The request was cancelled.");
+    if (timedOut) {
+      throw new Error(
+        "The backend took too long to respond. Please try again.",
+      );
+    }
     throw new Error(
       `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,
     );
+  } finally {
+    window.clearTimeout(timeoutId);
   }
   const contentType = response.headers.get("content-type") || "";
   if (!response.ok || !contentType.includes("application/json")) {

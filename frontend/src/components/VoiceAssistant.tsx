@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Volume2 } from "lucide-react";
+import { Mic, MicOff, Volume2, X } from "lucide-react";
 
 interface RecognitionResultEvent extends Event {
   results: SpeechRecognitionResultList;
@@ -33,28 +33,37 @@ function getRecognitionConstructor() {
     SpeechRecognition?: RecognitionConstructor;
     webkitSpeechRecognition?: RecognitionConstructor;
   };
-  return browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition;
+  return (
+    browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition
+  );
 }
 
 export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [message, setMessage] = useState("Ask about backlog, promotion, simulation, or notifications.");
+  const [message, setMessage] = useState(
+    "Ask about backlog, promotion, simulation, or notifications.",
+  );
   const [commandInput, setCommandInput] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const activeRef = useRef(false);
   const speakingRef = useRef(false);
   const commandInFlightRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
 
-  useEffect(() => () => {
-    activeRef.current = false;
-    speakingRef.current = false;
-    commandInFlightRef.current = false;
-    if (restartTimerRef.current !== null) window.clearTimeout(restartTimerRef.current);
-    recognitionRef.current?.stop();
-    window.speechSynthesis?.cancel();
-  }, []);
+  useEffect(
+    () => () => {
+      activeRef.current = false;
+      speakingRef.current = false;
+      commandInFlightRef.current = false;
+      if (restartTimerRef.current !== null)
+        window.clearTimeout(restartTimerRef.current);
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    },
+    [],
+  );
 
   const startRecognition = () => {
     const recognition = recognitionRef.current;
@@ -62,7 +71,8 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
     try {
       recognition.start();
     } catch (error) {
-      if (error instanceof DOMException && error.name === "InvalidStateError") return;
+      if (error instanceof DOMException && error.name === "InvalidStateError")
+        return;
       setMessage("Restarting listener...");
       if (restartTimerRef.current === null) {
         restartTimerRef.current = window.setTimeout(() => {
@@ -74,9 +84,12 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
   };
 
   const toggleListening = () => {
+    setExpanded(true);
     const Recognition = getRecognitionConstructor();
     if (!Recognition) {
-      setMessage("Voice commands are not supported here. Type a command below.");
+      setMessage(
+        "Voice commands are not supported here. Type a command below.",
+      );
       return;
     }
     if (listening) {
@@ -110,12 +123,16 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
     };
     recognition.onstart = () => setMessage("Listening. Say a command now...");
     recognition.onerror = (event) => {
-      const reason = event.error === "not-allowed"
-        ? "Microphone permission was denied."
-        : event.error === "no-speech"
-          ? "No speech was detected."
-          : "The microphone could not be used.";
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      const reason =
+        event.error === "not-allowed"
+          ? "Microphone permission was denied."
+          : event.error === "no-speech"
+            ? "No speech was detected."
+            : "The microphone could not be used.";
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed"
+      ) {
         activeRef.current = false;
         setListening(false);
         setMessage(`${reason} You can type a command below.`);
@@ -195,6 +212,20 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
     }
   };
 
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        aria-label="Open voice assistant"
+        title="Open voice assistant"
+        className={`fixed bottom-6 right-6 z-40 grid h-14 w-14 place-items-center rounded-full text-white shadow-xl transition hover:-translate-y-0.5 ${listening ? "bg-rose-500 shadow-rose-300" : "bg-indigo-600 shadow-indigo-300 hover:bg-indigo-700"}`}
+      >
+        {listening ? <MicOff size={22} /> : <Mic size={22} />}
+      </button>
+    );
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-40 w-[min(320px,calc(100vw-32px))] rounded-2xl border border-indigo-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
       <div className="flex items-center gap-3">
@@ -206,15 +237,33 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
         >
           {listening ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
-        <span className="sr-only">{listening ? "Stop listening" : "Start Voice Assistant"}</span>
+        <span className="sr-only">
+          {listening ? "Stop listening" : "Start Voice Assistant"}
+        </span>
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700">
-            <Volume2 size={13} /> {listening ? "Listening..." : "Start Voice Assistant"}
-            {listening && <span className="voice-wave" aria-label="Listening" />}
+            <Volume2 size={13} />{" "}
+            {listening ? "Listening..." : "Start Voice Assistant"}
+            {listening && (
+              <span className="voice-wave" aria-label="Listening" />
+            )}
           </div>
           <p className="mt-1 truncate text-xs text-slate-600">{message}</p>
-          {transcript && <p className="mt-1 truncate text-[11px] font-medium text-slate-400">“{transcript}”</p>}
+          {transcript && (
+            <p className="mt-1 truncate text-[11px] font-medium text-slate-400">
+              “{transcript}”
+            </p>
+          )}
         </div>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          aria-label="Collapse voice assistant"
+          title="Collapse voice assistant"
+          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        >
+          <X size={16} />
+        </button>
       </div>
       <form
         className="mt-3 flex gap-2 border-t border-slate-100 pt-3"
@@ -231,7 +280,10 @@ export default function VoiceAssistant({ onCommand }: VoiceAssistantProps) {
           aria-label="Type a voice command"
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-700 outline-none focus:border-indigo-400"
         />
-        <button type="submit" className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700">
+        <button
+          type="submit"
+          className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700"
+        >
           Run
         </button>
       </form>

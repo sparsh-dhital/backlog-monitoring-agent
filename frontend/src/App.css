@@ -94,6 +94,60 @@ select:focus-visible {
   --muted: #475569;
   --navy: #172033;
 }
+.institutional-strip {
+  width: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid #e8edf4;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+.institutional-inner {
+  width: min(1188px, calc(100% - 32px));
+  min-height: 116px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+.institutional-vignan {
+  display: grid;
+  flex: 0 0 280px;
+  place-items: center;
+  min-height: 82px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+.institutional-vignan:hover {
+  background: #f1f5ff;
+  transform: translateY(-1px);
+}
+.institutional-vignan img,
+.institutional-recognition img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+.institutional-vignan img {
+  max-height: 78px;
+}
+.institutional-divider {
+  width: 1px;
+  height: 70px;
+  flex: 0 0 1px;
+  background: #dfe5ef;
+}
+.institutional-recognition {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.institutional-recognition img {
+  max-height: 88px;
+}
 .site-nav {
   height: 74px;
   max-width: 1240px;
@@ -1479,6 +1533,39 @@ h2 em {
 }
 
 @media (max-width: 620px) {
+  .institutional-inner {
+    min-height: 0;
+    padding: 12px 18px;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .institutional-vignan {
+    flex-basis: 190px;
+    min-height: 70px;
+    padding: 6px 8px;
+  }
+  .institutional-vignan img {
+    max-height: 58px;
+  }
+  .institutional-divider {
+    height: auto;
+    min-height: 58px;
+  }
+  .institutional-recognition {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+  .institutional-recognition::-webkit-scrollbar {
+    display: none;
+  }
+  .institutional-recognition img {
+    width: 620px;
+    max-width: none;
+    height: 70px;
+    object-fit: contain;
+    object-position: left center;
+  }
   .landing-page .site-nav {
     height: 72px;
   }

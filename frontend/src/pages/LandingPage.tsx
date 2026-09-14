@@ -133,6 +133,32 @@ export default function LandingPage({
   const [activeRole, setActiveRole] = useState(0);
   return (
     <main className="landing-page">
+      <div
+        className="institutional-strip"
+        aria-label="Institutional affiliations"
+      >
+        <div className="institutional-inner">
+          <a
+            className="institutional-vignan"
+            href="https://vignan.ac.in/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Visit Vignan's Foundation for Science, Technology and Research"
+          >
+            <img
+              src="/vignan-logo-with-deemed.svg"
+              alt="Vignan's Foundation for Science, Technology and Research, Deemed to be University"
+            />
+          </a>
+          <span className="institutional-divider" aria-hidden="true" />
+          <div className="institutional-recognition">
+            <img
+              src="/vignan-accreditation-logos.svg"
+              alt="NAAC A plus, NIRF, NBA, AICTE, UGC, Ministry of Education and ABET recognitions"
+            />
+          </div>
+        </div>
+      </div>
       <nav className="site-nav">
         <a className="brand" href="#top" aria-label="EduRecover home">
           <Brand />

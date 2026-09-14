@@ -436,7 +436,13 @@ function DashboardTopbar({
   }, []);
 
   return (
-    <header className="dashboard-topbar h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8">
+    <header
+      className="dashboard-topbar h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8"
+      style={{
+        paddingLeft: "clamp(24px, 3vw, 40px)",
+        paddingRight: "clamp(24px, 3vw, 40px)",
+      }}
+    >
       {/* Search */}
       <div className="dashboard-search flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
         <Search size={15} className="text-slate-400 shrink-0" />
