@@ -11,7 +11,7 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
-  Sparkles,
+  Activity,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -303,7 +303,7 @@ export default function AuthPage({
       <section className="auth-layout" id="auth-top">
         <div className="auth-story">
           <span className="auth-label">
-            <Sparkles size={14} /> One platform. Every academic signal.
+            <Activity size={14} /> One platform. Every academic signal.
           </span>
           <h1>
             Your academic journey, <em>understood.</em>
