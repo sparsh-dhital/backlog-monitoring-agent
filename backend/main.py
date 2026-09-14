@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from gtts import gTTS
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -55,6 +55,43 @@ app.include_router(dispatch_router)
 class CustomFeeds(BaseModel):
     agent_34_results: Optional[Dict[str, Any]] = None
     agent_30_supplementary: Optional[Dict[str, Any]] = None
+
+
+class RegistrationLookup(BaseModel):
+    registration_number: str
+    role: Literal["student", "mentor"]
+
+
+@app.post("/api/auth/registration-phone")
+def registration_phone(payload: RegistrationLookup):
+    """Resolve a registration number to its stored phone for Supabase SMS OTP."""
+    registration_number = payload.registration_number.strip()
+    if not registration_number:
+        raise HTTPException(status_code=400, detail="Registration number is required")
+
+    try:
+        result = (
+            supabase.table(os.environ.get("REGISTRATION_TABLE", "profiles"))
+            .select("phone")
+            .eq("registration_number", registration_number)
+            .eq("role", payload.role)
+            .limit(1)
+            .execute()
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Registration lookup is not configured. Check the profiles table.",
+        ) from error
+
+    record = (result.data or [None])[0]
+    phone = record.get("phone") if record else None
+    if not phone:
+        raise HTTPException(
+            status_code=404,
+            detail="No registered phone number was found for that account.",
+        )
+    return {"phone": phone}
 
 @app.get("/")
 def read_root():

@@ -7,7 +7,7 @@ export const userRoles = [
   },
   {
     id: "mentor",
-    label: "Faculty / Mentor",
+    label: "Teacher / Mentor",
     detail: "My students",
     icon: "mentor",
   },

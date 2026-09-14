@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   Check,
   ClipboardCheck,
+  Code2,
   LayoutDashboard,
   LockKeyhole,
   Mail,
@@ -15,6 +16,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { supabaseAuth } from "../supabaseClient";
+import { api } from "../api";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
 import "../styles/auth.css";
@@ -38,12 +40,44 @@ export default function AuthPage({
   const [selectedRole, setSelectedRole] = useState<UserRole>("hod");
   const [authMessage, setAuthMessage] = useState("");
   const [authenticating, setAuthenticating] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"account" | "registration">(
+    "account",
+  );
+  const [registrationPhone, setRegistrationPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  const registrationRole =
+    selectedRole === "student" || selectedRole === "mentor"
+      ? selectedRole
+      : null;
+  const isAllowedInstitutionEmail = (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    return normalizedEmail.endsWith("@vignan.ac.in");
+  };
 
   useEffect(() => {
     let active = true;
     void (async () => {
       const { data } = await supabaseAuth.auth.getSession();
       if (!active || !data.session) return;
+
+      // Domain constraint runs before anything else: an account outside the
+      // institution is signed straight back out.
+      const provider = data.session.user.app_metadata?.provider;
+      const isInstitutionOAuth = provider === "github" || provider === "azure";
+      if (
+        isInstitutionOAuth &&
+        !isAllowedInstitutionEmail(data.session.user.email || "")
+      ) {
+        await supabaseAuth.auth.signOut();
+        if (active) {
+          setAuthMessage(
+            "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
+          );
+          setAuthenticating(false);
+        }
+        return;
+      }
 
       const savedRole = sessionStorage.getItem(
         "edurecover-pending-role",
@@ -99,99 +133,95 @@ export default function AuthPage({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "");
-    const studentId = String(form.get("student_id") || "")
-      .trim()
-      .toUpperCase();
-
-    // A student account is useless without the record it points at, so the
-    // link is required up front rather than discovered as an empty dashboard.
-    if (mode === "signup" && selectedRole === "student" && !studentId) {
-      setAuthMessage("Enter the student ID this account belongs to.");
-      return;
-    }
-
-    setAuthenticating(true);
-    setAuthMessage("");
-    const result =
-      mode === "signin"
-        ? await supabaseAuth.auth.signInWithPassword({ email, password })
-        : await supabaseAuth.auth.signUp({
-            email,
-            password,
-            // The role travels with the account, so the API can authorize it.
-            options: {
-              data: {
-                role: selectedRole,
-                ...(selectedRole === "student"
-                  ? { student_id: studentId }
-                  : {}),
-              },
-            },
-          });
-    if (result.error) {
-      setAuthMessage(result.error.message);
-      setAuthenticating(false);
-      return;
-    }
-    if (!result.data.session) {
-      setAuthMessage(
-        "Check your email to confirm your account before signing in.",
-      );
-      setAuthenticating(false);
-      return;
-    }
-
-    // Trust the role stored on the account, never the picker — the picker is
-    // only a signup-time choice, and sessionStorage is user-editable.
-    const accountRole = result.data.user?.user_metadata?.role as
-      | UserRole
-      | undefined;
-    const effectiveRole =
-      accountRole && userRoles.some((role) => role.id === accountRole)
-        ? accountRole
-        : selectedRole;
-
-    if (mode === "signin" && accountRole && accountRole !== selectedRole) {
-      setAuthMessage(
-        `This account is registered as ${
-          userRoles.find((role) => role.id === accountRole)?.label ??
-          accountRole
-        }. Opening that workspace.`,
-      );
-    }
-
-    // Accounts created before roles existed carry no claim, so the API would
-    // refuse them. Adopt the selected role once, then refresh so the new claim
-    // is in the token the very next request uses.
-    if (!accountRole) {
-      const { error: claimError } = await supabaseAuth.auth.updateUser({
-        data: {
-          role: effectiveRole,
-          ...(effectiveRole === "student" && studentId
-            ? { student_id: studentId }
-            : {}),
-        },
-      });
-      if (claimError) {
+    if (loginMethod === "registration") {
+      if (!registrationRole) {
         setAuthMessage(
-          `Signed in, but the account role could not be saved: ${claimError.message}`,
+          "Registration login is available for students and teachers only.",
         );
-        setAuthenticating(false);
         return;
       }
-      await supabaseAuth.auth.refreshSession();
-    }
+      const form = new FormData(event.currentTarget);
+      const registrationNumber = String(
+        form.get("registrationNumber") || "",
+      ).trim();
+      const otp = String(form.get("otp") || "").trim();
+      setAuthenticating(true);
+      setAuthMessage("");
+      try {
+        if (!otpSent) {
+          const { phone } = await api.registrationPhone(
+            registrationNumber,
+            registrationRole,
+          );
+          const { error } = await supabaseAuth.auth.signInWithOtp({
+            phone,
+            options: { channel: "sms" },
+          });
+          if (error) throw error;
+          setRegistrationPhone(phone);
+          setOtpSent(true);
+          setAuthMessage(
+            "A verification code was sent to your registered phone.",
+          );
+        } else {
+          const { data, error } = await supabaseAuth.auth.verifyOtp({
+            phone: registrationPhone,
+            token: otp,
+            type: "sms",
+          });
+          if (error) throw error;
+          if (!data.session)
+            throw new Error("Verification did not create a session.");
 
-    sessionStorage.setItem("edurecover-role", effectiveRole);
-    sessionStorage.removeItem("edurecover-pending-role");
-    onContinue(effectiveRole);
+          // Carry the role on the account so the API can authorize it, and
+          // for a student use the registration number as the record link.
+          if (!data.session.user.user_metadata?.role) {
+            const { error: claimError } = await supabaseAuth.auth.updateUser({
+              data: {
+                role: registrationRole,
+                ...(registrationRole === "student"
+                  ? { student_id: registrationNumber.toUpperCase() }
+                  : {}),
+              },
+            });
+            if (claimError) throw claimError;
+            // Refresh so the new claim is in the very next request's token.
+            await supabaseAuth.auth.refreshSession();
+          }
+
+          sessionStorage.setItem("edurecover-role", registrationRole);
+          sessionStorage.removeItem("edurecover-pending-role");
+          onContinue(registrationRole);
+        }
+      } catch (error) {
+        setAuthMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to send the verification code.",
+        );
+      } finally {
+        setAuthenticating(false);
+      }
+      return;
+    }
+    setAuthenticating(true);
+    setAuthMessage("");
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "");
+    if (!isAllowedInstitutionEmail(email)) {
+      setAuthMessage(
+        "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
+      );
+      setAuthenticating(false);
+      return;
+    }
+    setAuthMessage(
+      "Vignan accounts must continue with Microsoft 365 or GitHub login.",
+    );
     setAuthenticating(false);
   };
 
-  const handleGitHubLogin = async () => {
+  const handleOAuthLogin = async (provider: "github" | "azure") => {
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
@@ -203,12 +233,20 @@ export default function AuthPage({
       import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
       window.location.origin;
     const { error } = await supabaseAuth.auth.signInWithOAuth({
-      provider: "github",
+      provider,
       options: { redirectTo: `${siteUrl}/auth` },
     });
     if (error) {
       setAuthMessage(error.message);
       setAuthenticating(false);
+    }
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setSelectedRole(role);
+    if (role !== "student" && role !== "mentor") {
+      setLoginMethod("account");
+      setOtpSent(false);
     }
   };
 
@@ -305,13 +343,23 @@ export default function AuthPage({
           <div className="auth-tabs">
             <button
               className={mode === "signin" ? "active" : ""}
-              onClick={() => setMode("signin")}
+              onClick={() => {
+                setMode("signin");
+                setLoginMethod("account");
+                setOtpSent(false);
+                setAuthMessage("");
+              }}
             >
               Sign in
             </button>
             <button
               className={mode === "signup" ? "active" : ""}
-              onClick={() => setMode("signup")}
+              onClick={() => {
+                setMode("signup");
+                setLoginMethod("account");
+                setOtpSent(false);
+                setAuthMessage("");
+              }}
             >
               Sign up
             </button>
@@ -331,50 +379,96 @@ export default function AuthPage({
                 : "Start with your institutional email. You can invite your team later."}
             </p>
           </div>
+          {mode === "signin" && (
+            <div
+              className="auth-login-methods"
+              role="tablist"
+              aria-label="Login method"
+            >
+              <button
+                type="button"
+                className={loginMethod === "account" ? "active" : ""}
+                onClick={() => {
+                  setLoginMethod("account");
+                  setOtpSent(false);
+                  setAuthMessage("");
+                }}
+              >
+                Email and password
+              </button>
+              <button
+                type="button"
+                className={loginMethod === "registration" ? "active" : ""}
+                onClick={() => {
+                  setLoginMethod("registration");
+                  setAuthMessage("");
+                }}
+                disabled={!registrationRole}
+              >
+                Student / teacher SMS
+              </button>
+            </div>
+          )}
           <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Institutional email or ID</span>
-              <div className="auth-input">
-                <Mail size={17} />
-                <input
-                  required
-                  name="email"
-                  type="email"
-                  placeholder="you@university.edu"
-                />
-              </div>
-            </label>
-            <label>
-              <span>Password</span>
-              <div className="auth-input">
-                <LockKeyhole size={17} />
-                <input
-                  required
-                  name="password"
-                  type="password"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </label>
-            {selectedRole === "student" && (
-              <label>
-                <span>
-                  Your student ID
-                  {mode === "signin" && (
-                    <small> — only needed if not already linked</small>
-                  )}
-                </span>
-                <div className="auth-input">
-                  <UserRound size={17} />
-                  <input
-                    required={mode === "signup"}
-                    name="student_id"
-                    type="text"
-                    autoComplete="off"
-                    placeholder="e.g. STU002"
-                  />
-                </div>
-              </label>
+            {loginMethod === "registration" && mode === "signin" ? (
+              <>
+                <label>
+                  <span>
+                    {selectedRole === "mentor" ? "Teacher" : "Student"}{" "}
+                    registration number
+                  </span>
+                  <div className="auth-input">
+                    <UserRound size={17} />
+                    <input
+                      required
+                      name="registrationNumber"
+                      placeholder="Enter your registration number"
+                    />
+                  </div>
+                </label>
+                {otpSent && (
+                  <label>
+                    <span>SMS verification code</span>
+                    <div className="auth-input">
+                      <LockKeyhole size={17} />
+                      <input
+                        required
+                        name="otp"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="Enter the 6-digit code"
+                      />
+                    </div>
+                  </label>
+                )}
+              </>
+            ) : (
+              <>
+                <label>
+                  <span>Institutional email or ID</span>
+                  <div className="auth-input">
+                    <Mail size={17} />
+                    <input
+                      required
+                      name="email"
+                      type="email"
+                      placeholder="you@university.edu"
+                    />
+                  </div>
+                </label>
+                <label>
+                  <span>Password</span>
+                  <div className="auth-input">
+                    <LockKeyhole size={17} />
+                    <input
+                      required
+                      name="password"
+                      type="password"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </label>
+              </>
             )}
             <div className="auth-form-meta">
               <label className="remember">
@@ -395,9 +489,13 @@ export default function AuthPage({
             >
               {authenticating
                 ? "Connecting..."
-                : mode === "signin"
-                  ? "Sign in to workspace"
-                  : "Create account"}
+                : mode === "signin" && loginMethod === "registration"
+                  ? otpSent
+                    ? "Verify SMS code"
+                    : "Send SMS code"
+                  : mode === "signin"
+                    ? "Sign in to workspace"
+                    : "Create account"}
               <ArrowRight size={17} />
             </button>
           </form>
@@ -407,10 +505,23 @@ export default function AuthPage({
           <div className="auth-providers">
             <button
               type="button"
-              onClick={() => void handleGitHubLogin()}
+              onClick={() => void handleOAuthLogin("github")}
               disabled={authenticating}
+              title="Only @vignan.ac.in accounts can use GitHub login"
             >
-              <span className="provider-github">GH</span> GitHub
+              <Code2 size={16} aria-hidden="true" />
+              <span>GitHub</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleOAuthLogin("azure")}
+              disabled={authenticating}
+              title="Only @vignan.ac.in accounts can use Microsoft 365 login"
+            >
+              <span className="provider-microsoft" aria-hidden="true">
+                M
+              </span>
+              <span>Microsoft 365</span>
             </button>
           </div>
           {authMessage && (
@@ -432,7 +543,7 @@ export default function AuthPage({
                   type="button"
                   key={role.id}
                   className={selectedRole === role.id ? "selected" : ""}
-                  onClick={() => setSelectedRole(role.id)}
+                  onClick={() => handleRoleChange(role.id)}
                 >
                   <span className="role-selector-icon">
                     <Icon size={17} />

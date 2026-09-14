@@ -73,6 +73,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  registrationPhone: (registrationNumber: string, role: "student" | "mentor") =>
+    request<{ phone: string }>("/api/auth/registration-phone", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        registration_number: registrationNumber,
+        role,
+      }),
+    }),
   me: () => request<Identity>("/api/me"),
   mySummary: () => request<OrchestrationData>("/api/me/summary"),
   students: (params: {
