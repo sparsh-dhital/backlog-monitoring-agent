@@ -16,14 +16,15 @@ import {
   ClipboardCheck,
   MessageCircle,
   Mail,
+  Moon,
   Radar,
   ScanSearch,
   ShieldCheck,
-  Sparkles,
+  Sun,
   UserCheck,
-  WandSparkles,
 } from "lucide-react";
 import Brand from "../components/Brand";
+import { useTheme } from "../theme-context";
 
 const workflowSteps = [
   ["01", "Detect", "Spot a change in a student's academic signal."],
@@ -116,7 +117,7 @@ const workflowIcons = [
   ScanSearch,
   Fingerprint,
   Calculator,
-  WandSparkles,
+  ClipboardCheck,
   UserCheck,
   HandHelping,
   Activity,
@@ -132,6 +133,7 @@ export default function LandingPage({
 }) {
   const [activeWorkflow, setActiveWorkflow] = useState(0);
   const [activeRole, setActiveRole] = useState(0);
+  const { darkMode, toggleDarkMode } = useTheme();
   return (
     <main className="landing-page">
       <nav className="site-nav">
@@ -147,6 +149,18 @@ export default function LandingPage({
         <div className="nav-actions">
           <button className="link-button" onClick={onPrototype}>
             Prototype
+          </button>
+          <button
+            type="button"
+            className="theme-toggle navbar-theme-toggle"
+            onClick={toggleDarkMode}
+            aria-label={
+              darkMode ? "Switch to light mode" : "Switch to dark mode"
+            }
+            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            <span>{darkMode ? "Light" : "Dark"}</span>
           </button>
           <button className="primary-button small" onClick={onEnter}>
             Get started <ArrowUpRight size={15} />
@@ -431,7 +445,7 @@ export default function LandingPage({
         <div className="decision-flow">
           <div className="flow-node ai-node">
             <span>
-              <Sparkles size={18} />
+              <Activity size={18} />
             </span>
             <div>
               <small>Academic review</small>

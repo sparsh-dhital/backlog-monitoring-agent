@@ -2,17 +2,21 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Lenis from "lenis";
+import { Moon, Sun } from "lucide-react";
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
+import { ThemeProvider } from "./theme";
+import { useTheme } from "./theme-context";
 import "./App.css";
 
 const roleIds = new Set<UserRole>(userRoles.map((role) => role.id));
@@ -62,6 +66,30 @@ function SiteLoader() {
       </div>
     </div>
   );
+}
+
+function ThemeToggle({ floating = false }: { floating?: boolean }) {
+  const { darkMode, toggleDarkMode } = useTheme();
+  return (
+    <button
+      type="button"
+      onClick={toggleDarkMode}
+      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      className={
+        floating ? "theme-toggle theme-toggle-floating" : "theme-toggle"
+      }
+    >
+      {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+      <span>{darkMode ? "Light" : "Dark"}</span>
+    </button>
+  );
+}
+
+function SiteThemeToggle() {
+  const { pathname } = useLocation();
+  if (pathname === "/" || pathname.startsWith("/dashboard/")) return null;
+  return <ThemeToggle floating />;
 }
 
 function AuthRoute() {
@@ -152,8 +180,9 @@ export default function App() {
   if (isBooting) return <SiteLoader />;
 
   return (
-    <>
+    <ThemeProvider>
       <SmoothScroll />
+      <SiteThemeToggle />
       <Routes>
         <Route path="/" element={<LandingRoute />} />
         <Route path="/auth" element={<AuthRoute />} />
@@ -161,6 +190,6 @@ export default function App() {
         <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </>
+    </ThemeProvider>
   );
 }

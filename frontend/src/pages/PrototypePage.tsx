@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import {
   Activity,
-  AlertTriangle,
   Archive,
   ArrowLeft,
   ArrowRight,
@@ -20,14 +19,18 @@ import {
   FileSpreadsheet,
   FileText,
   Gauge,
+  HandHelping,
   Home,
+  Lightbulb,
   LineChart,
+  Moon,
+  ClipboardList,
   QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
   Settings,
-  Sparkles,
+  Sun,
   Users,
   UsersRound,
   X,
@@ -42,6 +45,7 @@ import { userRoles, type UserRole } from "../types/roles";
 import { api } from "../api";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import { supabaseAuth } from "../supabaseClient";
+import { useTheme } from "../theme-context";
 
 const dashboardByRole = {
   student: {
@@ -110,7 +114,7 @@ const dashboardNavigation = {
   student: [
     ["Dashboard", Home],
     ["My backlogs", Archive],
-    ["Recovery plan", Sparkles],
+    ["Recovery plan", ClipboardList],
     ["Exams", ClipboardCheck],
     ["Progress", LineChart],
     ["Notifications", Bell],
@@ -118,7 +122,7 @@ const dashboardNavigation = {
   mentor: [
     ["Dashboard", Home],
     ["Students", UsersRound],
-    ["Interventions", Sparkles],
+    ["Interventions", HandHelping],
     ["Patterns", BarChart3],
     ["Alerts", Bell],
     ["Reports", FileText],
@@ -128,7 +132,7 @@ const dashboardNavigation = {
     ["Students", UsersRound],
     ["Backlogs", Archive],
     ["Patterns", BarChart3],
-    ["Interventions", Sparkles],
+    ["Interventions", HandHelping],
     ["Examinations", ClipboardCheck],
     ["Alerts", Bell],
     ["Reports", FileText],
@@ -265,9 +269,9 @@ function DashboardSidebar({
         <button
           type="button"
           onClick={onLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-all duration-150"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all duration-150"
         >
-          <ArrowLeft size={17} className="text-slate-400" />
+          <ArrowLeft size={17} className="text-rose-600" />
           <span>Logout</span>
         </button>
       </div>
@@ -330,8 +334,12 @@ function DashboardSidebar({
               <Settings size={17} />
               <span>Settings</span>
             </button>
-            <button type="button" onClick={onLogout}>
-              <ArrowLeft size={17} />
+            <button
+              type="button"
+              onClick={onLogout}
+              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            >
+              <ArrowLeft size={17} className="text-rose-600" />
               <span>Log out</span>
             </button>
           </div>
@@ -341,26 +349,84 @@ function DashboardSidebar({
   );
 }
 
-function DashboardTopbar({ role }: { role: UserRole }) {
+function DashboardTopbar({
+  role,
+  onProfile,
+}: {
+  role: UserRole;
+  onProfile: () => void;
+}) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
+  const { darkMode, toggleDarkMode } = useTheme();
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
-    supabaseAuth.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return;
-      const metadata = data.user.user_metadata ?? {};
+    const loadProfile = async () => {
+      const [{ data: userData }, { data: sessionData }] = await Promise.all([
+        supabaseAuth.auth.getUser(),
+        supabaseAuth.auth.getSession(),
+      ]);
+      if (!active || !userData.user) return;
+      const user = userData.user;
+      const identityMetadata =
+        (user.identities?.find((identity) => identity.provider === "azure")
+          ?.identity_data as Record<string, unknown> | undefined) ?? {};
+      const metadata = {
+        ...identityMetadata,
+        ...(user.user_metadata ?? {}),
+      };
+      const constructedName =
+        metadata.given_name && metadata.family_name
+          ? `${metadata.given_name} ${metadata.family_name}`
+          : null;
+      let graphName: string | null = null;
+      const isAzureSession =
+        user.app_metadata?.provider === "azure" ||
+        user.identities?.some((identity) => identity.provider === "azure");
+      if (sessionData.session?.provider_token && isAzureSession) {
+        try {
+          const response = await fetch(
+            "https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname",
+            {
+              headers: {
+                Authorization: `Bearer ${sessionData.session.provider_token}`,
+              },
+            },
+          );
+          if (response.ok) {
+            const graphProfile = (await response.json()) as {
+              displayName?: string;
+              givenName?: string;
+              surname?: string;
+            };
+            graphName =
+              graphProfile.displayName ||
+              (graphProfile.givenName && graphProfile.surname
+                ? `${graphProfile.givenName} ${graphProfile.surname}`
+                : null) ||
+              null;
+          }
+        } catch {
+          graphName = null;
+        }
+      }
       const name =
+        graphName ||
         metadata.full_name ||
         metadata.name ||
+        constructedName ||
+        metadata.display_name ||
         metadata.user_name ||
         metadata.preferred_username ||
-        data.user.email?.split("@")[0] ||
-        "Authenticated user";
+        user.email?.split("@")[0].toUpperCase() ||
+        "Authenticated User";
       setProfileName(String(name));
-      setProfileEmail(data.user.email || "");
-    });
+      setProfileEmail(user.email || "");
+    };
+    void loadProfile();
     return () => {
       active = false;
     };
@@ -380,20 +446,107 @@ function DashboardTopbar({ role }: { role: UserRole }) {
 
       {/* Actions */}
       <div className="flex items-center gap-4">
-        {/* Notification bell */}
         <button
           type="button"
-          aria-label="Notifications"
-          className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-150"
+          onClick={toggleDarkMode}
+          aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+          className="theme-toggle"
         >
-          <Bell size={19} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+          {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          <span>{darkMode ? "Light" : "Dark"}</span>
         </button>
+        {/* Notification bell */}
+        <div className="relative">
+          <button
+            type="button"
+            aria-label="Notifications"
+            aria-expanded={notificationsOpen}
+            onClick={() => setNotificationsOpen((open) => !open)}
+            className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-150"
+          >
+            <Bell size={19} />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+          </button>
+          {notificationsOpen && (
+            <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-800">Alerts</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    Recent academic signals
+                  </p>
+                </div>
+                <span className="rounded-full bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-600">
+                  3 new
+                </span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {[
+                  [
+                    "Attempt pressure",
+                    "14 students have one attempt remaining",
+                    "2h ago",
+                    "bg-rose-500",
+                  ],
+                  [
+                    "Duration risk",
+                    "6 students are nearing maximum duration",
+                    "5h ago",
+                    "bg-amber-500",
+                  ],
+                  [
+                    "Recovery milestone",
+                    "12 backlogs cleared this term",
+                    "Today",
+                    "bg-emerald-500",
+                  ],
+                ].map(([title, detail, time, tone]) => (
+                  <button
+                    type="button"
+                    key={title}
+                    onClick={() => setNotificationsOpen(false)}
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                  >
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${tone}`}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-slate-700">
+                        {title}
+                      </span>
+                      <span className="mt-1 block text-[11px] leading-4 text-slate-500">
+                        {detail}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-[10px] text-slate-400">
+                      {time}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-slate-100 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(false)}
+                  className="w-full rounded-lg bg-slate-50 py-2 text-xs font-bold text-indigo-600 transition-colors hover:bg-indigo-50"
+                >
+                  Close alerts
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="w-px h-7 bg-slate-200" />
 
         {/* Profile */}
-        <div className="flex items-center gap-3 cursor-pointer group">
+        <button
+          type="button"
+          onClick={onProfile}
+          aria-label="Open profile"
+          className="flex items-center gap-3 cursor-pointer group text-left"
+        >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:shadow-indigo-200 transition-all duration-200">
             <CircleUserRound size={19} />
           </div>
@@ -405,9 +558,121 @@ function DashboardTopbar({ role }: { role: UserRole }) {
               {profileEmail || `${roleLabel} · EduRecover`}
             </span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
+  );
+}
+
+function ProfileView({ role }: { role: UserRole }) {
+  const roleLabel = userRoles.find((item) => item.id === role)?.label || role;
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+    provider: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabaseAuth.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return;
+      const user = data.user;
+      const metadata = user.user_metadata ?? {};
+      const identityMetadata =
+        (user.identities?.[0]?.identity_data as
+          | Record<string, unknown>
+          | undefined) ?? {};
+      const mergedMetadata = { ...identityMetadata, ...metadata };
+      const constructedName =
+        mergedMetadata.given_name && mergedMetadata.family_name
+          ? `${mergedMetadata.given_name} ${mergedMetadata.family_name}`
+          : null;
+      const name =
+        mergedMetadata.full_name ||
+        mergedMetadata.name ||
+        constructedName ||
+        mergedMetadata.display_name ||
+        mergedMetadata.user_name ||
+        user.email?.split("@")[0].toUpperCase() ||
+        "Authenticated User";
+      setProfile({
+        name: String(name),
+        email: user.email || "Not available",
+        provider: String(user.app_metadata?.provider || "Email and password"),
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const details = [
+    ["Institution", "Vignan University"],
+    ["Workspace role", roleLabel],
+    [
+      "Sign-in method",
+      profile?.provider === "azure"
+        ? "Microsoft 365"
+        : profile?.provider === "github"
+          ? "GitHub"
+          : profile?.provider || "Loading",
+    ],
+    ["Account status", profile ? "Active" : "Loading"],
+  ];
+
+  return (
+    <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">
+            Account overview
+          </p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            Your profile
+          </h1>
+          <p className="text-sm text-slate-500 mt-2">
+            Your EduRecover identity and institution access details.
+          </p>
+        </div>
+
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+              <CircleUserRound size={30} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">
+                {profile?.name || "Loading profile..."}
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                {profile?.email || "Loading account email..."}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-800 mb-4">
+            Account details
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {details.map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-xl bg-slate-50 border border-slate-100 p-4"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {label}
+                </p>
+                <p className="text-sm font-semibold text-slate-700 mt-2 break-all">
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 
@@ -580,7 +845,7 @@ function HodCommandCenter({
                 Failure patterns
               </h3>
             </div>
-            <Sparkles size={16} className="text-violet-400" />
+            <Search size={16} className="text-indigo-500" />
           </div>
           <div className="flex flex-col gap-3">
             {dashboard.course_patterns.map((pattern) => (
@@ -1762,7 +2027,10 @@ export default function PrototypePage({
         }
       >
         {mode === "dashboard" ? (
-          <DashboardTopbar role={role} />
+          <DashboardTopbar
+            role={role}
+            onProfile={() => handleTabSelect("Profile")}
+          />
         ) : (
           <header className="workspace-header">
             <div className="workspace-brand">
@@ -1870,7 +2138,7 @@ export default function PrototypePage({
                           className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
                         >
                           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
-                            <Sparkles size={14} className="text-indigo-100" />
+                            <Search size={14} className="text-indigo-100" />
                           </span>
                           <span className="flex flex-col text-left">
                             <small className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-wider leading-none mb-0.5">
@@ -1968,7 +2236,10 @@ export default function PrototypePage({
           activeTab !== "Dashboard" &&
           !data &&
           !loading &&
-          !dashboardLoading && (
+          !dashboardLoading &&
+          (activeTab === "Profile" ? (
+            <ProfileView role={role} />
+          ) : (
             <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
               <DashboardTabView
                 activeTab={activeTab}
@@ -1979,7 +2250,7 @@ export default function PrototypePage({
                 }}
               />
             </div>
-          )}
+          ))}
 
         {/* Loading state for tab views */}
         {mode === "dashboard" &&
@@ -2238,7 +2509,7 @@ export default function PrototypePage({
 
         {error && (
           <div className="workspace-error">
-            <AlertTriangle size={17} />
+            <CircleAlert size={17} />
             <span>{error}</span>
             <button onClick={() => setError("")} aria-label="Dismiss error">
               <X size={15} />
@@ -2261,7 +2532,7 @@ export default function PrototypePage({
               className="workspace-button primary"
               onClick={() => void fetchOrchestration(studentId)}
             >
-              <Sparkles size={16} /> Analyze {studentId}
+              <Search size={16} /> Analyze {studentId}
             </button>
           </section>
         )}
@@ -2563,7 +2834,7 @@ export default function PrototypePage({
                   <div className="card-heading">
                     <div>
                       <span className="workspace-kicker">
-                        <Sparkles size={12} /> AI recommendation
+                        <Lightbulb size={12} /> AI recommendation
                       </span>
                       <h3>{recommendation.recoverability_segment}</h3>
                     </div>
@@ -2720,7 +2991,7 @@ export default function PrototypePage({
                     void fetchOrchestration(studentId);
                   }}
                 >
-                  <Sparkles size={15} /> Use {studentId}
+                  <Lightbulb size={15} /> Use {studentId}
                 </button>
               </div>
             </div>

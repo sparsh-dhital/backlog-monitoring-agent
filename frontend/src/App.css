@@ -4777,10 +4777,14 @@ main.flex {
     position: sticky !important;
     top: 0 !important;
     width: 100% !important;
-    height: auto !important;
+    height: 0 !important;
     max-height: none;
     border-right: 0;
-    border-bottom: 1px solid #dbeafe !important;
+    border-bottom: 0 !important;
+  }
+
+  main.dashboard-shell > aside > div:first-child {
+    display: none;
   }
 
   main.dashboard-shell > aside nav {
@@ -4812,16 +4816,19 @@ main.flex {
   }
 
   main.dashboard-shell > aside .dashboard-mobile-nav {
-    position: fixed;
+    position: fixed !important;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 30;
+    z-index: 40;
+    width: 100vw;
+    box-sizing: border-box;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 2px;
     padding: 8px max(10px, env(safe-area-inset-left))
-      calc(8px + env(safe-area-inset-bottom));
+      calc(8px + env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-right));
     border-top: 1px solid #dbeafe;
     background: #fffffff2;
     box-shadow: 0 -12px 28px #5c83a51f;
@@ -4916,8 +4923,8 @@ main.flex {
   main.dashboard-shell > div {
     width: 100%;
     min-width: 0;
-    min-height: calc(100dvh - 112px);
-    padding-bottom: 82px;
+    min-height: 100dvh;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
     overflow: visible !important;
   }
 
@@ -4929,13 +4936,13 @@ main.flex {
 
   main.dashboard-shell .dashboard-topbar {
     position: sticky;
-    top: 64px;
+    top: 0;
     z-index: 9;
     flex-wrap: wrap;
     height: auto;
     min-height: 64px;
     gap: 10px;
-    padding: 12px 16px;
+    padding: 14px 16px;
   }
 
   main.dashboard-shell .dashboard-topbar .dashboard-search {
@@ -4945,6 +4952,30 @@ main.flex {
 
   main.dashboard-shell .dashboard-topbar > div:last-child {
     margin-left: auto;
+    min-width: 0;
+  }
+
+  main.dashboard-shell .dashboard-topbar > div:last-child > button:last-child {
+    min-width: 0;
+    max-width: 158px;
+  }
+
+  main.dashboard-shell
+    .dashboard-topbar
+    > div:last-child
+    > button:last-child
+    > div:last-child {
+    min-width: 0;
+  }
+
+  main.dashboard-shell
+    .dashboard-topbar
+    > div:last-child
+    > button:last-child
+    span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   main.dashboard-shell .px-8 {
@@ -4996,4 +5027,324 @@ main.flex {
   main.dashboard-shell .grid.grid-cols-4 > *:nth-child(4) {
     margin-top: 0;
   }
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #d7e3f2;
+  border-radius: 10px;
+  color: #526481;
+  background: #ffffffc7;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s,
+    transform 0.2s;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: #9bb9df;
+  color: #275cc9;
+  background: white;
+}
+
+.theme-toggle-floating {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 60;
+  box-shadow: 0 10px 24px #315b871c;
+}
+
+.navbar-theme-toggle {
+  min-height: 34px;
+  padding: 0 9px;
+}
+
+html.dark,
+body.dark {
+  color-scheme: dark;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+body.dark .landing-page,
+body.dark .auth-page,
+body.dark .not-found-page,
+body.dark .prototype-console {
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+body.dark .theme-toggle {
+  border-color: #334155;
+  color: #cbd5e1;
+  background: #172338;
+}
+
+body.dark .theme-toggle:hover {
+  border-color: #64748b;
+  color: #f8fafc;
+  background: #24334d;
+}
+
+body.dark .dashboard-shell {
+  background-color: #0f172a !important;
+  background-image:
+    linear-gradient(90deg, #33415520 1px, transparent 1px),
+    linear-gradient(#33415520 1px, transparent 1px),
+    linear-gradient(135deg, #0f172a 0%, #172554 52%, #111827 100%) !important;
+}
+
+body.dark .dashboard-sidebar,
+body.dark .dashboard-topbar,
+body.dark .dashboard-shell .bg-white\/60,
+body.dark .dashboard-shell .dashboard-stat,
+body.dark .dashboard-shell .bg-white {
+  color: #e2e8f0 !important;
+  background: #172338e8 !important;
+  border-color: #334155 !important;
+  box-shadow: 0 12px 30px -18px #02061799 !important;
+}
+
+body.dark .dashboard-search,
+body.dark .dashboard-shell .bg-slate-50 {
+  color: #cbd5e1 !important;
+  background: #111c2f !important;
+  border-color: #334155 !important;
+}
+
+body.dark .dashboard-mobile-nav,
+body.dark .dashboard-mobile-more {
+  background: #111c2ff5 !important;
+  border-color: #334155 !important;
+  box-shadow: 0 -12px 28px #02061766;
+}
+
+body.dark .dashboard-mobile-nav > button,
+body.dark .dashboard-mobile-more button {
+  color: #94a3b8;
+}
+
+body.dark .dashboard-mobile-nav > button.is-active,
+body.dark .dashboard-mobile-more button:hover,
+body.dark .dashboard-mobile-more button.is-active {
+  color: #bfdbfe;
+  background: #1e3a6d;
+}
+
+body.dark .text-slate-900,
+body.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+
+body.dark .text-slate-700,
+body.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+body.dark .text-slate-500,
+body.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+body.dark .border-slate-100,
+body.dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+body.dark .bg-slate-50 {
+  background-color: #111c2f !important;
+}
+
+body.dark .auth-panel,
+body.dark .auth-campus-card,
+body.dark .auth-input,
+body.dark .auth-login-methods,
+body.dark .auth-providers button,
+body.dark .role-selector button {
+  color: #e2e8f0;
+  background: #172338;
+  border-color: #334155;
+}
+
+body.dark .auth-input input,
+body.dark .auth-heading h2,
+body.dark .role-selector button strong {
+  color: #f1f5f9;
+}
+
+body.dark .auth-divider::before,
+body.dark .auth-divider::after {
+  background: #334155;
+}
+
+@media (max-width: 680px) {
+  .theme-toggle-floating {
+    top: 12px;
+    right: 14px;
+  }
+
+  main.dashboard-shell .dashboard-topbar .theme-toggle span {
+    display: none;
+  }
+
+  main.dashboard-shell .dashboard-topbar .theme-toggle {
+    width: 34px;
+    padding: 0;
+  }
+
+  .landing-page .nav-actions {
+    gap: 8px;
+  }
+
+  .landing-page .navbar-theme-toggle span {
+    display: none;
+  }
+
+  .landing-page .navbar-theme-toggle {
+    width: 34px;
+    padding: 0;
+  }
+}
+
+/* Landing dark mode: high-contrast type and layered surfaces. */
+body.dark .landing-page {
+  color: #f8fbff;
+  background:
+    radial-gradient(circle at 12% 8%, #1d3b6b55, transparent 30%),
+    radial-gradient(circle at 86% 42%, #26356b44, transparent 32%), #0a1220;
+}
+
+body.dark .landing-page .brand,
+body.dark .landing-page .hero-copy h1,
+body.dark .landing-page .section-heading h2,
+body.dark .landing-page .human-copy h2,
+body.dark .landing-page .cta-section h2 {
+  color: #f8fbff;
+}
+
+body.dark .landing-page .hero-copy h1 em,
+body.dark .landing-page .section-heading h2 em,
+body.dark .landing-page .human-copy h2 em {
+  color: #9db4ff;
+}
+
+body.dark .landing-page .hero-copy > p,
+body.dark .landing-page .section-heading p,
+body.dark .landing-page .human-copy p,
+body.dark .landing-page .cta-section p {
+  color: #c3d0e4;
+}
+
+body.dark .landing-page .nav-links a,
+body.dark .landing-page .link-button,
+body.dark .landing-page .hero-proof,
+body.dark .landing-page .workflow-step small,
+body.dark .landing-page .role-card p,
+body.dark .landing-page .flow-node small,
+body.dark .landing-page .flow-result small {
+  color: #a9b9d0;
+}
+
+body.dark .landing-page .nav-links a:hover,
+body.dark .landing-page .link-button:hover {
+  color: #dbe7ff;
+}
+
+body.dark .landing-page .workflow-step,
+body.dark .landing-page .role-card,
+body.dark .landing-page .human-section,
+body.dark .landing-page .cta-section,
+body.dark .landing-page .dashboard-preview,
+body.dark .landing-page .repeat-card,
+body.dark .landing-page .plan-card {
+  color: #eaf1fb;
+  background: #142238;
+  border: 1px solid #304565;
+  box-shadow: 0 22px 55px #02061752;
+}
+
+body.dark .landing-page .workflow-step.active,
+body.dark .landing-page .role-card.active {
+  background: #1b3153;
+  border-color: #6685d7;
+}
+
+body.dark .landing-page .workflow-step strong,
+body.dark .landing-page .role-card h3,
+body.dark .landing-page .flow-node strong,
+body.dark .landing-page .flow-result strong {
+  color: #f1f5fa;
+}
+
+body.dark .landing-page .step-icon,
+body.dark .landing-page .role-icon {
+  color: #b4c6ff;
+  background: #263d6b;
+  border-color: #526da8;
+}
+
+body.dark .landing-page .dashboard-preview {
+  background: linear-gradient(145deg, #1b2d49, #102039);
+}
+
+body.dark .landing-page .preview-heading strong,
+body.dark .landing-page .preview-metrics strong,
+body.dark .landing-page .preview-alert strong {
+  color: #f8fbff;
+}
+
+body.dark .landing-page .preview-heading small,
+body.dark .landing-page .preview-metrics small,
+body.dark .landing-page .chart-panel > small,
+body.dark .landing-page .preview-alert small {
+  color: #9fb0c8;
+}
+
+body.dark .landing-page .preview-metrics > div,
+body.dark .landing-page .chart-panel,
+body.dark .landing-page .preview-alert,
+body.dark .landing-page .flow-node,
+body.dark .landing-page .flow-result {
+  background: #223653;
+  border-color: #3c5375;
+}
+
+body.dark .landing-page .chart-labels,
+body.dark .landing-page .legend {
+  color: #9fb0c8;
+}
+
+body.dark .landing-page .positive {
+  color: #65d2c8;
+}
+
+body.dark .landing-page .warning,
+body.dark .landing-page .orange {
+  color: #f4bd69;
+}
+
+body.dark .landing-page .human-section {
+  background: #101d31;
+}
+
+body.dark .landing-page .cta-section {
+  background: linear-gradient(135deg, #25458d, #293a87);
+  border-color: #5c78c6;
+}
+
+body.dark .landing-page .site-footer {
+  color: #dce7f7;
+  background: #091321;
+  border-color: #263954;
 }

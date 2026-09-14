@@ -26,11 +26,11 @@ const toneConfig = {
   },
   danger: {
     badge:
-      "bg-rose-500/10 text-rose-700 border border-rose-500/20 backdrop-blur-md",
+      "bg-red-500/10 text-red-700 border border-red-500/25 backdrop-blur-md",
     stat: "border-rose-200/50 bg-rose-50/40 backdrop-blur-lg shadow-[0_4px_20px_-4px_rgba(244,63,94,0.1)]",
     value:
       "bg-clip-text text-transparent bg-gradient-to-br from-rose-600 to-red-500",
-    indicator: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]",
+    indicator: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]",
   },
 };
 
