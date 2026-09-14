@@ -12,6 +12,7 @@ import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
 import { ThemeProvider } from "./theme";
 import ThemeToggle from "./components/ThemeToggle";
+import { clearDevSession, getDevSession } from "./devAuth";
 import "./App.css";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -26,6 +27,7 @@ function clearLocalSession() {
   sessionStorage.removeItem("edurecover-pending-role");
   sessionStorage.removeItem("edurecover-demo-role");
   sessionStorage.removeItem("edurecover-focus-student");
+  clearDevSession();
 }
 
 function SmoothScroll() {
@@ -72,6 +74,7 @@ function SiteLoader() {
   );
 }
 
+<<<<<<< HEAD
 function SiteThemeToggle() {
   const { pathname } = useLocation();
   if (pathname === "/" || pathname.startsWith("/dashboard/")) return null;
@@ -83,6 +86,8 @@ function SiteThemeToggle() {
   );
 }
 
+=======
+>>>>>>> origin/Gaurav
 function AuthRoute() {
   const navigate = useNavigate();
   return (
@@ -121,7 +126,13 @@ function ProtectedDashboard() {
   ) as UserRole | null;
   const demoRole = sessionStorage.getItem("edurecover-demo-role");
 
+  // A local dev test login has no Supabase session and stands in for one.
+  // import.meta.env.DEV is the literal `false` in production, so this whole
+  // expression folds to null there and the real Supabase check always runs.
+  const devRole = import.meta.env.DEV ? (getDevSession()?.role ?? null) : null;
+
   useEffect(() => {
+    if (devRole) return;
     let active = true;
     supabaseAuth.auth.getSession().then(({ data }) => {
       if (!active) return;
@@ -135,12 +146,16 @@ function ProtectedDashboard() {
     return () => {
       active = false;
     };
+<<<<<<< HEAD
   }, [demoRole, navigate, role]);
+=======
+  }, [navigate, role, devRole]);
+>>>>>>> origin/Gaurav
 
   if (!role || !roleIds.has(role as UserRole)) return <NotFoundPage />;
   if (sessionRole !== role)
     return <Navigate replace to={`/auth?requiredRole=${role}`} />;
-  if (!sessionChecked) return null;
+  if (!sessionChecked && !devRole) return null;
 
   const handleLogout = async () => {
     await supabaseAuth.auth.signOut();
@@ -172,8 +187,9 @@ export default function App() {
   if (isBooting) return <SiteLoader />;
 
   return (
-    <ThemeProvider>
+    <>
       <SmoothScroll />
+<<<<<<< HEAD
       <SiteThemeToggle />
       <Suspense fallback={<SiteLoader />}>
         <Routes>
@@ -185,5 +201,15 @@ export default function App() {
         </Routes>
       </Suspense>
     </ThemeProvider>
+=======
+      <Routes>
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/auth" element={<AuthRoute />} />
+        <Route path="/prototype" element={<PrototypeRoute />} />
+        <Route path="/dashboard/:role" element={<ProtectedDashboard />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
+>>>>>>> origin/Gaurav
   );
 }

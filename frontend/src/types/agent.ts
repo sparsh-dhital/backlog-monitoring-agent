@@ -70,3 +70,76 @@ export interface DashboardData {
   students: DashboardStudent[];
   course_patterns: Array<{ course_code: string; count: number }>;
 }
+
+export interface BacklogRow {
+  id: string;
+  student_id: string;
+  course_code: string;
+  attempts_made: number;
+  status: string;
+}
+
+export interface Identity {
+  email: string | null;
+  role: string | null;
+  student_id: string | null;
+}
+
+export interface DirectoryStudent extends DashboardStudent {
+  courses: string[];
+}
+
+export interface StudentDirectory {
+  total: number;
+  page: number;
+  page_size: number;
+  page_count: number;
+  students: DirectoryStudent[];
+}
+
+export interface CourseRow {
+  course_code: string;
+  student_count: number;
+  backlog_count: number;
+  average_attempts: number;
+  max_attempts_made: number;
+  pressure: "HIGH" | "WATCH" | "STABLE";
+}
+
+export interface AlertRow {
+  id: string;
+  severity: "CRITICAL" | "WARNING";
+  title: string;
+  detail: string;
+  student_ids: string[];
+}
+
+export interface AlertFeed {
+  alerts: AlertRow[];
+  unread_count: number;
+}
+
+export interface InterventionRow {
+  id?: string;
+  student_id: string;
+  risk_level?: string;
+  recommended_action?: string;
+  human_approved?: boolean;
+  mentor_id?: string;
+  created_at?: string;
+}
+
+export interface ExamRegistrationRow {
+  id?: string;
+  student_id: string;
+  course_code: string;
+  fee_cleared?: boolean;
+  eligibility_status?: string;
+}
+
+export interface ExamRegistrationFeed {
+  registrations: ExamRegistrationRow[];
+  eligible_count: number;
+  fee_pending_count: number;
+  total: number;
+}

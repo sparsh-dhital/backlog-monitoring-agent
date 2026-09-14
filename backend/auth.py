@@ -17,6 +17,53 @@ _auth_client: Client | None = (
 )
 _demo_roles = {"student", "mentor", "hod", "exam", "placement"}
 
+VALID_ROLES = ("student", "mentor", "hod", "exam", "placement")
+STAFF_ROLES = ("mentor", "hod", "exam", "placement")
+
+# ── Local development test login ────────────────────────────────────────────
+# Off unless ALLOW_DEV_AUTH_BYPASS=true is present in backend/.env, which is
+# gitignored and never deployed. Read once at import so a running server cannot
+# be flipped open by a later environment change.
+#
+# It exists because the institutional flow (@vignan.ac.in OAuth, or
+# registration + SMS OTP against a `profiles` table that does not yet exist)
+# admits nobody on a developer machine. Never enable it on a deployed host:
+# it accepts a self-asserted role with no proof of identity whatsoever.
+_DEV_BYPASS = os.environ.get("ALLOW_DEV_AUTH_BYPASS", "").strip().lower() == "true"
+_DEV_TOKEN_PREFIX = "dev:"
+
+if _DEV_BYPASS:
+    print(
+        "[auth] ALLOW_DEV_AUTH_BYPASS=true — 'dev:<role>:<student_id>' bearer "
+        "tokens are accepted WITHOUT identity verification. Local use only."
+    )
+
+
+class _DevUser:
+    """Stands in for a Supabase user object, exposing only what the app reads."""
+
+    def __init__(self, role: str, student_id: str | None):
+        self.id = f"dev-{role}"
+        self.email = f"dev-{role}@localhost.test"
+        self.user_metadata = {"role": role}
+        if student_id:
+            self.user_metadata["student_id"] = student_id
+
+
+def _dev_user_from_token(token: str) -> "_DevUser | None":
+    """Parse 'dev:<role>:<student_id>'. Returns None if it is not one of ours."""
+    if not _DEV_BYPASS or not token.startswith(_DEV_TOKEN_PREFIX):
+        return None
+    parts = token.split(":", 2)
+    role = parts[1].strip().lower() if len(parts) > 1 else ""
+    if role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Dev token role must be one of: {', '.join(VALID_ROLES)}.",
+        )
+    student_id = parts[2].strip() if len(parts) > 2 else ""
+    return _DevUser(role, student_id or None)
+
 
 def require_user(
     request: Request,
@@ -33,6 +80,11 @@ def require_user(
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # When the bypass is disabled this returns None and a 'dev:' token simply
+    # falls through to Supabase, which rejects it like any other bad token.
+    dev_user = _dev_user_from_token(credentials.credentials)
+    if dev_user is not None:
+        return dev_user
     if _auth_client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -53,3 +105,63 @@ def require_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return response.user
+
+
+def user_role(user) -> str | None:
+    """Role claim carried on the Supabase user's metadata."""
+    metadata = getattr(user, "user_metadata", None) or {}
+    role = metadata.get("role")
+    return role if role in VALID_ROLES else None
+
+
+def user_student_id(user) -> str | None:
+    """The student record this account belongs to, if any."""
+    metadata = getattr(user, "user_metadata", None) or {}
+    value = metadata.get("student_id")
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def require_role(*allowed: str):
+    """Dependency factory enforcing that the caller holds one of `allowed`.
+
+    Authentication alone is not authorization: without this, every signed-in
+    account could read every endpoint regardless of the role the UI shows.
+    """
+
+    def dependency(user=Depends(require_user)):
+        role = user_role(user)
+        if role is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "No role is assigned to this account. "
+                    "Sign up again or ask an administrator to set one."
+                ),
+            )
+        if role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This view requires one of: {', '.join(allowed)}.",
+            )
+        return user
+
+    return dependency
+
+
+def require_student(user=Depends(require_user)):
+    """A student caller plus the student_id their account is bound to."""
+    if user_role(user) != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This view is for student accounts.",
+        )
+    student_id = user_student_id(user)
+    if not student_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "This student account is not linked to a student record. "
+                "Set a student ID on the account to continue."
+            ),
+        )
+    return student_id

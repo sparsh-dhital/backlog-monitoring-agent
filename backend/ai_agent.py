@@ -66,6 +66,35 @@ def run_agent_35_orchestration(student_evaluation: dict, integration_results: di
         print(f"[WARNING] Groq API Error: {error_str}")
         return get_fallback_response(student_evaluation.get("student_id", "UNKNOWN"), f"LLM Error/Rate Limit: {error_str}")
 
+def translate_remarks(text: str, target_language: str) -> str:
+    """Translate agent remarks for speech without changing the original analysis."""
+    if target_language.lower() in {"english", "en", "en-in"} or not client:
+        return text
+
+    prompt = f"""
+Translate the following academic recovery remarks into {target_language} for a human voice assistant.
+Use natural, complete spoken sentences with a warm professional tone. Expand technical labels:
+say "structured remedial support" instead of underscore-separated identifiers, and keep student IDs,
+course codes, and numbers accurate. Do not include markdown, brackets, bullets, or meta commentary.
+Return only the speech-ready translation.
+
+Remarks:
+{text}
+"""
+    try:
+        response = client.chat.completions.create(
+            model="qwen/qwen3.8-27b",
+            messages=[
+                {"role": "system", "content": "You are a precise translation service."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.1,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as error:
+        print(f"Translation error: {error}")
+        return text
+
 def get_fallback_response(student_id: str, reason: str):
     """
     Provides a seamless synthesized fallback analysis if the AI API hits rate limits,

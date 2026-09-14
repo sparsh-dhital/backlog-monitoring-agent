@@ -398,3 +398,761 @@ a {
   scrollbar-width: thin;
   scrollbar-color: rgba(99, 102, 241, 0.25) transparent;
 }
+
+/* ─── What-if recovery simulator ─────────────────────────────── */
+
+.sim-param.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sim-param-value {
+  display: inline-flex;
+  align-items: center;
+  min-width: 58px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid #c7d8f5;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eef4ff, #e3edff);
+  color: #2f5fd0;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+}
+
+/* Range track: filled portion is driven by --sim-progress */
+.sim-range {
+  width: 100%;
+  height: 6px;
+  border-radius: 100px;
+  background: linear-gradient(
+    90deg,
+    #247fe8 var(--sim-progress, 0%),
+    #dbe7f7 var(--sim-progress, 0%)
+  );
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.sim-range::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #247fe8;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px #247fe855;
+  cursor: grab;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.sim-range::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  box-shadow: 0 3px 12px #247fe877;
+}
+
+.sim-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+.sim-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 3px solid #247fe8;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px #247fe855;
+  cursor: grab;
+}
+
+.sim-range:focus-visible {
+  outline: 2px solid #247fe8;
+  outline-offset: 4px;
+}
+
+/* Animated live-calculate switch */
+.sim-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sim-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.sim-switch-track {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 24px;
+  border: 1px solid #cfdcef;
+  border-radius: 100px;
+  background: #e2e9f4;
+  transition:
+    background 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.28s ease;
+  flex-shrink: 0;
+}
+
+.sim-switch input:checked + .sim-switch-track {
+  border-color: #1f6fd4;
+  background: linear-gradient(135deg, #247fe8, #4264e8);
+}
+
+.sim-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #94a3b8;
+  box-shadow: 0 2px 5px #1b4b8f33;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.28s ease;
+}
+
+.sim-switch input:checked + .sim-switch-track .sim-switch-thumb {
+  transform: translateX(20px);
+  color: #247fe8;
+}
+
+.sim-switch input:focus-visible + .sim-switch-track {
+  outline: 2px solid #247fe8;
+  outline-offset: 3px;
+}
+
+.sim-switch-label {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  min-width: 78px;
+}
+
+/* Scenario segmented toggle with a sliding glider */
+.sim-segment {
+  position: relative;
+  display: grid;
+  padding: 4px;
+  border: 1px solid #dce7f6;
+  border-radius: 12px;
+  background: #eff5fd;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.sim-segment-glider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  height: calc(100% - 8px);
+  border-radius: 9px;
+  background: linear-gradient(135deg, #247fe8, #4264e8);
+  box-shadow: 0 4px 12px #247fe840;
+  transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.64, 1);
+  pointer-events: none;
+}
+
+.sim-segment button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 4px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #5b6b85;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.22s ease;
+}
+
+.sim-segment button.is-active {
+  color: #fff;
+}
+
+/* Result stat tiles */
+.sim-result-stat {
+  padding: 16px 18px;
+  border: 1px solid;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sim-result-stat:hover {
+  transform: translateY(-2px);
+}
+
+.sim-tone-indigo {
+  border-color: #c9dbf7;
+  background: #eef4ffcc;
+  color: #2f5fd0;
+}
+
+.sim-tone-emerald {
+  border-color: #a9e6cd;
+  background: #ecfdf5cc;
+  color: #047857;
+}
+
+.sim-tone-amber {
+  border-color: #fbdfa4;
+  background: #fffbebcc;
+  color: #b45309;
+}
+
+.sim-tone-rose {
+  border-color: #fac7d0;
+  background: #fff1f3cc;
+  color: #be123c;
+}
+
+/* Verdict banner */
+.sim-verdict {
+  padding: 22px;
+  border: 1px solid;
+  border-radius: 18px;
+  animation: sim-verdict-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sim-verdict-icon {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #ffffff85;
+  flex-shrink: 0;
+}
+
+.sim-verdict-emerald {
+  border-color: #8fdcbc;
+  background: linear-gradient(135deg, #ecfdf5, #d5f7e8);
+  color: #065f46;
+}
+
+.sim-verdict-amber {
+  border-color: #f8d489;
+  background: linear-gradient(135deg, #fffbeb, #fdf0cf);
+  color: #92400e;
+}
+
+.sim-verdict-rose {
+  border-color: #f7b4c1;
+  background: linear-gradient(135deg, #fff1f3, #ffe0e6);
+  color: #9f1239;
+}
+
+@keyframes sim-verdict-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Term-by-term projection tracks */
+.sim-track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sim-track-label {
+  width: 58px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sim-track {
+  height: 10px;
+  flex: 1;
+  border-radius: 100px;
+  background: #e8eff9;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px #1b4b8f14;
+}
+
+.sim-track-fill {
+  display: block;
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #247fe8, #6aa6f2);
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sim-track-fill.is-base {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
+
+.sim-track-fill.is-clear {
+  background: linear-gradient(90deg, #10b981, #6ee7b7);
+}
+
+.sim-track-value {
+  display: flex;
+  width: 34px;
+  justify-content: flex-end;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.sim-running {
+  animation: sim-running-pulse 0.42s ease;
+}
+
+@keyframes sim-running-pulse {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.995);
+  }
+}
+
+@media (max-width: 640px) {
+  .sim-root {
+    padding: 22px 16px;
+  }
+  .sim-switch-label {
+    display: none;
+  }
+  .sim-track-label {
+    width: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sim-verdict,
+  .sim-running {
+    animation: none;
+  }
+  .sim-segment-glider,
+  .sim-track-fill,
+  .sim-switch-thumb,
+  .sim-switch-track {
+    transition: none;
+  }
+}
+
+/* ─── Department charts ──────────────────────────────────────── */
+
+.viz-root {
+  /* Chart chrome & ink. Marks carry the data color; text never does. */
+  --viz-surface: #f9fcff;
+  --viz-ink: #0b0b0b;
+  --viz-ink-secondary: #52514e;
+  --viz-ink-muted: #898781;
+  --viz-hairline: #dbe7f7;
+  --viz-track: #e8eff9;
+}
+
+.viz-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.viz-card {
+  display: flex;
+  margin: 0;
+  padding: 20px;
+  flex-direction: column;
+  border: 1px solid #ffffffd4;
+  border-radius: 16px;
+  background: #ffffffb8;
+  box-shadow: 0 12px 30px -18px #3273ac40;
+  backdrop-filter: blur(12px);
+}
+
+.viz-card figcaption {
+  margin-bottom: 18px;
+}
+
+.viz-card figcaption h4 {
+  margin: 0;
+  color: var(--viz-ink);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.viz-card figcaption p {
+  margin: 2px 0 0;
+  color: var(--viz-ink-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.viz-empty {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--viz-ink-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Horizontal bars — thin marks, 4px rounded data-end, square baseline */
+.viz-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.viz-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  cursor: default;
+  /* Hit target is bigger than the mark. */
+  padding-block: 3px;
+}
+
+.viz-bar-row:hover,
+.viz-bar-row:focus-visible {
+  outline: none;
+  background: #2a78d60f;
+}
+
+.viz-bar-label {
+  width: 62px;
+  overflow: hidden;
+  color: var(--viz-ink-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.viz-bar-track {
+  display: block;
+  height: 14px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--viz-track);
+}
+
+.viz-bar-fill {
+  display: block;
+  height: 100%;
+  /* Square at the baseline, 4px rounded at the data-end. */
+  border-radius: 2px 4px 4px 2px;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.viz-bar-value {
+  width: 22px;
+  color: var(--viz-ink);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Donut */
+.viz-donut-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.viz-donut {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.viz-donut svg {
+  width: 100%;
+  height: 100%;
+}
+
+.viz-donut circle {
+  cursor: default;
+  transition: opacity 0.18s ease;
+}
+
+.viz-donut:hover circle {
+  opacity: 0.45;
+}
+
+.viz-donut circle:hover {
+  opacity: 1;
+}
+
+.viz-donut-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  inset: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.viz-donut-center strong {
+  color: var(--viz-ink);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.viz-donut-center span {
+  margin-top: 3px;
+  color: var(--viz-ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Stacked-bar fallback when the data collapses under three bands */
+.viz-stack {
+  display: flex;
+  width: 100%;
+  height: 16px;
+  gap: 2px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.viz-stack-seg {
+  height: 100%;
+}
+
+.viz-legend {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 7px;
+  list-style: none;
+}
+
+.viz-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.viz-legend-label {
+  flex: 1;
+  color: var(--viz-ink-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.viz-legend-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--viz-ink);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.viz-legend-value small {
+  color: var(--viz-ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Columns */
+.viz-columns {
+  display: flex;
+  height: 168px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.viz-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 6px;
+  cursor: default;
+}
+
+.viz-col:hover,
+.viz-col:focus-visible {
+  outline: none;
+  background: #2a78d60f;
+}
+
+.viz-col-value {
+  color: var(--viz-ink);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.viz-col-plot {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  justify-content: center;
+  /* Hairline baseline, solid, one step off the surface. */
+  border-bottom: 1px solid var(--viz-hairline);
+}
+
+.viz-col-fill {
+  display: block;
+  width: 100%;
+  max-width: 24px;
+  /* 4px rounded cap, square at the baseline. */
+  border-radius: 4px 4px 0 0;
+  transition: height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.viz-col-label {
+  color: var(--viz-ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Tooltip — value leads, label follows */
+.viz-tooltip {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  padding: 7px 10px;
+  transform: translate(-50%, calc(-100% - 12px));
+  border: 1px solid #00000014;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px -8px #1b4b8f4d;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.viz-tooltip strong {
+  color: var(--viz-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.viz-tooltip span {
+  margin-top: 1px;
+  color: var(--viz-ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Table view */
+.viz-table-wrap {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.viz-table {
+  width: 100%;
+  border: 1px solid #ffffffd4;
+  border-radius: 16px;
+  border-collapse: collapse;
+  background: #ffffffb8;
+  overflow: hidden;
+}
+
+.viz-table caption {
+  padding: 14px 16px 10px;
+  color: var(--viz-ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.viz-table th,
+.viz-table td {
+  padding: 8px 16px;
+  border-top: 1px solid var(--viz-hairline);
+  font-size: 11px;
+  text-align: left;
+}
+
+.viz-table thead th {
+  color: var(--viz-ink-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.viz-table tbody th {
+  color: var(--viz-ink-secondary);
+  font-weight: 600;
+}
+
+.viz-table tbody td {
+  color: var(--viz-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+  .viz-grid,
+  .viz-table-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viz-bar-fill,
+  .viz-col-fill,
+  .viz-donut circle {
+    transition: none;
+  }
+}
