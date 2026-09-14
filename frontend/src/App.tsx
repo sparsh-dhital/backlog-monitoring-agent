@@ -31,6 +31,7 @@ function SmoothScroll() {
     const lenis = new Lenis({
       autoRaf: true,
       anchors: true,
+      allowNestedScroll: true,
       lerp: 0.075,
       smoothWheel: true,
       syncTouch: false,

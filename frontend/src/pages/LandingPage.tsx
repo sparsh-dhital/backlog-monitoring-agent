@@ -272,21 +272,21 @@ export default function LandingPage({
               </div>
               <span className="arrow">→</span>
             </div>
-          </div>
-          <div className="float-card repeat-card">
-            <span className="float-icon coral">!</span>
-            <div>
-              <small>Repeated failure</small>
-              <strong>Data Structures × 3</strong>
+            <div className="float-card repeat-card">
+              <span className="float-icon coral">!</span>
+              <div>
+                <small>Repeated failure</small>
+                <strong>Data Structures × 3</strong>
+              </div>
             </div>
-          </div>
-          <div className="float-card plan-card">
-            <span className="float-icon mint">
-              <Check size={14} />
-            </span>
-            <div>
-              <small>Intervention completed</small>
-              <strong>Student #2048</strong>
+            <div className="float-card plan-card">
+              <span className="float-icon mint">
+                <Check size={14} />
+              </span>
+              <div>
+                <small>Intervention completed</small>
+                <strong>Student #2048</strong>
+              </div>
             </div>
           </div>
         </div>
