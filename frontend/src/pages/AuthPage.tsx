@@ -16,6 +16,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { supabaseAuth } from "../supabaseClient";
+import { api } from "../api";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
 import "../styles/auth.css";
@@ -39,11 +40,40 @@ export default function AuthPage({
   const [selectedRole, setSelectedRole] = useState<UserRole>("hod");
   const [authMessage, setAuthMessage] = useState("");
   const [authenticating, setAuthenticating] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"account" | "registration">(
+    "account",
+  );
+  const [registrationPhone, setRegistrationPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  const registrationRole =
+    selectedRole === "student" || selectedRole === "mentor"
+      ? selectedRole
+      : null;
+  const isAllowedInstitutionEmail = (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    return normalizedEmail.endsWith("@vignan.ac.in");
+  };
 
   useEffect(() => {
     let active = true;
-    supabaseAuth.auth.getSession().then(({ data }) => {
+    supabaseAuth.auth.getSession().then(async ({ data }) => {
       if (!active || !data.session) return;
+      const provider = data.session.user.app_metadata?.provider;
+      const isInstitutionOAuth = provider === "github" || provider === "azure";
+      if (
+        isInstitutionOAuth &&
+        !isAllowedInstitutionEmail(data.session.user.email || "")
+      ) {
+        await supabaseAuth.auth.signOut();
+        if (active) {
+          setAuthMessage(
+            "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
+          );
+          setAuthenticating(false);
+        }
+        return;
+      }
       const savedRole = sessionStorage.getItem(
         "edurecover-pending-role",
       ) as UserRole | null;
@@ -60,34 +90,78 @@ export default function AuthPage({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loginMethod === "registration") {
+      if (!registrationRole) {
+        setAuthMessage(
+          "Registration login is available for students and teachers only.",
+        );
+        return;
+      }
+      const form = new FormData(event.currentTarget);
+      const registrationNumber = String(
+        form.get("registrationNumber") || "",
+      ).trim();
+      const otp = String(form.get("otp") || "").trim();
+      setAuthenticating(true);
+      setAuthMessage("");
+      try {
+        if (!otpSent) {
+          const { phone } = await api.registrationPhone(
+            registrationNumber,
+            registrationRole,
+          );
+          const { error } = await supabaseAuth.auth.signInWithOtp({
+            phone,
+            options: { channel: "sms" },
+          });
+          if (error) throw error;
+          setRegistrationPhone(phone);
+          setOtpSent(true);
+          setAuthMessage(
+            "A verification code was sent to your registered phone.",
+          );
+        } else {
+          const { data, error } = await supabaseAuth.auth.verifyOtp({
+            phone: registrationPhone,
+            token: otp,
+            type: "sms",
+          });
+          if (error) throw error;
+          if (!data.session)
+            throw new Error("Verification did not create a session.");
+          sessionStorage.setItem("edurecover-role", registrationRole);
+          sessionStorage.removeItem("edurecover-pending-role");
+          onContinue(registrationRole);
+        }
+      } catch (error) {
+        setAuthMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to send the verification code.",
+        );
+      } finally {
+        setAuthenticating(false);
+      }
+      return;
+    }
     setAuthenticating(true);
     setAuthMessage("");
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") || "");
-    const password = String(form.get("password") || "");
-    const result =
-      mode === "signin"
-        ? await supabaseAuth.auth.signInWithPassword({ email, password })
-        : await supabaseAuth.auth.signUp({ email, password });
-    if (result.error) {
-      setAuthMessage(result.error.message);
-      setAuthenticating(false);
-      return;
-    }
-    if (!result.data.session) {
+    if (!isAllowedInstitutionEmail(email)) {
       setAuthMessage(
-        "Check your email to confirm your account before signing in.",
+        "Login is restricted to @vignan.ac.in accounts. Use your Vignan Microsoft 365 or GitHub account.",
       );
       setAuthenticating(false);
       return;
     }
-    sessionStorage.setItem("edurecover-role", selectedRole);
-    sessionStorage.removeItem("edurecover-pending-role");
-    onContinue(selectedRole);
+    setAuthMessage(
+      "Vignan accounts must continue with Microsoft 365 or GitHub login.",
+    );
     setAuthenticating(false);
   };
 
-  const handleOAuthLogin = async (provider: "github" | "google") => {
+  const handleOAuthLogin = async (provider: "github" | "azure") => {
     setAuthenticating(true);
     setAuthMessage("");
     sessionStorage.setItem("edurecover-pending-role", selectedRole);
@@ -105,6 +179,14 @@ export default function AuthPage({
     if (error) {
       setAuthMessage(error.message);
       setAuthenticating(false);
+    }
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setSelectedRole(role);
+    if (role !== "student" && role !== "mentor") {
+      setLoginMethod("account");
+      setOtpSent(false);
     }
   };
 
@@ -201,13 +283,23 @@ export default function AuthPage({
           <div className="auth-tabs">
             <button
               className={mode === "signin" ? "active" : ""}
-              onClick={() => setMode("signin")}
+              onClick={() => {
+                setMode("signin");
+                setLoginMethod("account");
+                setOtpSent(false);
+                setAuthMessage("");
+              }}
             >
               Sign in
             </button>
             <button
               className={mode === "signup" ? "active" : ""}
-              onClick={() => setMode("signup")}
+              onClick={() => {
+                setMode("signup");
+                setLoginMethod("account");
+                setOtpSent(false);
+                setAuthMessage("");
+              }}
             >
               Sign up
             </button>
@@ -227,31 +319,97 @@ export default function AuthPage({
                 : "Start with your institutional email. You can invite your team later."}
             </p>
           </div>
+          {mode === "signin" && (
+            <div
+              className="auth-login-methods"
+              role="tablist"
+              aria-label="Login method"
+            >
+              <button
+                type="button"
+                className={loginMethod === "account" ? "active" : ""}
+                onClick={() => {
+                  setLoginMethod("account");
+                  setOtpSent(false);
+                  setAuthMessage("");
+                }}
+              >
+                Email and password
+              </button>
+              <button
+                type="button"
+                className={loginMethod === "registration" ? "active" : ""}
+                onClick={() => {
+                  setLoginMethod("registration");
+                  setAuthMessage("");
+                }}
+                disabled={!registrationRole}
+              >
+                Student / teacher SMS
+              </button>
+            </div>
+          )}
           <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Institutional email or ID</span>
-              <div className="auth-input">
-                <Mail size={17} />
-                <input
-                  required
-                  name="email"
-                  type="email"
-                  placeholder="you@university.edu"
-                />
-              </div>
-            </label>
-            <label>
-              <span>Password</span>
-              <div className="auth-input">
-                <LockKeyhole size={17} />
-                <input
-                  required
-                  name="password"
-                  type="password"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </label>
+            {loginMethod === "registration" && mode === "signin" ? (
+              <>
+                <label>
+                  <span>
+                    {selectedRole === "mentor" ? "Teacher" : "Student"}{" "}
+                    registration number
+                  </span>
+                  <div className="auth-input">
+                    <UserRound size={17} />
+                    <input
+                      required
+                      name="registrationNumber"
+                      placeholder="Enter your registration number"
+                    />
+                  </div>
+                </label>
+                {otpSent && (
+                  <label>
+                    <span>SMS verification code</span>
+                    <div className="auth-input">
+                      <LockKeyhole size={17} />
+                      <input
+                        required
+                        name="otp"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="Enter the 6-digit code"
+                      />
+                    </div>
+                  </label>
+                )}
+              </>
+            ) : (
+              <>
+                <label>
+                  <span>Institutional email or ID</span>
+                  <div className="auth-input">
+                    <Mail size={17} />
+                    <input
+                      required
+                      name="email"
+                      type="email"
+                      placeholder="you@university.edu"
+                    />
+                  </div>
+                </label>
+                <label>
+                  <span>Password</span>
+                  <div className="auth-input">
+                    <LockKeyhole size={17} />
+                    <input
+                      required
+                      name="password"
+                      type="password"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </label>
+              </>
+            )}
             <div className="auth-form-meta">
               <label className="remember">
                 <input type="checkbox" /> <span>Remember me</span>
@@ -271,9 +429,13 @@ export default function AuthPage({
             >
               {authenticating
                 ? "Connecting..."
-                : mode === "signin"
-                  ? "Sign in to workspace"
-                  : "Create account"}
+                : mode === "signin" && loginMethod === "registration"
+                  ? otpSent
+                    ? "Verify SMS code"
+                    : "Send SMS code"
+                  : mode === "signin"
+                    ? "Sign in to workspace"
+                    : "Create account"}
               <ArrowRight size={17} />
             </button>
           </form>
@@ -285,19 +447,21 @@ export default function AuthPage({
               type="button"
               onClick={() => void handleOAuthLogin("github")}
               disabled={authenticating}
+              title="Only @vignan.ac.in accounts can use GitHub login"
             >
               <Code2 size={16} aria-hidden="true" />
               <span>GitHub</span>
             </button>
             <button
               type="button"
-              onClick={() => void handleOAuthLogin("google")}
+              onClick={() => void handleOAuthLogin("azure")}
               disabled={authenticating}
+              title="Only @vignan.ac.in accounts can use Microsoft 365 login"
             >
-              <span className="provider-google" aria-hidden="true">
-                G
+              <span className="provider-microsoft" aria-hidden="true">
+                M
               </span>
-              <span>Google</span>
+              <span>Microsoft 365</span>
             </button>
           </div>
           {authMessage && (
@@ -319,7 +483,7 @@ export default function AuthPage({
                   type="button"
                   key={role.id}
                   className={selectedRole === role.id ? "selected" : ""}
-                  onClick={() => setSelectedRole(role.id)}
+                  onClick={() => handleRoleChange(role.id)}
                 >
                   <span className="role-selector-icon">
                     <Icon size={17} />
