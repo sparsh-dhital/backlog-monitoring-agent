@@ -44,6 +44,13 @@ import DepartmentCharts from "../components/DepartmentCharts";
 import BacklogManager from "../components/BacklogManager";
 import StudentBacklogCharts from "../components/StudentBacklogCharts";
 import { supabaseAuth } from "../supabaseClient";
+import VoiceAssistant from "../components/VoiceAssistant";
+import {
+  addDemoEvent,
+  listDemoEvents,
+  subscribeToDemoEvents,
+  type DemoEvent,
+} from "../shared/demoStore";
 
 const dashboardByRole = {
   student: {
@@ -1406,10 +1413,13 @@ export default function PrototypePage({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [alertCount, setAlertCount] = useState(0);
+  const [demoEvents, setDemoEvents] = useState<DemoEvent[]>(() => listDemoEvents());
   // Bumped after every backlog mutation so dependent views re-read.
   const [dataVersion, setDataVersion] = useState(0);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
+
+  useEffect(() => subscribeToDemoEvents(() => setDemoEvents(listDemoEvents())), []);
 
   // Debounce so a request does not fire on every keystroke.
   useEffect(() => {
@@ -1424,7 +1434,10 @@ export default function PrototypePage({
     api
       .alerts()
       .then((payload) => {
-        if (active) setAlertCount(payload.unread_count);
+        if (active) {
+          const localUnread = demoEvents.filter((event) => !event.read).length;
+          setAlertCount(payload.unread_count + localUnread);
+        }
       })
       .catch(() => {
         if (active) setAlertCount(0);
@@ -1432,7 +1445,7 @@ export default function PrototypePage({
     return () => {
       active = false;
     };
-  }, [mode, activeTab]);
+  }, [mode, activeTab, demoEvents]);
 
   useEffect(() => {
     if (mode !== "dashboard") return;
@@ -1686,6 +1699,122 @@ export default function PrototypePage({
     setData(null);
     setDispatchLogs([]);
     setError("");
+  };
+
+  const handleVoiceCommand = async (command: string) => {
+    const normalized = command
+      .toLowerCase()
+      .replace(/[?!.,'’]/g, " ")
+      .replace(/\bwhat\s+s\b/g, "what is")
+      .replace(/\bwhats\b/g, "what is")
+      .replace(/\bmy\s+backlogs?\b/g, "my backlog")
+      .replace(/\bthe\s+simulation\b/g, "simulation")
+      .replace(/\s+/g, " ")
+      .trim();
+    const availableTabs = (dashboardNavigation[role] as readonly (readonly [string, unknown])[]).map(([tab]) => tab);
+    const openTab = (tab: string) => {
+      if (!availableTabs.includes(tab)) return false;
+      handleTabSelect(tab);
+      return true;
+    };
+
+    if (normalized.includes("scroll down") || normalized.includes("move down")) {
+      window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" });
+      return "Command executed. Scrolling down.";
+    }
+    if (normalized.includes("scroll up") || normalized.includes("move up")) {
+      window.scrollBy({ top: -window.innerHeight * 0.8, behavior: "smooth" });
+      return "Command executed. Scrolling up.";
+    }
+    if (normalized.includes("close modal") || normalized.includes("close window") || normalized === "close") {
+      const closeButton = document.querySelector<HTMLButtonElement>("[aria-label='Close scanner'], [aria-label='Close']");
+      if (!closeButton) return "There is no open modal to close.";
+      closeButton.click();
+      return "Command executed. Closing the open panel.";
+    }
+    if (normalized.includes("enable dark mode") || normalized.includes("turn on dark mode")) {
+      document.documentElement.classList.add("dark");
+      document.body.classList.add("dark");
+      return "Command executed. Dark mode enabled.";
+    }
+    if (normalized.includes("disable dark mode") || normalized.includes("turn off dark mode")) {
+      document.documentElement.classList.remove("dark");
+      document.body.classList.remove("dark");
+      return "Command executed. Dark mode disabled.";
+    }
+    if (normalized.includes("open dashboard") || normalized.includes("go to dashboard") || normalized === "dashboard") {
+      openTab("Dashboard");
+      return "Command executed. Opening the dashboard.";
+    }
+    const tabAliases: Array<[string[], string]> = [
+      [["backlog", "backlogs", "arrear", "arrears"], role === "student" ? "My backlogs" : role === "hod" ? "Backlogs" : "Backlog constraints"],
+      [["simulator", "simulation", "what if", "recovery plan"], "Simulator"],
+      [["student", "directory", "students"], "Students"],
+      [["intervention", "interventions"], "Interventions"],
+      [["pattern", "patterns", "course pattern"], "Patterns"],
+      [["alert", "alerts", "notification", "notifications"], "Alerts"],
+      [["registration", "registrations", "exam registration"], "Registrations"],
+      [["eligibility", "promotion"], "Eligibility"],
+      [["fee", "fees", "fee clearance"], "Fee clearance"],
+      [["examination", "examinations", "exam"], "Examinations"],
+    ];
+    const requestedTab = tabAliases.find(([aliases]) => aliases.some((alias) => normalized.includes(alias)))?.[1];
+    const isDirectCommand = normalized.includes("show my backlog") || normalized.includes("what is my backlog") || normalized.includes("promotion status") || normalized.includes("show my notifications") || normalized.includes("show notifications") || normalized.includes("run simulation") || normalized.includes("what if") || normalized.includes("register for supplementary");
+    if (requestedTab && !isDirectCommand) {
+      if (!openTab(requestedTab)) return `${requestedTab} is not available in this view.`;
+      return `Command executed. Opening ${requestedTab}.`;
+    }
+    const clickMatch = normalized.match(/(?:click|press|open)\s+(?:the\s+)?(.+)/);
+    if (clickMatch) {
+      const target = clickMatch[1].trim();
+      const button = Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
+        .find((candidate) => candidate.textContent?.toLowerCase().includes(target));
+      if (!button) return `I could not find a button named ${target}.`;
+      button.click();
+      return `Command executed. Clicking ${target}.`;
+    }
+    if (normalized.includes("clear form")) {
+      document.querySelectorAll<HTMLInputElement>("input:not([type='hidden'])").forEach((input) => {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      return "Command executed. The visible form fields have been cleared.";
+    }
+    if (normalized.includes("show my backlog") || normalized.includes("what is my backlog") || normalized.includes("tell me my backlog") || normalized.includes("check my backlog")) {
+      openTab("My backlogs");
+      return "Command executed. Opening your backlog register.";
+    }
+    if (normalized.includes("register for supplementary") || normalized.includes("register supplementary") || normalized.includes("supplementary exam")) {
+      if (!openTab("Registrations")) {
+        return "Supplementary registration is not available in this view. Switch to the examination view to continue.";
+      }
+      return "Command executed. Opening supplementary exam registrations.";
+    }
+    if (normalized.includes("promotion status")) {
+      openTab("Dashboard");
+      return `Your promotion status is ${summaryEvaluation?.promotion_status || "being calculated"}.`;
+    }
+    if (normalized.includes("notification")) {
+      openTab("Alerts");
+      const latest = demoEvents[0]?.message;
+      return latest ? `Opening notifications. Latest alert: ${latest}` : "Opening notifications. There are no new demo alerts.";
+    }
+    if (normalized.includes("simulation") || normalized.includes("clear my backlog") || normalized.includes("clear backlog")) {
+      openTab("Simulator");
+      addDemoEvent({
+        kind: "simulation_completed",
+        studentId: studentId || "21CS112",
+        message: "Student simulation opened for recovery planning.",
+        sourceRole: "student",
+      });
+      return "Opening the recovery simulator. Choose how many backlogs to clear.";
+    }
+    if (normalized.includes("switch to hod") || normalized.includes("switch to hod view") || normalized.includes("open hod view")) {
+      if (!onSwitchRole) return "Role switching is not available in this workspace.";
+      onSwitchRole?.("hod");
+      return "Switching to the HoD command center.";
+    }
+    return "I did not understand that command. Try dashboard, backlog, simulator, alerts, scroll down, dark mode, or click analyze.";
   };
 
   return (
@@ -1973,7 +2102,17 @@ export default function PrototypePage({
             <div className="dashboard-reveal flex flex-col gap-5">
               <BacklogManager
                 studentId={role === "student" ? undefined : studentId}
-                onChanged={() => setDataVersion((version) => version + 1)}
+                onChanged={() => {
+                  setDataVersion((version) => version + 1);
+                  if (role === "student") {
+                    addDemoEvent({
+                      kind: "supplementary_registered",
+                      studentId: studentId || "21CS112",
+                      message: `${studentId || "21CS112"} updated the supplementary backlog register.`,
+                      sourceRole: "student",
+                    });
+                  }
+                }}
               />
               <StudentBacklogCharts
                 key={dataVersion}
@@ -1992,6 +2131,19 @@ export default function PrototypePage({
           !data &&
           !loading && (
             <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
+              {activeTab === "Alerts" && demoEvents.length > 0 && (
+                <div className="mx-8 mt-8 rounded-2xl border border-indigo-100 bg-white/80 p-5 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Shared session alerts</p>
+                  <div className="mt-3 space-y-2">
+                    {demoEvents.slice(0, 6).map((event) => (
+                      <div key={event.id} className="flex items-start justify-between gap-4 rounded-xl bg-indigo-50/70 px-4 py-3 text-sm text-slate-700">
+                        <span>{event.message}</span>
+                        <span className="shrink-0 text-[10px] font-bold uppercase text-indigo-500">{event.sourceRole}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <DashboardTabView
                 activeTab={activeTab}
                 search={debouncedSearch}
@@ -2765,6 +2917,7 @@ export default function PrototypePage({
           </div>
         )}
       </div>
+      <VoiceAssistant onCommand={handleVoiceCommand} />
       {/* end of inner content wrapper */}
     </main>
   );

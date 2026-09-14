@@ -17,6 +17,20 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
+.voice-wave {
+  display: inline-block;
+  width: 22px;
+  height: 8px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #6366f1 0 3px, transparent 3px 6px);
+  animation: voice-wave-pulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes voice-wave-pulse {
+  from { transform: scaleY(0.55); opacity: 0.55; }
+  to { transform: scaleY(1.25); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
