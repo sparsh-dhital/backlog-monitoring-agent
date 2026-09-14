@@ -48,3 +48,16 @@ For local development, also add:
 ```text
 http://localhost:5173/auth
 ```
+
+For the OAuth providers, use Supabase's callback endpoint, not the frontend
+callback URL. In GitHub OAuth App settings, set the Authorization callback URL
+to:
+
+```text
+https://nloprkmmfsiawhlasxdw.supabase.co/auth/v1/callback
+```
+
+In Microsoft Entra ID, add the same URL as a Web redirect URI. In Supabase,
+enable the GitHub and Azure providers and configure each provider's client ID
+and secret. The provider then returns to Supabase, and Supabase redirects the
+user back to the deployed `/auth` URL above.

@@ -205,9 +205,7 @@ export default function AuthPage({
         registrationNumber.trim().toUpperCase(),
       );
     }
-    const siteUrl =
-      import.meta.env.VITE_SITE_URL?.replace(/\/$/, "") ||
-      window.location.origin;
+    const siteUrl = window.location.origin;
     try {
       const { error } = await supabaseAuth.auth.signInWithOAuth({
         provider,

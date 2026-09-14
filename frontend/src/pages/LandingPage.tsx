@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import ThemeToggle from "../components/ThemeToggle";
+import otherLogos from "../assets/Other-Logos.png";
 
 const workflowSteps = [
   ["01", "Detect", "Spot a change in a student's academic signal."],
@@ -153,7 +154,7 @@ export default function LandingPage({
           <span className="institutional-divider" aria-hidden="true" />
           <div className="institutional-recognition">
             <img
-              src="/vignan-accreditation-logos.svg"
+              src={otherLogos}
               alt="NAAC A plus, NIRF, NBA, AICTE, UGC, Ministry of Education and ABET recognitions"
             />
           </div>
