@@ -165,7 +165,7 @@ export default function BacklogManager({
 
   return (
     <section
-      className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6"
+      className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6"
       aria-label="Manage backlog records"
     >
       <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
@@ -219,7 +219,7 @@ export default function BacklogManager({
             onChange={(event) => setCourseCode(event.target.value)}
             placeholder="e.g. CS204"
             maxLength={20}
-            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition"
           />
         </label>
         <label className="flex flex-col gap-1.5 w-32">
@@ -232,7 +232,7 @@ export default function BacklogManager({
             max={10}
             value={attempts}
             onChange={(event) => setAttempts(Number(event.target.value))}
-            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 transition"
           />
         </label>
         <button
@@ -302,9 +302,9 @@ export default function BacklogManager({
             return (
               <li
                 key={row.id}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-100 bg-white/70"
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 rounded-xl border border-slate-100 bg-white/70"
               >
-                <span className="font-mono text-sm font-bold text-slate-800 w-32 shrink-0">
+                <span className="font-mono text-sm font-bold text-slate-800 w-32 min-w-0 truncate shrink-0">
                   {row.course_code}
                 </span>
                 {isDemo && (
@@ -312,9 +312,8 @@ export default function BacklogManager({
                     SAMPLE
                   </span>
                 )}
-                <span className="text-sm text-slate-500 flex-1">
-                  {row.attempts_made} attempt
-                  {row.attempts_made === 1 ? "" : "s"} made
+                <span className="text-sm text-slate-500 flex-1 min-w-[7rem]">
+                  {row.attempts_made} attempt{row.attempts_made === 1 ? "" : "s"} made
                 </span>
                 <StatusBadge tone={statusTone(row.status)}>
                   {row.status}
@@ -324,7 +323,7 @@ export default function BacklogManager({
                   onClick={() => void handleDelete(row)}
                   disabled={Boolean(busy)}
                   aria-label={`Delete ${row.course_code}`}
-                  className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 transition-colors shrink-0"
+                  className="grid place-items-center w-9 h-9 ml-auto rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 transition-colors shrink-0"
                 >
                   <Trash2 size={15} />
                 </button>

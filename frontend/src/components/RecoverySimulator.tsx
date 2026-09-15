@@ -302,15 +302,14 @@ export default function RecoverySimulator({
   const [committed, setCommitted] = useState<SimulationInputs | null>(null);
   const [running, setRunning] = useState(false);
 
-  // Pull the real evaluation for the focused student; fall back to the sample.
+  // Pull the rule-engine facts for the focused student (no AI call); fall back to the sample.
   useEffect(() => {
     if (!studentId) return;
     let active = true;
     api
-      .orchestration(studentId)
-      .then((payload) => {
+      .evaluation(studentId)
+      .then((evaluation) => {
         if (!active) return;
-        const evaluation = payload.deterministic_evaluation;
         const next: SimulatorCase = {
           studentId,
           backlogCount: evaluation.active_backlog_count,
@@ -394,7 +393,7 @@ export default function RecoverySimulator({
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-5">
         {/* ── Parameters ── */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
           <div className="flex items-center justify-between gap-4 mb-5">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Your plan
@@ -520,7 +519,7 @@ export default function RecoverySimulator({
             <button
               type="button"
               onClick={runSimulation}
-              className="w-full mt-6 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-200"
+              className="w-full mt-6 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-200"
             >
               <FlaskConical size={15} />
               {stale ? "Run simulation" : "Simulation up to date"}
@@ -605,7 +604,7 @@ export default function RecoverySimulator({
           </div>
 
           {/* Term-by-term projection */}
-          <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+          <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
             <div className="flex items-center justify-between mb-4">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Term by term

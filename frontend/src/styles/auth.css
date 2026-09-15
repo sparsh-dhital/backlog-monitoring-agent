@@ -2,6 +2,10 @@
 .auth-page {
   position: relative;
   min-height: 100vh;
+  /* The decorative atmosphere circles hang off the page edges. Clip them on
+     both axes so they never extend the scroll area, without creating a
+     scroll container (clip keeps the sticky nav working). */
+  overflow: clip;
   color: #102754;
   background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 48%, #ffffff 100%);
 }
@@ -25,9 +29,10 @@
   height: 550px;
   background: #ffdcd580;
 }
+/* Scrolls with the page: the bar is transparent, so pinning it would lay the
+   links over the content beneath. */
 .auth-nav {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
@@ -390,6 +395,8 @@
 }
 .auth-input input {
   width: 100%;
+  /* Fill the 44px field so the whole box is the tap target. */
+  height: 100%;
   border: 0;
   outline: 0;
   color: #203968;
@@ -452,7 +459,7 @@
   align-items: center;
   gap: 11px;
   margin: 20px 0 14px;
-  color: #a0abc0;
+  color: #66748d;
   font-size: 10px;
 }
 .auth-divider::before,
@@ -585,8 +592,8 @@
 }
 .role-selector small {
   margin-top: 3px;
-  color: #8b98b1;
-  font-size: 9px;
+  color: #5f6d86;
+  font-size: 10px;
   line-height: 1.25;
 }
 .role-selected {

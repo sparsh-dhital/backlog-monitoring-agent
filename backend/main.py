@@ -1,19 +1,21 @@
 import os
 from collections import Counter
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from gtts import gTTS
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List, Literal
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
 from rules_engine import evaluate_student_progression, orchestrate_agent_35_workflow
-from ai_agent import translate_remarks
+from ai_agent import interpret_voice_command, transcribe_audio, translate_remarks
 from routers.integrations import router as integrations_router
 from routers.dispatch import router as dispatch_router, trigger_execution_pipeline
+from otp_login import router as otp_login_router
 from auth import (
     STAFF_ROLES,
     require_role,
@@ -33,7 +35,12 @@ app.add_middleware(
         origin.strip()
         for origin in os.environ.get(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+            # Local Vite ports under either loopback name; deployments set CORS_ORIGINS.
+            ",".join(
+                f"http://{host}:{port}"
+                for host in ("localhost", "127.0.0.1")
+                for port in range(5173, 5181)
+            ),
         ).split(",")
         if origin.strip()
     ],
@@ -50,16 +57,12 @@ supabase: Client = create_client(url, key)
 
 app.include_router(integrations_router)
 app.include_router(dispatch_router)
+app.include_router(otp_login_router)
 
 # Pydantic Model for External Feeds
 class CustomFeeds(BaseModel):
     agent_34_results: Optional[Dict[str, Any]] = None
     agent_30_supplementary: Optional[Dict[str, Any]] = None
-
-
-class RegistrationLookup(BaseModel):
-    registration_number: str
-    role: Literal["student", "mentor", "hod", "exam", "placement"]
 
 
 class BacklogInput(BaseModel):
@@ -79,37 +82,6 @@ DEMO_SEED = [
     ("DEMO-DBMS1", 3),
 ]
 
-
-@app.post("/api/auth/registration-phone")
-def registration_phone(payload: RegistrationLookup):
-    """Resolve a registration number to its stored phone for Supabase SMS OTP."""
-    registration_number = payload.registration_number.strip()
-    if not registration_number:
-        raise HTTPException(status_code=400, detail="Registration number is required")
-
-    try:
-        result = (
-            supabase.table(os.environ.get("REGISTRATION_TABLE", "profiles"))
-            .select("phone")
-            .eq("registration_number", registration_number)
-            .eq("role", payload.role)
-            .limit(1)
-            .execute()
-        )
-    except Exception as error:
-        raise HTTPException(
-            status_code=503,
-            detail="Registration lookup is not configured. Check the profiles table.",
-        ) from error
-
-    record = (result.data or [None])[0]
-    phone = record.get("phone") if record else None
-    if not phone:
-        raise HTTPException(
-            status_code=404,
-            detail="No registered phone number was found for that account.",
-        )
-    return {"phone": phone}
 
 @app.get("/")
 def read_root():
@@ -534,8 +506,99 @@ def hindi_speech(request: TranslationRequest):
     except Exception as error:
         raise HTTPException(status_code=503, detail=f"Hindi speech unavailable: {error}")
 
-@app.get("/api/evaluate/{student_id}", dependencies=[Depends(require_role(*STAFF_ROLES))])
-def evaluate_student(student_id: str):
+
+class AssistantTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
+class AssistantRequest(BaseModel):
+    utterance: str = Field(max_length=500)
+    role: Optional[Literal["student", "mentor", "hod", "exam", "placement"]] = None
+    active_tab: str = "Dashboard"
+    available_tabs: List[str] = Field(default_factory=list, max_length=30)
+    visible_controls: List[str] = Field(default_factory=list, max_length=120)
+    open_case: Optional[Dict[str, Any]] = None
+    dark_mode: bool = False
+    history: List[AssistantTurn] = Field(default_factory=list, max_length=12)
+
+
+def _assistant_records(user) -> dict:
+    """Live figures the assistant may quote, scoped the same way as /api/dashboard."""
+    role = user_role(user)
+    try:
+        if role == "student":
+            student_id = linked_student_id(user)
+            if not student_id:
+                return {}
+            return {"own_record": evaluate_student_progression(supabase, student_id)}
+        if role in STAFF_ROLES:
+            pending = _pending_backlogs()
+            students = _student_rows(pending)
+            course_counts = Counter(item.get("course_code", "Unknown") for item in pending)
+            return {
+                "active_backlog_count": len(pending),
+                "student_count": len(students),
+                "critical_case_count": sum(row["status"] == "CRITICAL" for row in students),
+                "intervention_count": len(_interventions()),
+                "alerts": list_alerts()["alerts"],
+                "students": students[:50],
+                "course_patterns": [
+                    {"course_code": course, "count": count}
+                    for course, count in course_counts.most_common(10)
+                ],
+            }
+    except Exception:
+        return {"unavailable": "Live records could not be loaded right now."}
+    return {}
+
+
+@app.post("/api/assistant")
+def voice_assistant(request: AssistantRequest, user=Depends(require_user)):
+    """Understand a free-form voice or typed request and plan the dashboard actions for it."""
+    utterance = request.utterance.strip()
+    if not utterance:
+        raise HTTPException(status_code=400, detail="utterance is required")
+    screen = request.model_dump(exclude={"utterance", "history"})
+    history = [turn.model_dump() for turn in request.history]
+    try:
+        return interpret_voice_command(utterance, screen, _assistant_records(user), history)
+    except Exception as error:
+        print(f"[WARNING] Voice assistant error: {error}")
+        raise HTTPException(
+            status_code=503, detail="The voice assistant AI is unavailable right now."
+        ) from error
+
+
+MAX_AUDIO_BYTES = 10 * 1024 * 1024
+
+
+@app.post("/api/transcribe")
+async def transcribe(request: Request, user=Depends(require_user)):
+    """Turn one recorded voice request (webm/ogg/mp4/wav body) into text."""
+    audio = await request.body()
+    if not audio:
+        raise HTTPException(status_code=400, detail="Audio is required")
+    if len(audio) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="The recording is too long")
+    content_type = request.headers.get("content-type", "audio/webm")
+    try:
+        text = await run_in_threadpool(transcribe_audio, audio, content_type)
+    except Exception as error:
+        print(f"[WARNING] Transcription error: {error}")
+        raise HTTPException(
+            status_code=503, detail="Speech transcription is unavailable right now."
+        ) from error
+    return {"text": text}
+
+@app.get("/api/evaluate/{student_id}")
+def evaluate_student(student_id: str, user=Depends(require_user)):
+    """Rule-engine facts only (no AI call) - staff for anyone, a student for themselves."""
+    role = user_role(user)
+    if role not in STAFF_ROLES and not (
+        role == "student" and linked_student_id(user) == student_id
+    ):
+        raise HTTPException(status_code=403, detail="You cannot access this student record.")
     return evaluate_student_progression(supabase, student_id)
 
 @app.get("/api/orchestrate/{student_id}")

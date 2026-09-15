@@ -1,0 +1,559 @@
+/* ─── Dashboard navigation ──────────────────────────────────────────
+   Desktop/tablet: a sidebar that collapses to an icon rail (the choice is
+   remembered). Phones (<= 680px): the sidebar becomes an off-canvas drawer
+   and a fixed bottom bar carries Dashboard and the next three tabs.
+   Only width (sidebar) and transform/opacity (drawer, scrim) animate.  */
+
+.dash-sidebar {
+  --dash-sidebar-width: 256px;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  width: var(--dash-sidebar-width);
+  height: 100%;
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid rgb(var(--app-border));
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-surface));
+  box-shadow: 8px 0 28px rgb(var(--app-shadow) / 0.07);
+  transition: width 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dash-sidebar.is-collapsed {
+  --dash-sidebar-width: 76px;
+}
+
+.dash-sidebar-head {
+  display: flex;
+  min-height: 73px;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px 16px 18px;
+  border-bottom: 1px solid rgb(var(--app-border-subtle));
+}
+
+.dash-sidebar-brand {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dash-sidebar-name {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: rgb(var(--app-text));
+}
+
+.dash-sidebar-role {
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dash-sidebar-toggle,
+.dash-sidebar-close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: rgb(var(--app-text-muted));
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.dash-sidebar-toggle:hover,
+.dash-sidebar-close:hover {
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-surface-hover));
+}
+
+.dash-sidebar-toggle:focus-visible,
+.dash-sidebar-close:focus-visible,
+.dash-nav-item:focus-visible,
+.dash-bottom-nav button:focus-visible {
+  outline: 2px solid rgb(var(--app-focus));
+  outline-offset: 2px;
+}
+
+.dash-sidebar-close,
+.dash-topbar-brand,
+.dash-scrim,
+.dash-bottom-nav {
+  display: none;
+}
+
+.dash-sidebar-nav {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 16px 12px;
+  scrollbar-width: none;
+}
+
+.dash-sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-sidebar-heading {
+  margin: 0 0 8px;
+  padding: 0 12px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgb(var(--app-text-muted));
+  transition: opacity 150ms ease;
+}
+
+.dash-sidebar-nav ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.dash-nav-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  color: rgb(var(--app-text-secondary));
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.dash-nav-item svg {
+  flex-shrink: 0;
+  color: rgb(var(--app-text-muted));
+  transition: color 150ms ease;
+}
+
+.dash-nav-item:hover {
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-surface-hover));
+}
+
+.dash-nav-item:hover svg {
+  color: rgb(var(--app-text-secondary));
+}
+
+.dash-nav-item.is-active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #247fe8, #4264e8);
+  box-shadow: 0 9px 20px rgb(57 120 229 / 0.24);
+}
+
+.dash-nav-item.is-active svg {
+  color: rgb(255 255 255 / 0.85);
+}
+
+.dash-nav-item.is-danger,
+.dash-nav-item.is-danger svg {
+  color: rgb(var(--c-text-rose-600));
+}
+
+.dash-nav-item.is-danger:hover {
+  color: rgb(var(--c-text-rose-700));
+  background: rgb(var(--c-bg-rose-50));
+}
+
+.dash-nav-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-nav-badge {
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgb(var(--c-text-rose-700));
+  background: rgb(var(--c-bg-rose-100));
+}
+
+.dash-nav-item.is-active .dash-nav-badge {
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.22);
+}
+
+.dash-sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-top: 1px solid rgb(var(--app-border-subtle));
+}
+
+/* Collapsed rail */
+.dash-sidebar.is-collapsed .dash-sidebar-head {
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0 12px;
+}
+
+.dash-sidebar.is-collapsed .dash-sidebar-brand {
+  display: none;
+}
+
+.dash-sidebar.is-collapsed .dash-sidebar-heading {
+  opacity: 0;
+}
+
+.dash-sidebar.is-collapsed .dash-nav-item {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.dash-sidebar.is-collapsed .dash-nav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.dash-sidebar.is-collapsed .dash-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+}
+
+.dash-nav-tooltip {
+  position: fixed;
+  left: 86px;
+  z-index: 80;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #0f172a;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+  animation: dash-tooltip-in 120ms ease-out;
+}
+
+html.dark .dash-nav-tooltip {
+  border: 1px solid rgb(var(--app-border));
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-surface-raised));
+}
+
+@keyframes dash-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-4px, -50%);
+  }
+}
+
+/* Phones: drawer + bottom bar */
+@media (max-width: 680px) {
+  .dash-sidebar,
+  .dash-sidebar.is-collapsed {
+    --dash-sidebar-width: min(84vw, 300px);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    height: 100dvh;
+    visibility: hidden;
+    box-shadow: 24px 0 48px rgb(0 0 0 / 0.28);
+    transform: translateX(-104%);
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s linear 240ms;
+  }
+
+  .dash-sidebar.is-open {
+    visibility: visible;
+    transform: none;
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s;
+  }
+
+  /* The desktop rail preference never shrinks the drawer. */
+  .dash-sidebar.is-collapsed .dash-sidebar-head {
+    flex-direction: row;
+    gap: 10px;
+    padding: 16px 12px 16px 18px;
+  }
+
+  .dash-sidebar.is-collapsed .dash-sidebar-brand {
+    display: flex;
+  }
+
+  .dash-sidebar.is-collapsed .dash-sidebar-heading {
+    opacity: 1;
+  }
+
+  .dash-sidebar.is-collapsed .dash-nav-item {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .dash-sidebar.is-collapsed .dash-nav-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+
+  .dash-sidebar.is-collapsed .dash-nav-badge {
+    position: static;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
+  .dash-sidebar-toggle {
+    display: none;
+  }
+
+  .dash-sidebar-close {
+    display: grid;
+  }
+
+  .dash-topbar-brand {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    color: rgb(var(--app-text));
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .dash-topbar-brand .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .dash-nav-item {
+    min-height: 46px;
+  }
+
+  .dash-nav-tooltip {
+    display: none;
+  }
+
+  /* Brand and actions share the first row; search wraps below.
+     (Overrides a legacy column layout for narrow top bars.) */
+  main.dashboard-shell .dashboard-topbar {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0;
+  }
+
+  .dash-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    display: block;
+    background: rgb(2 6 23 / 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
+  }
+
+  .dash-scrim.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .dash-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 6px max(8px, env(safe-area-inset-right))
+      calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    border-top: 1px solid rgb(var(--app-border));
+    background: rgb(var(--app-surface) / 0.97);
+    box-shadow: 0 -10px 28px rgb(var(--app-shadow) / 0.1);
+  }
+
+  .dash-bottom-nav button {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 2px;
+    border: 0;
+    border-radius: 12px;
+    color: rgb(var(--app-text-muted));
+    background: transparent;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.1;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .dash-bottom-nav button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dash-bottom-nav button.is-active {
+    color: rgb(var(--app-accent-ink));
+    background: rgb(var(--app-accent-soft));
+  }
+
+  .dash-bottom-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 6px);
+    display: grid;
+    min-width: 16px;
+    height: 16px;
+    place-items: center;
+    padding: 0 4px;
+    border: 2px solid rgb(var(--app-surface));
+    border-radius: 999px;
+    color: #ffffff;
+    background: #e11d48;
+    font-size: 9px;
+  }
+
+  /* The alerts dropdown spans the screen instead of hanging off the bell. */
+  .dashboard-notifications {
+    position: fixed !important;
+    top: 64px !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-height: calc(100dvh - 160px);
+    overflow-y: auto !important;
+  }
+}
+
+/* Keep the last row of each dashboard view clear of the floating voice button
+   (phones already reserve space for the bottom bar). */
+@media (min-width: 681px) {
+  .dashboard-shell .scrollbar-thin:not(.flex)::after {
+    display: block;
+    height: 72px;
+    content: "";
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-sidebar,
+  .dash-sidebar.is-open,
+  .dash-scrim,
+  .dash-nav-tooltip {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ─── Dark theme ───────────────────────────────────────────────────
+   Navigation sits a step below the content cards so the page leads. */
+html.dark .dash-sidebar {
+  border-right-color: rgb(30 41 62);
+  background: rgb(11 17 31);
+  box-shadow: none;
+}
+
+html.dark .dash-sidebar-head,
+html.dark .dash-sidebar-actions {
+  border-color: rgb(26 36 56);
+}
+
+html.dark .dash-nav-item:hover {
+  background: rgb(30 41 66 / 0.7);
+}
+
+html.dark .dash-nav-item.is-active {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 10px 24px -10px rgb(59 130 246 / 0.55);
+}
+
+html.dark .dashboard-topbar {
+  border-color: rgb(30 41 62) !important;
+  background: rgb(11 17 31 / 0.9) !important;
+}
+
+html.dark .dash-bottom-nav {
+  border-top-color: rgb(30 41 62);
+  background: rgb(11 17 31 / 0.97);
+  box-shadow: 0 -12px 28px rgb(0 0 0 / 0.35);
+}
+
+/* A soft indigo light at the top of the dark canvas. It sits behind the
+   scroller and never repaints while content scrolls. */
+html.dark .dashboard-shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(900px 520px at 78% -8%, rgb(67 56 202 / 0.16), transparent 62%),
+    radial-gradient(700px 480px at 12% 112%, rgb(14 116 144 / 0.08), transparent 60%);
+  content: "";
+  pointer-events: none;
+}

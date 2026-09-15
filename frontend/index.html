@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7f9ff" />
     <title>EduRecover | Academic recovery, made actionable</title>
+    <script>
+      // Apply the saved theme before the first paint so dark mode never flashes light.
+      try {
+        if (localStorage.getItem("edurecover-theme") === "dark") {
+          document.documentElement.classList.add("dark");
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0a101d");
+        }
+      } catch (error) {
+        // Storage unavailable: start in light mode.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

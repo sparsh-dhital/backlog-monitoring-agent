@@ -1,4 +1,10 @@
+import base64
+import hashlib
+import hmac
+import json
 import os
+import secrets
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,15 +27,126 @@ _demo_roles = {"student", "mentor", "hod", "exam", "placement"}
 VALID_ROLES = ("student", "mentor", "hod", "exam", "placement")
 STAFF_ROLES = ("mentor", "hod", "exam", "placement")
 
+# ── Institution email domain ────────────────────────────────────────────────
+# GitHub and Microsoft 365 sign-in is limited to institution accounts. The rule
+# is enforced here, on every request, because the browser-side check can be
+# skipped by anyone holding a Supabase token.
+ALLOWED_EMAIL_DOMAIN = (
+    os.environ.get("ALLOWED_EMAIL_DOMAIN", "vignan.ac.in").strip().lower().lstrip("@")
+)
+
+
+def is_allowed_email(email: str | None) -> bool:
+    """True only when the address's domain is exactly the institution's."""
+    if not isinstance(email, str) or email.count("@") != 1:
+        return False
+    local, domain = email.strip().lower().split("@")
+    return bool(local) and domain == ALLOWED_EMAIL_DOMAIN
+
+
+# ── Registration-number sessions ────────────────────────────────────────────
+# After a one-time code is verified (otp_login.py) the API issues its own
+# signed bearer token, "otp.<payload>.<signature>". Set AUTH_SESSION_SECRET in
+# backend/.env to keep sessions valid across restarts; without it a random
+# per-process secret is used, so every restart signs code sessions out.
+_SESSION_TOKEN_PREFIX = "otp."
+_SESSION_TTL_SECONDS = 8 * 60 * 60
+_session_secret = os.environ.get("AUTH_SESSION_SECRET", "").encode() or secrets.token_bytes(32)
+
+if not os.environ.get("AUTH_SESSION_SECRET"):
+    print(
+        "[auth] AUTH_SESSION_SECRET is not set; registration-number sessions "
+        "end when the backend restarts."
+    )
+
+
+def _b64encode(raw: bytes) -> str:
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+
+def _b64decode(text: str) -> bytes:
+    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
+
+
+def _sign(payload: str) -> str:
+    return _b64encode(hmac.new(_session_secret, payload.encode(), hashlib.sha256).digest())
+
+
+def issue_session_token(registration_number: str, role: str) -> tuple[str, int]:
+    """Signed bearer token for a verified registration-number sign-in."""
+    expires_at = int(time.time()) + _SESSION_TTL_SECONDS
+    claims = {"sub": registration_number, "role": role, "exp": expires_at}
+    payload = _b64encode(json.dumps(claims, separators=(",", ":")).encode())
+    return f"{_SESSION_TOKEN_PREFIX}{payload}.{_sign(payload)}", expires_at
+
+
+def _session_user_from_token(token: str) -> dict | None:
+    """Verify an 'otp.' token. Returns None if the token is not one of ours."""
+    if not token.startswith(_SESSION_TOKEN_PREFIX):
+        return None
+    invalid = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Your sign-in has expired or is invalid. Please sign in again.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload, _, signature = token[len(_SESSION_TOKEN_PREFIX):].partition(".")
+    if not payload or not hmac.compare_digest(signature.encode(), _sign(payload).encode()):
+        raise invalid
+    try:
+        claims = json.loads(_b64decode(payload))
+    except ValueError:
+        raise invalid from None
+    if not isinstance(claims, dict):
+        raise invalid
+    registration_number = claims.get("sub")
+    role = claims.get("role")
+    expires_at = claims.get("exp")
+    if (
+        not isinstance(registration_number, str)
+        or role not in VALID_ROLES
+        or not isinstance(expires_at, int)
+        or expires_at <= time.time()
+    ):
+        raise invalid
+    return {
+        "id": f"otp-{role}-{registration_number}",
+        "role": role,
+        "student_id": registration_number if role == "student" else None,
+        "registration_number": registration_number,
+        "provider": "otp",
+    }
+
+
+def find_registration(registration_number: str, role: str) -> bool | None:
+    """Whether the registration table lists this number under this role.
+
+    None means the lookup is unavailable (no table, or no Supabase client), so
+    a real account cannot be told apart from a typo.
+    """
+    if _auth_client is None:
+        return None
+    try:
+        result = (
+            _auth_client.table(os.environ.get("REGISTRATION_TABLE", "profiles"))
+            .select("registration_number")
+            .ilike("registration_number", registration_number)
+            .eq("role", role)
+            .limit(1)
+            .execute()
+        )
+    except Exception:
+        return None
+    return bool(result.data)
+
+
 # ── Local development test login ────────────────────────────────────────────
 # Off unless ALLOW_DEV_AUTH_BYPASS=true is present in backend/.env, which is
 # gitignored and never deployed. Read once at import so a running server cannot
 # be flipped open by a later environment change.
 #
-# It exists because the institutional flow (@vignan.ac.in OAuth, or
-# registration + SMS OTP against a `profiles` table that does not yet exist)
-# admits nobody on a developer machine. Never enable it on a deployed host:
-# it accepts a self-asserted role with no proof of identity whatsoever.
+# It predates the registration-number code sign-in and remains for scripted
+# API testing. Never enable it on a deployed host: it accepts a self-asserted
+# role with no proof of identity whatsoever.
 _DEV_BYPASS = os.environ.get("ALLOW_DEV_AUTH_BYPASS", "").strip().lower() == "true"
 _DEV_TOKEN_PREFIX = "dev:"
 
@@ -86,6 +203,9 @@ def require_user(
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    session_user = _session_user_from_token(credentials.credentials)
+    if session_user is not None:
+        return session_user
     # When the bypass is disabled this returns None and a 'dev:' token simply
     # falls through to Supabase, which rejects it like any other bad token.
     dev_user = _dev_user_from_token(credentials.credentials)
@@ -109,6 +229,12 @@ def require_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    # Supabase sessions come from GitHub or Microsoft 365 OAuth.
+    if not is_allowed_email(user_email(response.user)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Sign-in is limited to @{ALLOWED_EMAIL_DOMAIN} accounts.",
         )
     return response.user
 

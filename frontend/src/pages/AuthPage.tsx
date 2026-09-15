@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import { supabaseAuth } from "../supabaseClient";
 import { api } from "../api";
+import {
+  ALLOWED_EMAIL_DOMAIN,
+  DOMAIN_RESTRICTION_MESSAGE,
+  clearOtpSession,
+  isAllowedInstitutionEmail,
+  saveOtpSession,
+} from "../shared/authSession";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
 import "../styles/auth.css";
@@ -28,6 +35,12 @@ const roleIcons = {
   placement: BriefcaseBusiness,
 };
 
+/** A dashboard that rejected an out-of-domain session sends the user back here. */
+function initialAuthMessage() {
+  const error = new URLSearchParams(window.location.search).get("error");
+  return error === "domain_restricted" ? DOMAIN_RESTRICTION_MESSAGE : "";
+}
+
 export default function AuthPage({
   onBack,
   onContinue,
@@ -36,14 +49,10 @@ export default function AuthPage({
   onContinue: (role: UserRole) => void;
 }) {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [authMessage, setAuthMessage] = useState("");
+  const [authMessage, setAuthMessage] = useState(initialAuthMessage);
   const [authenticating, setAuthenticating] = useState(false);
-  const [registrationPhone, setRegistrationPhone] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-
-  const isAllowedInstitutionEmail = (email: string) =>
-    email.trim().toLowerCase().endsWith("@vignan.ac.in");
 
   useEffect(() => {
     let active = true;
@@ -66,22 +75,18 @@ export default function AuthPage({
       callbackParams.get("error") || callbackHash.get("error");
     if (callbackError === "access_denied") {
       resetCancelledOAuth();
+    }
+    if (callbackError === "access_denied" || callbackError === "domain_restricted") {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     supabaseAuth.auth.getSession().then(async ({ data }) => {
       if (!active || !data.session) return;
-      const provider = data.session.user.app_metadata?.provider;
-      const isInstitutionOAuth = provider === "github" || provider === "azure";
-      if (
-        isInstitutionOAuth &&
-        !isAllowedInstitutionEmail(data.session.user.email || "")
-      ) {
+      // Every Supabase session here comes from GitHub or Microsoft 365 OAuth.
+      if (!isAllowedInstitutionEmail(data.session.user.email)) {
         await supabaseAuth.auth.signOut();
         if (active) {
-          setAuthMessage(
-            "Login is restricted to @vignan.ac.in accounts for GitHub and Microsoft 365.",
-          );
+          setAuthMessage(DOMAIN_RESTRICTION_MESSAGE);
           setAuthenticating(false);
         }
         return;
@@ -121,6 +126,10 @@ export default function AuthPage({
           return;
         }
         sessionStorage.removeItem("edurecover-pending-student-id");
+        // One sign-in at a time: a stale demo role or code session would
+        // otherwise be sent alongside this account's token.
+        sessionStorage.removeItem("edurecover-demo-role");
+        clearOtpSession();
         onContinue(role);
       }
     });
@@ -130,6 +139,14 @@ export default function AuthPage({
     };
   }, [onContinue, selectedRole]);
 
+  const requestCode = async (role: UserRole, registration: string) => {
+    const { expires_in } = await api.requestOtp(registration, role);
+    setOtpSent(true);
+    setAuthMessage(
+      `A 6-digit code was generated. Find it in the backend terminal and enter it below. It expires in ${Math.max(1, Math.round(expires_in / 60))} minutes.`,
+    );
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedRole) {
@@ -137,58 +154,67 @@ export default function AuthPage({
       return;
     }
     const form = new FormData(event.currentTarget);
-    const registrationNumber = String(
-      form.get("registrationNumber") || "",
-    ).trim();
+    const registration = registrationNumber.trim().toUpperCase();
     const otp = String(form.get("otp") || "").trim();
+    if (!registration) {
+      setAuthMessage("Enter your registration number.");
+      return;
+    }
     setAuthenticating(true);
     setAuthMessage("");
     try {
       if (!otpSent) {
-        const { phone } = await api.registrationPhone(
-          registrationNumber,
-          selectedRole,
-        );
-        const { error } = await supabaseAuth.auth.signInWithOtp({
-          phone,
-          options: { channel: "sms" },
-        });
-        if (error) throw error;
-        setRegistrationPhone(phone);
-        setOtpSent(true);
-        setAuthMessage("OTP sent to your registered mobile number.");
+        await requestCode(selectedRole, registration);
       } else {
-        const { data, error } = await supabaseAuth.auth.verifyOtp({
-          phone: registrationPhone,
-          token: otp,
-          type: "sms",
+        if (!/^\d{6}$/.test(otp)) {
+          throw new Error("Enter the 6-digit code from the backend terminal.");
+        }
+        const session = await api.verifyOtp(registration, selectedRole, otp);
+        // A code sign-in replaces any GitHub or Microsoft 365 session.
+        const { data } = await supabaseAuth.auth.getSession();
+        if (data.session) await supabaseAuth.auth.signOut();
+        saveOtpSession({
+          token: session.access_token,
+          role: session.role,
+          registrationNumber: session.registration_number,
+          studentId: session.student_id,
+          expiresAt: session.expires_at,
         });
-        if (error) throw error;
-        if (!data.session)
-          throw new Error("Verification did not create a session.");
-        const { error: metadataError } = await supabaseAuth.auth.updateUser({
-          data: {
-            role: selectedRole,
-            ...(selectedRole === "student"
-              ? { student_id: registrationNumber }
-              : {}),
-          },
-        });
-        if (metadataError) throw metadataError;
         sessionStorage.removeItem("edurecover-demo-role");
-        sessionStorage.setItem("edurecover-role", selectedRole);
+        sessionStorage.setItem("edurecover-role", session.role);
         sessionStorage.removeItem("edurecover-pending-role");
-        onContinue(selectedRole);
+        onContinue(session.role);
       }
     } catch (error) {
       setAuthMessage(
         error instanceof Error
           ? error.message
-          : "Unable to send the verification code.",
+          : "Unable to verify the code. Please try again.",
       );
     } finally {
       setAuthenticating(false);
     }
+  };
+
+  const handleResend = async () => {
+    const registration = registrationNumber.trim().toUpperCase();
+    if (!selectedRole || !registration) return;
+    setAuthenticating(true);
+    setAuthMessage("");
+    try {
+      await requestCode(selectedRole, registration);
+    } catch (error) {
+      setAuthMessage(
+        error instanceof Error ? error.message : "Unable to send a new code.",
+      );
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  const resetCode = () => {
+    setOtpSent(false);
+    setAuthMessage("");
   };
 
   const handleOAuthLogin = async (provider: "github" | "azure") => {
@@ -225,16 +251,16 @@ export default function AuthPage({
   const handleRoleChange = (role: UserRole) => {
     setSelectedRole(role);
     setOtpSent(false);
-    setRegistrationPhone("");
     setRegistrationNumber("");
     setAuthMessage("");
   };
 
   const handleDemoLogin = () => {
     if (!selectedRole) {
-      setAuthMessage("Select a workspace role before using demo login.");
+      setAuthMessage("Select a role before using demo login.");
       return;
     }
+    clearOtpSession();
     sessionStorage.setItem("edurecover-demo-role", selectedRole);
     sessionStorage.setItem("edurecover-role", selectedRole);
     sessionStorage.removeItem("edurecover-pending-role");
@@ -316,8 +342,8 @@ export default function AuthPage({
             <span className="auth-kicker">Secure sign in</span>
             <h2>Continue where you left off.</h2>
             <p>
-              Enter your registration number and get an OTP sent to your
-              registered mobile number.
+              Enter your registration number and we'll generate a one-time code
+              to confirm it's you.
             </p>
           </div>
           {!selectedRole && (
@@ -344,6 +370,10 @@ export default function AuthPage({
                   required
                   name="registrationNumber"
                   value={registrationNumber}
+                  readOnly={otpSent}
+                  autoComplete="username"
+                  autoCapitalize="characters"
+                  spellCheck={false}
                   onChange={(event) =>
                     setRegistrationNumber(event.target.value)
                   }
@@ -353,7 +383,7 @@ export default function AuthPage({
             </label>
             {otpSent && (
               <label>
-                <span>OTP verification code</span>
+                <span>One-time code</span>
                 <div className="auth-input">
                   <LockKeyhole size={17} />
                   <input
@@ -361,6 +391,8 @@ export default function AuthPage({
                     name="otp"
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    pattern="\d{6}"
+                    maxLength={6}
                     placeholder="Enter the 6-digit code"
                   />
                 </div>
@@ -374,10 +406,30 @@ export default function AuthPage({
               {authenticating
                 ? "Connecting..."
                 : otpSent
-                  ? "Verify OTP"
+                  ? "Verify code"
                   : "Get OTP"}
               <ArrowRight size={17} />
             </button>
+            {otpSent && (
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <button
+                  type="button"
+                  className="min-h-[36px] px-1 font-semibold text-indigo-600 hover:underline disabled:opacity-50"
+                  onClick={() => void handleResend()}
+                  disabled={authenticating}
+                >
+                  Resend code
+                </button>
+                <button
+                  type="button"
+                  className="min-h-[36px] px-1 font-semibold text-slate-600 hover:underline disabled:opacity-50"
+                  onClick={resetCode}
+                  disabled={authenticating}
+                >
+                  Use a different number
+                </button>
+              </div>
+            )}
           </form>
           {authMessage && (
             <p className="auth-feedback" role="status">
@@ -392,7 +444,7 @@ export default function AuthPage({
               type="button"
               onClick={() => void handleOAuthLogin("github")}
               disabled={authenticating || !selectedRole}
-              title="Use your @vignan.ac.in GitHub account"
+              title={`Use your @${ALLOWED_EMAIL_DOMAIN} GitHub account`}
             >
               <Code2 size={16} aria-hidden="true" />
               <span>GitHub</span>
@@ -401,7 +453,7 @@ export default function AuthPage({
               type="button"
               onClick={() => void handleOAuthLogin("azure")}
               disabled={authenticating || !selectedRole}
-              title="Use your @vignan.ac.in Microsoft 365 account"
+              title={`Use your @${ALLOWED_EMAIL_DOMAIN} Microsoft 365 account`}
             >
               <span className="provider-microsoft" aria-hidden="true">
                 M
@@ -409,6 +461,10 @@ export default function AuthPage({
               <span>Microsoft 365</span>
             </button>
           </div>
+          <p className="auth-note">
+            GitHub and Microsoft 365 sign-in is limited to @
+            {ALLOWED_EMAIL_DOMAIN} accounts.
+          </p>
           <div className="demo-heading">
             <div>
               <span>Workspace role</span>

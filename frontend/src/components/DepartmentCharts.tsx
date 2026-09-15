@@ -1,16 +1,23 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Table2, ChartColumnBig } from "lucide-react";
 import type { DashboardData } from "../types/agent";
 
 /* ── Palette ──────────────────────────────────────────────────────
-   Ordinal blue ramp (steps 250/350/450/600) and categorical slot 1,
-   both validated with scripts/validate_palette.js against the card
-   surface (#f9fcff): ordinal passes monotonic L, adjacent dL, light-end
-   contrast and single-hue; slot 1 passes the categorical gates.
+   Ordinal blue ramp, resolved per theme from CSS variables on .viz-root
+   (index.css). Light: steps 250/350/450/600 against the card surface
+   (#f9fcff). Dark: steps 500/400/300/200 against #111a2b - the anchor flips
+   so the heaviest bucket stays the most prominent. Both ramps pass the
+   dataviz validator's ordinal checks (monotonic L, adjacent dL, light-end
+   contrast, single hue); slot 1 is the categorical blue for each mode.
    Buckets here are ORDERED (1 → 4+ backlogs), so an ordinal ramp is the
    correct job — not categorical identity hues.                        */
-const RAMP = ["#86b6ef", "#5598e7", "#2a78d6", "#184f95"];
-const SERIES_1 = "#2a78d6";
+const RAMP = [
+  "var(--viz-ramp-1)",
+  "var(--viz-ramp-2)",
+  "var(--viz-ramp-3)",
+  "var(--viz-ramp-4)",
+];
+const SERIES_1 = "var(--viz-series-1)";
 
 /** 2px of surface between touching marks — the gap does the separating,
  *  never a stroke around the mark. */
@@ -58,9 +65,12 @@ function Tooltip({ tip }: { tip: Tip | null }) {
   );
 }
 
+/* The chart bodies are memoized: moving the pointer only updates the tooltip,
+   so hovering never re-renders the marks. */
+
 /* ── 1. Backlogs by course — horizontal bar, single series ─────── */
 
-function CourseBars({
+const CourseBars = memo(function CourseBars({
   patterns,
   onTip,
 }: {
@@ -117,11 +127,11 @@ function CourseBars({
       })}
     </div>
   );
-}
+});
 
 /* ── 2. Backlog load mix — donut (part-to-whole, ordered) ──────── */
 
-function LoadDonut({
+const LoadDonut = memo(function LoadDonut({
   buckets,
   total,
   onTip,
@@ -196,7 +206,7 @@ function LoadDonut({
                 cy="70"
                 r={R}
                 fill="none"
-                stroke={bucket.color}
+                style={{ stroke: bucket.color }}
                 strokeWidth="18"
                 strokeDasharray={`${dash} ${C - dash}`}
                 strokeDashoffset={offset}
@@ -221,7 +231,7 @@ function LoadDonut({
       <DonutLegend buckets={live} total={total} />
     </div>
   );
-}
+});
 
 /** Legend is always present for >= 2 series, and carries the value so
  *  identity is never color-alone and no number is gated behind hover. */
@@ -244,7 +254,7 @@ function DonutLegend({ buckets, total }: { buckets: Bucket[]; total: number }) {
 
 /* ── 3. Attempt pressure — columns, ordered bands ─────────────── */
 
-function AttemptColumns({
+const AttemptColumns = memo(function AttemptColumns({
   buckets,
   onTip,
 }: {
@@ -301,7 +311,7 @@ function AttemptColumns({
       ))}
     </div>
   );
-}
+});
 
 /* ── Table view — the relief every chart here is backed by ────── */
 
@@ -373,11 +383,7 @@ function ChartTable({
 
 /* ── The section ──────────────────────────────────────────────── */
 
-export default function DepartmentCharts({
-  dashboard,
-}: {
-  dashboard: DashboardData;
-}) {
+function DepartmentCharts({ dashboard }: { dashboard: DashboardData }) {
   const [tip, setTip] = useState<Tip | null>(null);
   const [asTable, setAsTable] = useState(false);
 
@@ -410,7 +416,7 @@ export default function DepartmentCharts({
 
   return (
     <section className="viz-root" aria-label="Department analytics">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
             Department analytics
@@ -422,7 +428,7 @@ export default function DepartmentCharts({
         <button
           type="button"
           onClick={() => setAsTable((current) => !current)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600 hover:bg-white hover:text-slate-900 transition-colors"
+          className="flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-full border border-slate-200 bg-white/70 text-xs font-semibold text-slate-600 hover:bg-white hover:text-slate-900 transition-colors"
           aria-pressed={asTable}
         >
           {asTable ? <ChartColumnBig size={13} /> : <Table2 size={13} />}
@@ -475,3 +481,5 @@ export default function DepartmentCharts({
     </section>
   );
 }
+
+export default memo(DepartmentCharts);

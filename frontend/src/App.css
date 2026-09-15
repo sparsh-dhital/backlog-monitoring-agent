@@ -50,7 +50,7 @@
 }
 
 html.dark,
-body.dark {
+html.dark body {
   --navy: #e7eef9;
   --ink: #dbeafe;
   --muted: #9aabc1;
@@ -4890,15 +4890,6 @@ main.role-dashboard.flex {
   padding: 0 !important;
 }
 
-/* Ensure the aside/sidebar is NOT position:fixed in the new flex layout.
-   The old .dashboard-sidebar rule is not used by the new Tailwind sidebar,
-   but add this safety reset in case class names overlap. */
-main.flex aside {
-  position: sticky !important;
-  top: 0 !important;
-  left: auto !important;
-}
-
 /* The new dashboard main container */
 main.flex {
   display: flex !important;
@@ -4912,16 +4903,7 @@ main.flex {
   font-family: inherit !important;
 }
 
-.dashboard-mobile-nav,
-.dashboard-mobile-more {
-  display: none;
-}
-
 @media (max-width: 900px) {
-  main.dashboard-shell > aside {
-    width: 204px !important;
-  }
-
   main.dashboard-shell .dashboard-topbar {
     padding-right: 20px;
     padding-left: 20px;
@@ -4960,153 +4942,6 @@ main.flex {
     min-height: 100dvh;
     max-height: none !important;
     overflow: visible !important;
-  }
-
-  main.dashboard-shell > aside {
-    position: sticky !important;
-    top: 0 !important;
-    width: 100% !important;
-    height: 0 !important;
-    max-height: none;
-    border-right: 0;
-    border-bottom: 0 !important;
-  }
-
-  main.dashboard-shell > aside > div:first-child {
-    display: none;
-  }
-
-  main.dashboard-shell > aside nav {
-    display: none;
-  }
-
-  main.dashboard-shell > aside nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  main.dashboard-shell > aside nav > p {
-    display: none;
-  }
-
-  main.dashboard-shell > aside nav > div {
-    display: flex;
-    gap: 6px;
-  }
-
-  main.dashboard-shell > aside nav button {
-    width: auto;
-    min-width: max-content;
-    padding: 9px 12px;
-    font-size: 12px;
-  }
-
-  main.dashboard-shell > aside .dashboard-sidebar-actions {
-    display: none;
-  }
-
-  main.dashboard-shell > aside .dashboard-mobile-nav {
-    position: fixed !important;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 40;
-    width: 100vw;
-    box-sizing: border-box;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 2px;
-    padding: 8px max(10px, env(safe-area-inset-left))
-      calc(8px + env(safe-area-inset-bottom))
-      max(10px, env(safe-area-inset-right));
-    border-top: 1px solid #dbeafe;
-    background: #fffffff2;
-    box-shadow: 0 -12px 28px #5c83a51f;
-    backdrop-filter: blur(20px);
-  }
-
-  .dashboard-mobile-nav > button {
-    position: relative;
-    display: flex;
-    min-width: 0;
-    min-height: 50px;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 5px 3px;
-    border: 0;
-    border-radius: 12px;
-    color: #71809d;
-    background: transparent;
-    cursor: pointer;
-    flex-direction: column;
-    font-size: 9px;
-    font-weight: 800;
-    line-height: 1.1;
-  }
-
-  .dashboard-mobile-nav > button.is-active {
-    color: #2f63dc;
-    background: #edf4ff;
-  }
-
-  .dashboard-mobile-nav > button b,
-  .dashboard-mobile-more button b {
-    position: absolute;
-    top: 4px;
-    right: 18%;
-    display: grid;
-    width: 15px;
-    height: 15px;
-    place-items: center;
-    border: 2px solid white;
-    border-radius: 999px;
-    color: white;
-    background: #ed6c72;
-    font-size: 8px;
-  }
-
-  .dashboard-mobile-more {
-    position: absolute;
-    right: 10px;
-    bottom: calc(100% + 10px);
-    display: grid;
-    min-width: 190px;
-    gap: 4px;
-    padding: 8px;
-    border: 1px solid #dbeafe;
-    border-radius: 16px;
-    background: #fffffff5;
-    box-shadow: 0 18px 36px #315b8730;
-    backdrop-filter: blur(20px);
-  }
-
-  .dashboard-mobile-more button {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 42px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 10px;
-    color: #526481;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 750;
-    text-align: left;
-  }
-
-  .dashboard-mobile-more button:hover,
-  .dashboard-mobile-more button.is-active {
-    color: #2f63dc;
-    background: #edf4ff;
-  }
-
-  .dashboard-mobile-more button b {
-    position: static;
-    margin-left: auto;
-    border: 0;
   }
 
   main.dashboard-shell > div {
@@ -5376,344 +5211,243 @@ main.flex {
 }
 
 html.dark,
-body.dark {
+html.dark body {
   color-scheme: dark;
   background: #0f172a;
   color: #e2e8f0;
 }
 
-body.dark .landing-page,
-body.dark .auth-page,
-body.dark .not-found-page,
-body.dark .prototype-console {
+html.dark .landing-page,
+html.dark .auth-page,
+html.dark .not-found-page,
+html.dark .prototype-console {
   color: #e2e8f0;
   background: #0f172a;
 }
 
-body.dark .auth-nav {
+html.dark .auth-nav {
   border-bottom-color: rgba(71, 85, 105, 0.5);
   background: transparent;
 }
 
-body.dark .auth-back {
+html.dark .auth-back {
   border-color: #475569;
   color: #cbd5e1;
   background: rgba(30, 41, 59, 0.72);
 }
 
-body.dark .auth-back:hover {
+html.dark .auth-back:hover {
   border-color: #7c93b5;
   color: #f8fafc;
   background: rgba(51, 65, 85, 0.9);
 }
 
-body.dark .auth-role-prompt {
+html.dark .auth-role-prompt {
   border-color: #3c506d;
   color: #b9c9e4;
   background: rgba(30, 50, 78, 0.62);
 }
 
-body.dark .auth-role-prompt-icon {
+html.dark .auth-role-prompt-icon {
   border-color: #506888;
   color: #8fb3e8;
   background: rgba(51, 65, 85, 0.5);
 }
 
-body.dark .auth-role-prompt-copy strong {
+html.dark .auth-role-prompt-copy strong {
   color: #dbeafe;
 }
 
-body.dark .auth-role-prompt-copy small {
+html.dark .auth-role-prompt-copy small {
   color: #9fb2d0;
 }
 
-body.dark .dashboard-shell {
-  background-color: #0f172a !important;
-  background-image:
-    linear-gradient(90deg, #33415520 1px, transparent 1px),
-    linear-gradient(#33415520 1px, transparent 1px),
-    linear-gradient(135deg, #0f172a 0%, #172554 52%, #111827 100%) !important;
-}
+/* Dashboard dark surfaces, ink and borders come from tokens.css (Tailwind
+   utilities) and index.css (dashboard shell and cards). */
 
-body.dark .dashboard-sidebar,
-body.dark .dashboard-topbar,
-body.dark .dashboard-shell .bg-white\/60,
-body.dark .dashboard-shell .dashboard-stat,
-body.dark .dashboard-shell .bg-white {
-  color: #e2e8f0 !important;
-  background: #172338e8 !important;
-  border-color: #334155 !important;
-  box-shadow: 0 12px 30px -18px #02061799 !important;
-}
-
-body.dark .dashboard-search,
-body.dark .dashboard-shell .bg-slate-50 {
-  color: #cbd5e1 !important;
-  background: #111c2f !important;
-  border-color: #334155 !important;
-}
-
-body.dark .dashboard-shell [class*="bg-white/"],
-body.dark .dashboard-shell [class*="bg-slate-50/"],
-body.dark .dashboard-shell [class*="bg-indigo-50"],
-body.dark .dashboard-shell [class*="bg-emerald-50"],
-body.dark .dashboard-shell [class*="bg-amber-50"],
-body.dark .dashboard-shell [class*="bg-rose-50"] {
-  background: #172338 !important;
-}
-
-body.dark .dashboard-shell [class*="border-white/"],
-body.dark .dashboard-shell [class*="border-emerald-200"],
-body.dark .dashboard-shell [class*="border-amber-200"],
-body.dark .dashboard-shell [class*="border-rose-200"] {
-  border-color: #334155 !important;
-}
-
-body.dark .dashboard-shell [class*="text-slate-800"],
-body.dark .dashboard-shell [class*="text-slate-700"],
-body.dark .dashboard-shell [class*="text-slate-600"] {
-  color: #dbe5f2 !important;
-}
-
-body.dark .dashboard-shell [class*="text-emerald-700"] {
-  color: #6ee7b7 !important;
-}
-
-body.dark .dashboard-shell [class*="text-amber-700"] {
-  color: #fcd34d !important;
-}
-
-body.dark .dashboard-shell [class*="text-rose-700"],
-body.dark .dashboard-shell [class*="text-red-700"] {
-  color: #fda4af !important;
-}
-
-body.dark .dashboard-mobile-nav,
-body.dark .dashboard-mobile-more {
-  background: #111c2ff5 !important;
-  border-color: #334155 !important;
-  box-shadow: 0 -12px 28px #02061766;
-}
-
-body.dark .dashboard-mobile-nav > button,
-body.dark .dashboard-mobile-more button {
-  color: #94a3b8;
-}
-
-body.dark .dashboard-mobile-nav > button.is-active,
-body.dark .dashboard-mobile-more button:hover,
-body.dark .dashboard-mobile-more button.is-active {
-  color: #bfdbfe;
-  background: #1e3a6d;
-}
-
-body.dark .text-slate-900,
-body.dark .text-slate-800 {
-  color: #f1f5f9 !important;
-}
-
-body.dark .text-slate-700,
-body.dark .text-slate-600 {
-  color: #cbd5e1 !important;
-}
-
-body.dark .text-slate-500,
-body.dark .text-slate-400 {
-  color: #94a3b8 !important;
-}
-
-body.dark .border-slate-100,
-body.dark .border-slate-200 {
-  border-color: #334155 !important;
-}
-
-body.dark .bg-slate-50 {
-  background-color: #111c2f !important;
-}
-
-body.dark .auth-panel,
-body.dark .auth-campus-card,
-body.dark .auth-input,
-body.dark .auth-login-methods,
-body.dark .auth-providers button,
-body.dark .role-selector button {
+html.dark .auth-panel,
+html.dark .auth-campus-card,
+html.dark .auth-input,
+html.dark .auth-login-methods,
+html.dark .auth-providers button,
+html.dark .role-selector button {
   color: #e2e8f0;
   background: #172338;
   border-color: #334155;
 }
 
-body.dark .auth-label,
-body.dark .auth-kicker,
-body.dark .demo-heading > div > span {
+html.dark .auth-label,
+html.dark .auth-kicker,
+html.dark .demo-heading > div > span {
   color: #a5b4fc;
 }
 
-body.dark .auth-story h1,
-body.dark .auth-story h1 em {
+html.dark .auth-story h1,
+html.dark .auth-story h1 em {
   color: #f8fafc;
 }
 
-body.dark .auth-story h1 em {
+html.dark .auth-story h1 em {
   color: #a5b4fc;
 }
 
-body.dark .auth-story > p,
-body.dark .auth-heading p {
+html.dark .auth-story > p,
+html.dark .auth-heading p {
   color: #b1bfd4;
 }
 
-body.dark .auth-proof-list strong {
+html.dark .auth-proof-list strong {
   color: #e2e8f0;
 }
 
-body.dark .auth-proof-list small,
-body.dark .demo-heading small,
-body.dark .auth-note {
+html.dark .auth-proof-list small,
+html.dark .demo-heading small,
+html.dark .auth-note {
   color: #94a3b8;
 }
 
-body.dark .auth-form label > span {
+html.dark .auth-form label > span {
   color: #cbd5e1;
 }
 
-body.dark .auth-input input,
-body.dark .auth-heading h2,
-body.dark .role-selector button strong {
+html.dark .auth-input input,
+html.dark .auth-heading h2,
+html.dark .role-selector button strong {
   color: #f1f5f9;
 }
 
-body.dark .auth-input input::placeholder {
+html.dark .auth-input input::placeholder {
   color: #71819a;
 }
 
-body.dark .auth-input {
+html.dark .auth-input {
   color: #94a3b8;
 }
 
-body.dark .auth-input:focus-within {
+html.dark .auth-input:focus-within {
   border-color: #818cf8;
   background: #1e2d4b;
   box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.18);
 }
 
-body.dark .auth-login-methods {
+html.dark .auth-login-methods {
   background: #111c2f;
 }
 
-body.dark .auth-login-methods button {
+html.dark .auth-login-methods button {
   color: #94a3b8;
 }
 
-body.dark .auth-login-methods button.active {
+html.dark .auth-login-methods button.active {
   color: #dbeafe;
   background: #26385a;
   box-shadow: 0 2px 7px rgba(2, 6, 23, 0.28);
 }
 
-body.dark .auth-providers button:hover:not(:disabled) {
+html.dark .auth-providers button:hover:not(:disabled) {
   border-color: #64748b;
   background: #223450;
 }
 
-body.dark .auth-submit:hover:not(:disabled) {
+html.dark .auth-submit:hover:not(:disabled) {
   background: linear-gradient(to right, #6366f1, #8b5cf6);
 }
 
-body.dark .auth-providers button:disabled,
-body.dark .auth-submit:disabled,
-body.dark .demo-submit:disabled {
+html.dark .auth-providers button:disabled,
+html.dark .auth-submit:disabled,
+html.dark .demo-submit:disabled {
   opacity: 0.5;
 }
 
-body.dark .auth-submit {
+html.dark .auth-submit {
   color: #ffffff;
 }
 
-body.dark .auth-divider {
-  color: #71819a;
+html.dark .auth-divider {
+  color: #9aa8bf;
 }
 
-body.dark .auth-providers button {
+html.dark .auth-providers button {
   color: #dbeafe;
 }
 
-body.dark .auth-providers svg {
+html.dark .auth-providers svg {
   color: #bfdbfe;
 }
 
-body.dark .provider-microsoft {
+html.dark .provider-microsoft {
   color: #93c5fd;
 }
 
-body.dark .auth-feedback {
+html.dark .auth-feedback {
   border-color: #4c5ca3;
   color: #c7d2fe;
   background: #202b58;
 }
 
-body.dark .role-selector button {
+html.dark .role-selector button {
   color: #b4c1d4;
 }
 
-body.dark .role-selector button.selected {
+html.dark .role-selector button.selected {
   border-color: #6877c7;
   background: #293462;
 }
 
-body.dark .role-selector-icon {
+html.dark .role-selector-icon {
   color: #c7d2fe;
   background: #354277;
 }
 
-body.dark .role-selector small {
+html.dark .role-selector small {
   color: #9aabc3;
 }
 
-body.dark .role-selected {
+html.dark .role-selected {
   color: #a5b4fc;
 }
 
-body.dark .demo-submit {
+html.dark .demo-submit {
   border-color: #5968b7;
   color: #c7d2fe;
   background: rgba(99, 102, 241, 0.16);
 }
 
-body.dark .demo-submit:hover {
+html.dark .demo-submit:hover {
   background: rgba(99, 102, 241, 0.26);
 }
 
-body.dark .not-found-page {
+html.dark .not-found-page {
   color: #e7eef9;
   background:
     radial-gradient(circle at 20% 10%, #1d3b6b55, transparent 32%),
     linear-gradient(135deg, #0f172a, #111c2f 60%, #1e1b2e);
 }
 
-body.dark .not-found-nav > span,
-body.dark .not-found-content p {
+html.dark .not-found-nav > span,
+html.dark .not-found-content p {
   color: #a9b9d0;
 }
 
-body.dark .not-found-icon {
+html.dark .not-found-icon {
   color: #a5b4fc;
   background: #25365b;
   box-shadow: 0 16px 30px #02061766;
 }
 
-body.dark .not-found-code,
-body.dark .not-found-content h1 em {
+html.dark .not-found-code,
+html.dark .not-found-content h1 em {
   color: #a5b4fc;
 }
 
-body.dark .not-found-actions .secondary-button {
+html.dark .not-found-actions .secondary-button {
   border-color: #475569;
   color: #dbeafe;
   background: #172338;
 }
 
-body.dark .auth-divider::before,
-body.dark .auth-divider::after {
+html.dark .auth-divider::before,
+html.dark .auth-divider::after {
   background: #334155;
 }
 
@@ -5733,83 +5467,83 @@ body.dark .auth-divider::after {
 }
 
 /* Landing dark mode: high-contrast type and layered surfaces. */
-body.dark .landing-page {
+html.dark .landing-page {
   color: #f8fbff;
   background:
     radial-gradient(circle at 12% 8%, #1d3b6b55, transparent 30%),
     radial-gradient(circle at 86% 42%, #26356b44, transparent 32%), #0a1220;
 }
 
-body.dark .landing-page .brand,
-body.dark .landing-page .hero-copy h1,
-body.dark .landing-page .section-heading h2,
-body.dark .landing-page .human-copy h2,
-body.dark .landing-page .cta-section h2 {
+html.dark .landing-page .brand,
+html.dark .landing-page .hero-copy h1,
+html.dark .landing-page .section-heading h2,
+html.dark .landing-page .human-copy h2,
+html.dark .landing-page .cta-section h2 {
   color: #f8fbff;
 }
 
-body.dark .landing-page .hero-copy h1 em,
-body.dark .landing-page .section-heading h2 em,
-body.dark .landing-page .human-copy h2 em {
+html.dark .landing-page .hero-copy h1 em,
+html.dark .landing-page .section-heading h2 em,
+html.dark .landing-page .human-copy h2 em {
   color: #9db4ff;
 }
 
-body.dark .landing-page .hero-copy > p,
-body.dark .landing-page .section-heading p,
-body.dark .landing-page .human-copy p,
-body.dark .landing-page .cta-section p {
+html.dark .landing-page .hero-copy > p,
+html.dark .landing-page .section-heading p,
+html.dark .landing-page .human-copy p,
+html.dark .landing-page .cta-section p {
   color: #c3d0e4;
 }
 
-body.dark .landing-page .nav-links a,
-body.dark .landing-page .link-button,
-body.dark .landing-page .hero-proof,
-body.dark .landing-page .workflow-step small,
-body.dark .landing-page .role-card p,
-body.dark .landing-page .flow-node small,
-body.dark .landing-page .flow-result small {
+html.dark .landing-page .nav-links a,
+html.dark .landing-page .link-button,
+html.dark .landing-page .hero-proof,
+html.dark .landing-page .workflow-step small,
+html.dark .landing-page .role-card p,
+html.dark .landing-page .flow-node small,
+html.dark .landing-page .flow-result small {
   color: #a9b9d0;
 }
 
-body.dark .landing-page .nav-links a:hover,
-body.dark .landing-page .link-button:hover {
+html.dark .landing-page .nav-links a:hover,
+html.dark .landing-page .link-button:hover {
   color: #dbe7ff;
 }
 
-body.dark .landing-page .workflow-step,
-body.dark .landing-page .role-card,
-body.dark .landing-page .human-section,
-body.dark .landing-page .cta-section,
-body.dark .landing-page .dashboard-preview,
-body.dark .landing-page .repeat-card,
-body.dark .landing-page .plan-card {
+html.dark .landing-page .workflow-step,
+html.dark .landing-page .role-card,
+html.dark .landing-page .human-section,
+html.dark .landing-page .cta-section,
+html.dark .landing-page .dashboard-preview,
+html.dark .landing-page .repeat-card,
+html.dark .landing-page .plan-card {
   color: #eaf1fb;
   background: #142238;
   border: 1px solid #304565;
   box-shadow: 0 22px 55px #02061752;
 }
 
-body.dark .landing-page .workflow-step.active,
-body.dark .landing-page .role-card.active {
+html.dark .landing-page .workflow-step.active,
+html.dark .landing-page .role-card.active {
   background: #1b3153;
   border-color: #6685d7;
 }
 
-body.dark .landing-page .workflow-step strong,
-body.dark .landing-page .role-card h3,
-body.dark .landing-page .flow-node strong,
-body.dark .landing-page .flow-result strong {
+html.dark .landing-page .workflow-step strong,
+html.dark .landing-page .role-card h3,
+html.dark .landing-page .flow-node strong,
+html.dark .landing-page .flow-result strong {
   color: #f1f5fa;
 }
 
-body.dark .landing-page .step-icon,
-body.dark .landing-page .role-icon {
+html.dark .landing-page .step-icon,
+html.dark .landing-page .role-icon {
   color: #b4c6ff;
   background: #263d6b;
   border-color: #526da8;
 }
 
-body.dark .landing-page .dashboard-preview {
+html.dark .landing-page .dashboard-preview {
   border-color: #47638d;
   background:
     radial-gradient(circle at 92% 8%, #5667f438, transparent 31%),
@@ -5821,13 +5555,13 @@ body.dark .landing-page .dashboard-preview {
     0 2px 18px #9db4ff1f inset;
 }
 
-body.dark .landing-page .campus-shape {
+html.dark .landing-page .campus-shape {
   opacity: 0.78;
   background: linear-gradient(130deg, #243e68, #3b3155 53%, #223b66), #243a60;
   box-shadow: 0 0 70px #526dcb2e;
 }
 
-body.dark .landing-page .campus-window {
+html.dark .landing-page .campus-window {
   background: #9bb9ff88;
   box-shadow:
     20px 0 #9bb9ff88,
@@ -5836,40 +5570,40 @@ body.dark .landing-page .campus-window {
     80px 0 #9bb9ff88;
 }
 
-body.dark .landing-page .campus-roof {
+html.dark .landing-page .campus-roof {
   background: #a87988;
 }
 
-body.dark .landing-page .mini-brand,
-body.dark .landing-page .preview-heading strong,
-body.dark .landing-page .preview-heading strong,
-body.dark .landing-page .preview-metrics strong,
-body.dark .landing-page .preview-alert strong {
+html.dark .landing-page .mini-brand,
+html.dark .landing-page .preview-heading strong,
+html.dark .landing-page .preview-heading strong,
+html.dark .landing-page .preview-metrics strong,
+html.dark .landing-page .preview-alert strong {
   color: #f8fbff;
 }
 
-body.dark .landing-page .live-pill {
+html.dark .landing-page .live-pill {
   color: #a9c2dc;
 }
 
-body.dark .landing-page .date-pill {
+html.dark .landing-page .date-pill {
   border-color: #58729a;
   color: #c7d7ec;
   background: #263d60;
 }
 
-body.dark .landing-page .preview-heading small,
-body.dark .landing-page .preview-metrics small,
-body.dark .landing-page .chart-panel > small,
-body.dark .landing-page .preview-alert small {
+html.dark .landing-page .preview-heading small,
+html.dark .landing-page .preview-metrics small,
+html.dark .landing-page .chart-panel > small,
+html.dark .landing-page .preview-alert small {
   color: #9fb0c8;
 }
 
-body.dark .landing-page .preview-metrics > div,
-body.dark .landing-page .chart-panel,
-body.dark .landing-page .preview-alert,
-body.dark .landing-page .flow-node,
-body.dark .landing-page .flow-result {
+html.dark .landing-page .preview-metrics > div,
+html.dark .landing-page .chart-panel,
+html.dark .landing-page .preview-alert,
+html.dark .landing-page .flow-node,
+html.dark .landing-page .flow-result {
   background: linear-gradient(145deg, #274163, #203653);
   border-color: #466488;
   box-shadow:
@@ -5877,78 +5611,78 @@ body.dark .landing-page .flow-result {
     0 1px 0 #9db4ff14 inset;
 }
 
-body.dark .landing-page .preview-metrics > div:nth-child(1) {
+html.dark .landing-page .preview-metrics > div:nth-child(1) {
   background: linear-gradient(145deg, #253e63, #1e3658);
 }
 
-body.dark .landing-page .preview-metrics > div:nth-child(2) {
+html.dark .landing-page .preview-metrics > div:nth-child(2) {
   background: linear-gradient(145deg, #23495c, #1d3b51);
 }
 
-body.dark .landing-page .preview-metrics > div:nth-child(3) {
+html.dark .landing-page .preview-metrics > div:nth-child(3) {
   background: linear-gradient(145deg, #57412d, #3d3040);
   border-color: #8d6a4d;
 }
 
-body.dark .landing-page .preview-metrics > div:nth-child(2) strong {
+html.dark .landing-page .preview-metrics > div:nth-child(2) strong {
   color: #7ee7d0;
 }
 
-body.dark .landing-page .preview-metrics > div:nth-child(3) strong {
+html.dark .landing-page .preview-metrics > div:nth-child(3) strong {
   color: #ffc477;
 }
 
-body.dark .landing-page .bars {
+html.dark .landing-page .bars {
   border-bottom-color: #526d91;
 }
 
-body.dark .landing-page .bars i {
+html.dark .landing-page .bars i {
   background: linear-gradient(180deg, #8d9cff, #4d72f0 58%, #35c7c0);
   box-shadow: 0 0 12px #6378ff66;
 }
 
-body.dark .landing-page .donut {
+html.dark .landing-page .donut {
   background: conic-gradient(#6475ff 0 54%, #a7b2ff 54% 86%, #ffb56e 86% 100%);
   box-shadow: 0 0 20px #6378ff3d;
 }
 
-body.dark .landing-page .donut::after {
+html.dark .landing-page .donut::after {
   background: #1a2c49;
   box-shadow: 0 0 0 1px #87a0c433 inset;
 }
 
-body.dark .landing-page .donut b {
+html.dark .landing-page .donut b {
   color: #f8fbff;
 }
 
-body.dark .landing-page .donut b small {
+html.dark .landing-page .donut b small {
   color: #a9bdd8;
 }
 
-body.dark .landing-page .chart-labels,
-body.dark .landing-page .legend {
+html.dark .landing-page .chart-labels,
+html.dark .landing-page .legend {
   color: #9fb0c8;
 }
 
-body.dark .landing-page .positive {
+html.dark .landing-page .positive {
   color: #65d2c8;
 }
 
-body.dark .landing-page .warning,
-body.dark .landing-page .orange {
+html.dark .landing-page .warning,
+html.dark .landing-page .orange {
   color: #f4bd69;
 }
 
-body.dark .landing-page .human-section {
+html.dark .landing-page .human-section {
   background: #101d31;
 }
 
-body.dark .landing-page .cta-section {
+html.dark .landing-page .cta-section {
   background: linear-gradient(135deg, #25458d, #293a87);
   border-color: #5c78c6;
 }
 
-body.dark .landing-page .float-card {
+html.dark .landing-page .float-card {
   border-color: #4b6790;
   background: rgba(27, 48, 79, 0.9);
   box-shadow:
@@ -5956,32 +5690,32 @@ body.dark .landing-page .float-card {
     0 1px 0 #9db4ff1c inset;
 }
 
-body.dark .landing-page .float-card small {
+html.dark .landing-page .float-card small {
   color: #9eb1ca;
 }
 
-body.dark .landing-page .float-card strong {
+html.dark .landing-page .float-card strong {
   color: #f3f7ff;
 }
 
-body.dark .landing-page .float-icon.coral {
+html.dark .landing-page .float-icon.coral {
   color: #ffaaa1;
   background: #6b3640;
 }
 
-body.dark .landing-page .float-icon.mint {
+html.dark .landing-page .float-icon.mint {
   color: #82e8d0;
   background: #1d5a5c;
 }
 
-body.dark .landing-page .site-footer {
+html.dark .landing-page .site-footer {
   color: #dce7f7;
   background: #091321;
   border-color: #263954;
 }
 
 /* Dark mode dashboard components */
-body.dark .dashboard-hero {
+html.dark .dashboard-hero {
   background: linear-gradient(
     to bottom right,
     #1e3a8a,
@@ -5992,131 +5726,581 @@ body.dark .dashboard-hero {
   box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2) !important;
 }
 
-body.dark .dashboard-hero p,
-body.dark .dashboard-hero small {
+html.dark .dashboard-hero p,
+html.dark .dashboard-hero small {
   color: #bfdbfe !important;
 }
 
-body.dark .dashboard-hero h1 {
+html.dark .dashboard-hero h1 {
   color: #f1f5f9 !important;
 }
 
-body.dark .dashboard-hero button {
+html.dark .dashboard-hero button {
   background: rgba(255, 255, 255, 0.1) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   color: #f1f5f9 !important;
 }
 
-body.dark .dashboard-hero button:hover {
+html.dark .dashboard-hero button:hover {
   background: rgba(255, 255, 255, 0.15) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-body.dark [class*="bg-white/60"],
-body.dark [class*="bg-white/70"],
-body.dark [class*="bg-white/80"] {
-  background-color: rgba(15, 23, 42, 0.8) !important;
-  border-color: #334155 !important;
-}
-
-body.dark [class*="border-white/60"],
-body.dark [class*="border-white/70"],
-body.dark [class*="border-white/80"] {
-  border-color: #334155 !important;
-}
-
-body.dark .bg-white {
-  background-color: #1e293b !important;
-  color: #e2e8f0 !important;
-}
-
-body.dark .bg-slate-50 {
-  background-color: #0f172a !important;
-}
-
-body.dark .bg-indigo-50,
-body.dark .bg-indigo-100 {
-  background-color: rgba(79, 70, 229, 0.15) !important;
-  border-color: rgba(79, 70, 229, 0.3) !important;
-}
-
-body.dark .text-slate-800,
-body.dark .text-slate-700,
-body.dark .text-slate-600 {
-  color: #e2e8f0 !important;
-}
-
-body.dark .text-slate-500 {
-  color: #94a3b8 !important;
-}
-
-body.dark .text-slate-400 {
-  color: #64748b !important;
-}
-
-body.dark .border-slate-100,
-body.dark .border-slate-200 {
-  border-color: #334155 !important;
-}
-
-body.dark .shadow-inner {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-}
-
-body.dark .dashboard-sidebar {
-  background: #0f172a !important;
-  border-right-color: #334155 !important;
-}
-
-body.dark .dashboard-topbar {
-  background: #1e293b !important;
-  border-bottom-color: #334155 !important;
-}
-
-body.dark .dashboard-search {
-  background: #0f172a !important;
-  border-color: #334155 !important;
-}
-
-body.dark .dashboard-search input {
-  color: #e2e8f0 !important;
-}
-
-body.dark .dashboard-search input::placeholder {
-  color: #64748b !important;
-}
-
-body.dark .role-selector button {
+html.dark .role-selector button {
   background: rgba(79, 70, 229, 0.1) !important;
   border-color: rgba(79, 70, 229, 0.3) !important;
   color: #bfdbfe !important;
 }
 
-body.dark .role-selector button:hover,
-body.dark .role-selector button.selected {
+html.dark .role-selector button:hover,
+html.dark .role-selector button.selected {
   background: rgba(79, 70, 229, 0.25) !important;
   border-color: rgba(79, 70, 229, 0.5) !important;
 }
 
-body.dark .stat-card,
-body.dark .dashboard-stat {
-  background: rgba(15, 23, 42, 0.8) !important;
-  border-color: #334155 !important;
+html.dark .stat-card {
+  background: rgb(var(--app-surface));
+  border-color: rgb(var(--app-border));
 }
 
-/* Profile pill styling for dark mode */
-body.dark .bg-indigo-50 {
-  background-color: rgba(79, 70, 229, 0.12) !important;
+/* ─── Dark theme: hand-styled pages ─────────────────────────────────
+   Tailwind-based screens follow tokens.css on their own; these rules cover
+   the landing, auth, 404 and prototype pages, which use their own classes.
+   Values come from the shared --app-* tokens so every page matches.   */
+
+html.dark .landing-page .primary-button,
+html.dark .not-found-page .primary-button {
+  color: #ffffff;
+  background: #5059e6;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
 }
 
-body.dark .border-indigo-100 {
-  border-color: rgba(79, 70, 229, 0.25) !important;
+html.dark .landing-page .primary-button:hover,
+html.dark .not-found-page .primary-button:hover {
+  background: #5d66f0;
 }
 
-body.dark .hover\:bg-indigo-100:hover {
-  background-color: rgba(79, 70, 229, 0.18) !important;
+html.dark .landing-page .secondary-button,
+html.dark .not-found-page .secondary-button {
+  color: rgb(var(--app-accent-ink));
+  background: rgb(var(--app-surface-raised));
+  border: 1px solid rgb(var(--app-border));
+  box-shadow: none;
 }
 
-body.dark .hover\:border-indigo-300:hover {
-  border-color: rgba(79, 70, 229, 0.35) !important;
+html.dark .landing-page .secondary-button:hover,
+html.dark .not-found-page .secondary-button:hover {
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .landing-page .eyebrow,
+html.dark .workflow-detail span,
+html.dark .role-detail .workspace-kicker {
+  color: #a3afff;
+}
+
+html.dark .landing-page .workflow-step:hover,
+html.dark .landing-page .workflow-step:focus-visible {
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .landing-page .preview-alert:hover {
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .workflow-rail,
+html.dark .decision-flow {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface) / 0.9);
+}
+
+html.dark .workflow-detail,
+html.dark .role-detail,
+html.dark .landing-page .role-card.selected {
+  border-color: rgb(var(--app-border));
+  background: linear-gradient(
+    110deg,
+    rgb(var(--app-accent-soft)),
+    rgb(var(--app-surface)) 70%
+  );
+  box-shadow: none;
+}
+
+html.dark .workflow-detail-icon {
+  color: #b9c3ff;
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .workflow-detail strong,
+html.dark .role-detail h3 {
+  color: rgb(var(--app-text));
+}
+
+html.dark .workflow-detail p,
+html.dark .role-detail p,
+html.dark .role-detail-metric small,
+html.dark .role-detail-evidence > span,
+html.dark .role-detail-metric > span {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .role-detail-evidence div {
+  color: rgb(var(--app-text-secondary));
+}
+
+html.dark .role-detail-intro,
+html.dark .role-detail-metric {
+  border-color: rgb(var(--app-border));
+}
+
+html.dark .role-detail-metric strong {
+  color: #a3afff;
+}
+
+html.dark .workflow-detail > button {
+  color: #c7d0ff;
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-raised));
+}
+
+html.dark .workflow-detail > button:hover {
+  color: #ffffff;
+  border-color: #5059e6;
+  background: #5059e6;
+}
+
+html.dark .landing-page .visual-glow {
+  opacity: 0.18;
+}
+
+html.dark .footer-wave-one {
+  background: rgb(var(--app-surface));
+}
+
+html.dark .footer-wave-two {
+  border-color: rgb(var(--app-border));
+}
+
+html.dark .footer-live {
+  color: #6ee7b7;
+  border-color: rgb(16 185 129 / 0.35);
+  background: rgb(16 185 129 / 0.12);
+}
+
+html.dark .footer-cta,
+html.dark .footer-socials a {
+  color: #c7d0ff;
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-raised));
+}
+
+html.dark .footer-cta:hover,
+html.dark .footer-socials a:hover {
+  color: #ffffff;
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .footer-bottom,
+html.dark .footer-socials {
+  border-color: rgb(var(--app-border));
+}
+
+/* Auth */
+html.dark .auth-atmosphere-one {
+  background: rgb(79 70 229 / 0.16);
+}
+
+html.dark .auth-atmosphere-two {
+  background: rgb(244 63 94 / 0.07);
+}
+
+html.dark .auth-campus-card {
+  background: linear-gradient(120deg, #1e2a55, #3a2342);
+}
+
+html.dark .auth-campus-sky {
+  background:
+    radial-gradient(circle at 20% 20%, rgb(255 255 255 / 0.22) 0 4%, transparent 5%),
+    radial-gradient(circle at 70% 30%, rgb(255 255 255 / 0.16) 0 3%, transparent 4%);
+}
+
+html.dark .auth-campus-building {
+  background: #2c3a66;
+}
+
+html.dark .auth-campus-building i {
+  background: rgb(157 180 255 / 0.5);
+}
+
+html.dark .auth-proof-list > div > span {
+  color: #6ee7b7;
+  background: rgb(16 185 129 / 0.16);
+}
+
+/* 404 */
+html.dark .orbit-one {
+  background: rgb(79 70 229 / 0.14);
+}
+
+html.dark .orbit-two {
+  background: rgb(244 63 94 / 0.07);
+}
+
+/* Prototype workspace */
+html.dark .workspace-page {
+  color: rgb(var(--app-text));
+  background:
+    radial-gradient(circle at 90% 0%, rgb(79 70 229 / 0.14) 0, transparent 32%),
+    linear-gradient(180deg, #0c1426 0%, #0a101d 60%, #0b1120 100%);
+}
+
+html.dark .workspace-header {
+  border-color: rgb(var(--app-border));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--app-surface-raised)),
+    rgb(var(--app-surface))
+  );
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.35);
+}
+
+html.dark .workspace-brand h1,
+html.dark .workspace-empty h2,
+html.dark .profile-label span {
+  color: rgb(var(--app-text));
+}
+
+html.dark .workspace-brand p,
+html.dark .workspace-empty p,
+html.dark .profile-label small {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .workspace-kicker {
+  color: #a3afff;
+}
+
+html.dark .icon-button,
+html.dark .workspace-button,
+html.dark .workspace-button.subtle,
+html.dark .workspace-button.ghost,
+html.dark .student-search,
+html.dark .profile-pills button {
+  color: rgb(var(--app-text-secondary));
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-raised));
+}
+
+html.dark .icon-button:hover,
+html.dark .workspace-button:hover:not(:disabled) {
+  color: rgb(var(--app-text));
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-hover));
+  box-shadow: none;
+}
+
+html.dark .workspace-button.primary {
+  color: #ffffff;
+  border-color: #5059e6;
+  background: #5059e6;
+  box-shadow: 0 10px 22px rgb(0 0 0 / 0.35);
+}
+
+html.dark .workspace-button.success {
+  color: #6ee7b7;
+  border-color: rgb(16 185 129 / 0.4);
+  background: rgb(16 185 129 / 0.12);
+}
+
+html.dark .student-search input {
+  color: rgb(var(--app-text));
+}
+
+html.dark .profile-pills button:hover,
+html.dark .profile-pills button.active {
+  color: #ffffff;
+  border-color: #5059e6;
+  background: #5059e6;
+}
+
+html.dark .workspace-error {
+  border-color: rgb(244 63 94 / 0.4);
+  color: #fda4af;
+  background: rgb(244 63 94 / 0.1);
+}
+
+html.dark .empty-icon {
+  color: #a5b4fc;
+  background: rgb(var(--app-accent-soft));
+}
+
+/* ─── Light theme: legible secondary text (WCAG AA) ───────────────── */
+html:not(.dark) .landing-page .footer-bottom,
+html:not(.dark) .landing-page .footer-legal a,
+html:not(.dark) .landing-page .footer-brand small,
+html:not(.dark) .landing-page .hero-proof,
+html:not(.dark) .landing-page .preview-metrics small,
+html:not(.dark) .landing-page .chart-panel > small,
+html:not(.dark) .landing-page .preview-alert small {
+  color: #5f6b85;
+}
+
+html:not(.dark) .landing-page .footer-brand p,
+html:not(.dark) .landing-page .footer-links a {
+  color: #5c6882;
+}
+
+html:not(.dark) .landing-page .footer-live {
+  color: #1c6e53;
+}
+
+/* Comfortable tap targets for text links in the landing header. */
+.landing-page .nav-links a,
+.landing-page .link-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+}
+
+.landing-page .footer-links a {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+}
+
+/* Landing step labels and the product mock-up: AA contrast in light mode. */
+html:not(.dark) .landing-page .workflow-step small,
+html:not(.dark) .landing-page .date-pill {
+  color: #56657c;
+}
+
+html:not(.dark) .landing-page .chart-labels,
+html:not(.dark) .landing-page .step-number,
+html:not(.dark) .landing-page .role-number {
+  color: #66748c;
+}
+
+html:not(.dark) .landing-page .positive {
+  color: #1f8a67;
+}
+
+html:not(.dark) .landing-page .warning {
+  color: #b85c10;
+}
+
+html:not(.dark) .landing-page .orange {
+  color: #c2581a;
+}
+
+/* Prototype workspace: long identifiers wrap instead of widening the page. */
+.workspace-column,
+.workspace-column > * {
+  min-width: 0;
+}
+
+.card-heading h3,
+.workspace-overview h2 {
+  overflow-wrap: anywhere;
+}
+
+.student-search input {
+  align-self: stretch;
+  min-height: 36px;
+}
+
+/* ─── Dark theme: prototype student case, scanner, landing footer ─── */
+html.dark .workspace-overview h2,
+html.dark .workspace-stat strong,
+html.dark .card-heading h3,
+html.dark .export-card h3,
+html.dark .scanner-heading h2,
+html.dark .student-context-identity h2,
+html.dark .feed-heading strong,
+html.dark .feed-row > span {
+  color: rgb(var(--app-text));
+}
+
+html.dark .workspace-overview h2 span,
+html.dark .workspace-stat span,
+html.dark .workspace-stat small,
+html.dark .muted-copy,
+html.dark .context-list span:not(.status-badge),
+html.dark .backlog-row span:not(.status-badge),
+html.dark .card-heading,
+html.dark .card-heading .workspace-kicker,
+html.dark .reasoning-block > span,
+html.dark .actions-block > span,
+html.dark .approval-row span,
+html.dark .export-icon,
+html.dark .scanner-footer p,
+html.dark .student-context-facts small,
+html.dark .agent-next-state span,
+html.dark .feed-row small {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .workspace-stat,
+html.dark .workspace-card,
+html.dark .scanner-modal {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface));
+  box-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.6);
+}
+
+html.dark .workspace-stat:hover,
+html.dark .workspace-card:hover {
+  border-color: rgb(var(--app-border));
+  box-shadow: 0 16px 32px -20px rgb(0 0 0 / 0.7);
+}
+
+html.dark .student-context-card,
+html.dark .agent-checklist-card,
+html.dark .recommendation-card {
+  border-color: rgb(var(--app-border));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--app-surface-raised)),
+    rgb(var(--app-surface))
+  );
+  box-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.6);
+}
+
+html.dark .student-context-avatar {
+  color: #a5b4fc;
+  background: rgb(var(--app-accent-soft));
+}
+
+html.dark .student-context-facts strong,
+html.dark .agent-checklist > div,
+html.dark .backlog-row strong,
+html.dark .context-list strong,
+html.dark .approval-row strong {
+  color: rgb(var(--app-text-secondary));
+}
+
+html.dark .backlog-row,
+html.dark .context-list > div,
+html.dark .approval-row,
+html.dark .agent-next-state,
+html.dark .feed-block + .feed-block,
+html.dark .feed-row {
+  border-color: rgb(var(--app-border-subtle));
+}
+
+html.dark .agent-next-state strong,
+html.dark .actions-block li b,
+html.dark .card-heading .workspace-kicker svg {
+  color: #a3afff;
+}
+
+html.dark .reasoning-block p {
+  border-left-color: #6d7cff;
+  color: rgb(var(--app-text-secondary));
+  background: rgb(var(--app-surface-inset));
+}
+
+html.dark .actions-block li {
+  border-color: rgb(var(--app-border));
+  color: rgb(var(--app-text-secondary));
+  background: rgb(var(--app-surface-inset));
+}
+
+html.dark .approval-row select,
+html.dark .export-actions button {
+  border-color: rgb(var(--app-border));
+  color: rgb(var(--app-text-secondary));
+  background: rgb(var(--app-surface-raised));
+}
+
+html.dark .export-actions button:hover {
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .activity-log,
+html.dark .scanner-modal #barcode-reader {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-inset));
+}
+
+html.dark .activity-log p {
+  color: #6ee7b7;
+}
+
+html.dark .scanner-backdrop {
+  background: rgb(2 6 23 / 0.6);
+}
+
+html.dark .footer-links strong {
+  color: rgb(var(--app-text));
+}
+
+html.dark .footer-links a,
+html.dark .footer-legal a,
+html.dark .footer-brand p,
+html.dark .footer-brand small,
+html.dark .footer-bottom {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .human-node > span,
+html.dark .flow-result > span {
+  color: #6ee7b7;
+  background: rgb(16 185 129 / 0.16);
+}
+
+/* ─── Landing hero performance ──────────────────────────────────────
+   The product mock-up and its floating cards sit over animated bars and a
+   pulsing glow. A backdrop blur there is recomputed on every animation
+   frame, so they use slightly more opaque solid fills instead.          */
+.dashboard-preview,
+.float-card {
+  backdrop-filter: none;
+}
+
+html:not(.dark) .landing-page .dashboard-preview {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+html:not(.dark) .landing-page .float-card {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+/* The hero glow pulsed its box-shadow, repainting a large area every frame.
+   Opacity and scale give the same breathing effect on the compositor. */
+.landing-page .visual-glow {
+  animation: soft-glow 3.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes soft-glow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.82;
+    transform: scale(1.025);
+  }
+}
+
+html:not(.dark) .landing-page .flow-node small,
+html:not(.dark) .landing-page .flow-result small,
+html:not(.dark) .landing-page .legend {
+  color: #5f6b85;
+}
+
+html:not(.dark) .landing-page .positive {
+  color: #17755a;
+}
+
+html:not(.dark) .landing-page .step-number {
+  color: #56657c;
+}
+
+.landing-page .footer-legal a {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
 }

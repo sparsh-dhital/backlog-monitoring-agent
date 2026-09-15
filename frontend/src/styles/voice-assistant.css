@@ -1,0 +1,571 @@
+/* Voice assistant: floating mic button and conversation panel. */
+
+.va-root {
+  --va-surface: #ffffff;
+  --va-surface-muted: #f1f5f9;
+  --va-border: #e2e8f0;
+  --va-text: #0f172a;
+  --va-muted: #56657c;
+  --va-accent: #4f46e5;
+  --va-accent-2: #7c3aed;
+  --va-live: #e11d48;
+  --va-shadow: 0 28px 64px -24px rgba(30, 27, 75, 0.38),
+    0 10px 28px -14px rgba(15, 23, 42, 0.2);
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+html.dark .va-root {
+  --va-surface: rgb(var(--app-surface-raised));
+  --va-surface-muted: rgb(var(--app-surface-hover));
+  --va-border: rgb(var(--app-border));
+  --va-text: rgb(var(--app-text));
+  --va-muted: rgb(var(--app-text-muted));
+  --va-live: #fb7185;
+  --va-shadow: 0 28px 64px -24px rgba(0, 0, 0, 0.75);
+}
+
+.va-root button {
+  font: inherit;
+}
+
+.va-root button:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.35);
+  outline-offset: 2px;
+}
+
+.va-input:focus-within {
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.16);
+}
+
+/* Floating button */
+.va-fab,
+.va-mic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--va-accent), var(--va-accent-2));
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.va-fab {
+  width: 60px;
+  height: 60px;
+  box-shadow: 0 16px 32px -12px rgba(79, 70, 229, 0.7);
+}
+
+.va-fab:hover,
+.va-mic:hover {
+  transform: translateY(-1px) scale(1.04);
+}
+
+.va-fab.is-on,
+.va-mic.is-on {
+  background: linear-gradient(135deg, #e11d48, #db2777);
+  box-shadow: 0 16px 32px -12px rgba(225, 29, 72, 0.65);
+}
+
+.va-fab.is-live::after,
+.va-mic.is-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: va-pulse 1.5s ease-out infinite;
+}
+
+/* Panel */
+.va-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(384px, calc(100vw - 32px));
+  max-height: min(580px, calc(100dvh - 128px));
+  overflow: hidden;
+  border: 1px solid var(--va-border);
+  border-radius: 24px;
+  color: var(--va-text);
+  background: var(--va-surface);
+  box-shadow: var(--va-shadow);
+  transform-origin: bottom right;
+  animation: va-panel-in 180ms ease-out;
+}
+
+.va-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 12px 16px;
+  border-bottom: 1px solid var(--va-border);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.09), rgba(124, 58, 237, 0.05));
+}
+
+.va-orb {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--va-accent), var(--va-accent-2));
+  box-shadow: 0 8px 18px -10px rgba(79, 70, 229, 0.8);
+}
+
+.va-orb-thinking,
+.va-orb-transcribing,
+.va-orb-speaking {
+  animation: va-breathe 1.2s ease-in-out infinite;
+}
+
+.va-title {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.va-title strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.va-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--va-muted);
+}
+
+.va-status > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.va-status-starting > i,
+.va-status-transcribing > i {
+  background: var(--va-accent);
+  animation: va-blink 1s ease-in-out infinite;
+}
+
+.va-status-thinking > i {
+  background: #f59e0b;
+  animation: va-blink 1s ease-in-out infinite;
+}
+
+.va-status-speaking > i {
+  background: #10b981;
+}
+
+.va-status-listening,
+.va-status-hearing {
+  color: var(--va-live);
+}
+
+/* Live input level (recorded engine); --va-level is written by the monitor. */
+.va-meter {
+  --va-level: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+}
+
+.va-meter i {
+  display: block;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleY(min(1, calc(0.18 + var(--va-level) * var(--va-gain, 1))));
+  transition: transform 90ms linear;
+}
+
+.va-meter i:nth-child(1) {
+  --va-gain: 0.45;
+}
+
+.va-meter i:nth-child(2) {
+  --va-gain: 0.8;
+}
+
+.va-meter i:nth-child(4) {
+  --va-gain: 0.7;
+}
+
+.va-meter i:nth-child(5) {
+  --va-gain: 0.4;
+}
+
+/* Browser engine has no level; show a gentle activity wave instead. */
+.va-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.va-bars i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--va-live);
+  transform-origin: bottom;
+  animation: va-bars 0.9s ease-in-out infinite;
+}
+
+.va-bars i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.va-bars i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.va-bars i:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+.va-status-listening .va-bars i {
+  animation-duration: 1.8s;
+  opacity: 0.6;
+}
+
+.va-icon-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 11px;
+  color: var(--va-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.va-icon-button:hover {
+  color: var(--va-text);
+  background: var(--va-surface-muted);
+}
+
+/* Conversation */
+.va-conversation {
+  display: flex;
+  flex: 1;
+  min-height: 190px;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 16px;
+  overscroll-behavior: contain;
+}
+
+.va-welcome p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--va-muted);
+}
+
+.va-welcome .va-welcome-title {
+  margin-bottom: 4px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--va-text);
+}
+
+.va-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.va-suggestions button {
+  min-height: 32px;
+  padding: 7px 12px;
+  border: 1px solid var(--va-border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  color: var(--va-accent);
+  background: var(--va-surface);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+html.dark .va-suggestions button {
+  color: #c7d2fe;
+}
+
+.va-suggestions button:hover {
+  border-color: rgba(99, 102, 241, 0.55);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.va-bubble {
+  max-width: 86%;
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: 17px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  animation: va-bubble-in 160ms ease-out;
+}
+
+.va-bubble-user {
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--va-accent), var(--va-accent-2));
+}
+
+.va-bubble-assistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+  color: var(--va-text);
+  background: var(--va-surface-muted);
+}
+
+.va-bubble-interim {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.va-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 13px 14px;
+}
+
+.va-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--va-muted);
+  animation: va-typing 1s ease-in-out infinite;
+}
+
+.va-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.va-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Problems the user can fix (blocked mic, unsupported browser...) */
+.va-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 12px 10px;
+  padding: 10px 12px;
+  border: 1px solid #fecdd3;
+  border-radius: 13px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.va-notice.is-info {
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.va-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+html.dark .va-notice {
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.12);
+}
+
+html.dark .va-notice.is-info {
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Footer */
+.va-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--va-border);
+}
+
+.va-mic {
+  width: 46px;
+  height: 46px;
+}
+
+.va-input {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 14px;
+  border: 1px solid var(--va-border);
+  border-radius: 999px;
+  background: var(--va-surface-muted);
+}
+
+.va-input input {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--va-text);
+  background: transparent;
+}
+
+.va-input input::placeholder {
+  color: var(--va-muted);
+}
+
+.va-input button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--va-accent);
+  cursor: pointer;
+}
+
+.va-input button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+@keyframes va-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(225, 29, 72, 0);
+  }
+}
+
+@keyframes va-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes va-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes va-bars {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes va-typing {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes va-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes va-breathe {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Sit above the fixed bottom navigation on phones. */
+@media (max-width: 680px) {
+  .va-root {
+    right: 14px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  .va-fab {
+    width: 54px;
+    height: 54px;
+  }
+
+  .va-panel {
+    max-height: calc(100dvh - 190px);
+  }
+
+  .va-input input {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .va-root *,
+  .va-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

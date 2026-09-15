@@ -10,7 +10,11 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import Lenis from "lenis";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
-import { ThemeProvider } from "./theme";
+import {
+  clearOtpSession,
+  isAllowedInstitutionEmail,
+  readOtpSession,
+} from "./shared/authSession";
 import ThemeToggle from "./components/ThemeToggle";
 import "./App.css";
 
@@ -26,6 +30,7 @@ function clearLocalSession() {
   sessionStorage.removeItem("edurecover-pending-role");
   sessionStorage.removeItem("edurecover-demo-role");
   sessionStorage.removeItem("edurecover-focus-student");
+  clearOtpSession();
 }
 
 function SmoothScroll() {
@@ -123,9 +128,22 @@ function ProtectedDashboard() {
 
   useEffect(() => {
     let active = true;
-    supabaseAuth.auth.getSession().then(({ data }) => {
+    supabaseAuth.auth.getSession().then(async ({ data }) => {
       if (!active) return;
-      if (!data.session && demoRole !== role) {
+      const session = data.session;
+      // The API rejects out-of-domain accounts too; checking here keeps them
+      // from seeing even an empty dashboard.
+      if (session && !isAllowedInstitutionEmail(session.user.email)) {
+        await supabaseAuth.auth.signOut();
+        clearLocalSession();
+        if (active) {
+          navigate(`/auth?requiredRole=${role || "hod"}&error=domain_restricted`, {
+            replace: true,
+          });
+        }
+        return;
+      }
+      if (!session && !readOtpSession() && demoRole !== role) {
         clearLocalSession();
         navigate(`/auth?requiredRole=${role || "hod"}`, { replace: true });
         return;
@@ -162,17 +180,10 @@ function ProtectedDashboard() {
 }
 
 export default function App() {
-  const [isBooting, setIsBooting] = useState(true);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIsBooting(false), 760);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  if (isBooting) return <SiteLoader />;
-
+  // ThemeProvider wraps the app in main.tsx; the loader shows only while a
+  // route chunk is actually loading.
   return (
-    <ThemeProvider>
+    <>
       <SmoothScroll />
       <SiteThemeToggle />
       <Suspense fallback={<SiteLoader />}>
@@ -184,6 +195,6 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </ThemeProvider>
+    </>
   );
 }

@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { BacklogRow } from "../types/agent";
 
-/* Same validated ordinal ramp as the department charts: blue steps
-   250/350/450/600, checked with scripts/validate_palette.js against the card
-   surface (#f9fcff) — monotone lightness, adjacent dL, light-end contrast,
-   single hue. Attempt bands are ORDERED, so an ordinal ramp is the right job. */
-const RAMP = ["#86b6ef", "#5598e7", "#2a78d6", "#184f95"];
+/* Same validated ordinal ramp as the department charts, resolved per theme
+   from CSS variables on .viz-root (index.css): blue 250/350/450/600 on light,
+   500/400/300/200 on dark. Attempt bands are ORDERED, so an ordinal ramp is
+   the right job. The exhausted-attempts meter uses the fixed status red. */
+const RAMP = ["var(--viz-ramp-1)", "var(--viz-ramp-2)", "var(--viz-ramp-3)"];
 const GAP = 2;
 /** Regulation default; the evaluation endpoint is the source of truth. */
 const MAX_ATTEMPTS = 3;
@@ -27,8 +27,11 @@ interface Tip {
 
 export default function StudentBacklogCharts({
   studentId,
+  refreshKey = 0,
 }: {
   studentId?: string;
+  /** Bump after the backlog list changes so the charts re-read it. */
+  refreshKey?: number;
 }) {
   const [rows, setRows] = useState<BacklogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +62,7 @@ export default function StudentBacklogCharts({
     return () => {
       active = false;
     };
-  }, [studentId]);
+  }, [studentId, refreshKey]);
 
   if (loading) {
     return (
@@ -131,11 +134,11 @@ export default function StudentBacklogCharts({
             const left = Math.max(0, MAX_ATTEMPTS - used);
             return (
               <div key={row.id}>
-                <div className="flex items-baseline justify-between mb-1.5">
-                  <span className="font-mono text-xs font-bold text-slate-700">
+                <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                  <span className="font-mono text-xs font-bold text-slate-700 truncate">
                     {row.course_code}
                   </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
+                  <span className="text-[11px] font-semibold text-slate-500 shrink-0">
                     {left === 0 ? "no attempts left" : `${left} left`}
                   </span>
                 </div>
@@ -148,9 +151,9 @@ export default function StudentBacklogCharts({
                         background:
                           index < used
                             ? left === 0
-                              ? "#d03b3b"
-                              : RAMP[2]
-                            : "#e8eff9",
+                              ? "var(--viz-critical)"
+                              : "var(--viz-ramp-3)"
+                            : "var(--viz-track)",
                       }}
                     />
                   ))}
@@ -187,7 +190,7 @@ export default function StudentBacklogCharts({
               ))}
             </div>
             <Legend bands={live} total={total} />
-            <p className="text-[11px] font-medium text-slate-400 text-center">
+            <p className="text-[11px] font-medium text-slate-500 text-center">
               A ring needs three bands — add subjects with different attempt
               counts and this becomes a donut.
             </p>
@@ -208,7 +211,7 @@ export default function StudentBacklogCharts({
                       cy="70"
                       r={R}
                       fill="none"
-                      stroke={band.color}
+                      style={{ stroke: band.color }}
                       strokeWidth="18"
                       strokeDasharray={`${dash} ${C - dash}`}
                       strokeDashoffset={offset}
