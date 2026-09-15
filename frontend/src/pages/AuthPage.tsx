@@ -76,14 +76,31 @@ export default function AuthPage({
     if (callbackError === "access_denied") {
       resetCancelledOAuth();
     }
-    if (callbackError === "access_denied" || callbackError === "domain_restricted") {
+    if (
+      callbackError === "access_denied" ||
+      callbackError === "domain_restricted"
+    ) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     supabaseAuth.auth.getSession().then(async ({ data }) => {
       if (!active || !data.session) return;
-      // Every Supabase session here comes from GitHub or Microsoft 365 OAuth.
-      if (!isAllowedInstitutionEmail(data.session.user.email)) {
+      const user = data.session.user;
+      const identityProviders =
+        user.identities?.map((identity) => identity.provider) || [];
+      const isInstitutionOAuth =
+        user.app_metadata?.provider === "github" ||
+        user.app_metadata?.provider === "azure" ||
+        identityProviders.includes("github") ||
+        identityProviders.includes("azure");
+      const identityEmail = user.identities?.find(
+        (identity) =>
+          identity.provider === "github" || identity.provider === "azure",
+      )?.identity_data?.email;
+      if (
+        isInstitutionOAuth &&
+        !isAllowedInstitutionEmail(user.email || identityEmail || "")
+      ) {
         await supabaseAuth.auth.signOut();
         if (active) {
           setAuthMessage(DOMAIN_RESTRICTION_MESSAGE);
@@ -235,7 +252,10 @@ export default function AuthPage({
     try {
       const { error } = await supabaseAuth.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${siteUrl}/auth` },
+        options: {
+          redirectTo: `${siteUrl}/auth`,
+          ...(provider === "github" ? { scopes: "read:user user:email" } : {}),
+        },
       });
       if (error) throw error;
     } catch (error) {

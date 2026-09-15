@@ -43,6 +43,16 @@ In Supabase Authentication URL Configuration, add the actual frontend callback U
 https://backlog-monitoring-agent-vu.vercel.app/auth
 ```
 
+Set the Supabase **Site URL** to the deployed frontend origin, for example:
+
+```text
+https://backlog-monitoring-agent-vu.vercel.app
+```
+
+Remove stale `http://localhost:3000` or `http://localhost:5173` entries from
+the production Site URL setting. Keep localhost only as an additional redirect
+URL for local development.
+
 For local development, also add:
 
 ```text
@@ -56,6 +66,11 @@ to:
 ```text
 https://nloprkmmfsiawhlasxdw.supabase.co/auth/v1/callback
 ```
+
+The GitHub account must have a verified `@vignan.ac.in` email address. The
+frontend requests the GitHub `read:user user:email` scopes so Supabase can read
+that address. In the GitHub OAuth App, set the Homepage URL to the deployed
+frontend origin and ensure the app uses the callback URL above.
 
 In Microsoft Entra ID, add the same URL as a Web redirect URI. In Supabase,
 enable the GitHub and Azure providers and configure each provider's client ID

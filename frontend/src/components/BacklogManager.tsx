@@ -313,7 +313,8 @@ export default function BacklogManager({
                   </span>
                 )}
                 <span className="text-sm text-slate-500 flex-1 min-w-[7rem]">
-                  {row.attempts_made} attempt{row.attempts_made === 1 ? "" : "s"} made
+                  {row.attempts_made} attempt
+                  {row.attempts_made === 1 ? "" : "s"} made
                 </span>
                 <StatusBadge tone={statusTone(row.status)}>
                   {row.status}
