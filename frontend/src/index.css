@@ -309,12 +309,14 @@ html.dark .skeleton-shimmer::after {
 }
 
 html.dark .dashboard-shell {
-  --dashboard-grid-line: rgb(148 163 184 / 0.045);
-  --dashboard-wash: linear-gradient(135deg, #0a101d 0%, #0e1830 55%, #0b1120 100%);
-  --dashboard-card-bg: rgb(17 26 43 / 0.94);
-  --dashboard-card-border: rgb(38 50 74);
-  --dashboard-card-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.65);
-  --dashboard-card-shadow-hover: 0 16px 30px -18px rgb(0 0 0 / 0.75);
+  --dashboard-grid-line: rgb(148 163 184 / 0.035);
+  --dashboard-wash: linear-gradient(135deg, #080d19 0%, #0c1426 55%, #090f1c 100%);
+  /* Top-lit surfaces with a hairline highlight read as raised on the dark
+     canvas without heavier borders. */
+  --dashboard-card-bg: linear-gradient(180deg, rgb(24 34 54 / 0.97), rgb(17 25 41 / 0.97));
+  --dashboard-card-border: rgb(51 65 93 / 0.6);
+  --dashboard-card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 36px -24px rgb(0 0 0 / 0.85);
+  --dashboard-card-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 22px 40px -22px rgb(0 0 0 / 0.9);
   --c-bg-slate-50: 22 32 51;
 }
 
@@ -950,9 +952,9 @@ html.dark .viz-root {
   --viz-ramp-3: #6da7ec;
   --viz-ramp-4: #9ec5f4;
   --viz-series-1: #3987e5;
-  --viz-card-bg: rgb(17 26 43 / 0.94);
-  --viz-card-border: rgb(38 50 74);
-  --viz-card-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.65);
+  --viz-card-bg: linear-gradient(180deg, rgb(24 34 54 / 0.97), rgb(17 25 41 / 0.97));
+  --viz-card-border: rgb(51 65 93 / 0.6);
+  --viz-card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 36px -24px rgb(0 0 0 / 0.85);
 }
 
 .viz-grid {

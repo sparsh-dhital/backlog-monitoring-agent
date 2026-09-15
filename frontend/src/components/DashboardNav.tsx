@@ -253,13 +253,9 @@ export function DashboardBottomNav({
 export function DashboardTopbar({
   role,
   onProfile,
-  onOpenMenu,
-  menuOpen,
 }: {
   role: UserRole;
   onProfile: () => void;
-  onOpenMenu: () => void;
-  menuOpen: boolean;
 }) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label;
   const [profileName, setProfileName] = useState("");
@@ -347,16 +343,11 @@ export function DashboardTopbar({
 
   return (
     <header className="dashboard-topbar h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between gap-4 px-8">
-      <button
-        type="button"
-        className="dash-menu-button"
-        onClick={onOpenMenu}
-        aria-label="Open menu"
-        aria-controls="dashboard-navigation"
-        aria-expanded={menuOpen}
-      >
-        <Menu size={20} aria-hidden="true" />
-      </button>
+      {/* Brand: phones only, where the sidebar is a hidden drawer */}
+      <div className="dash-topbar-brand">
+        <Brand compact />
+        <span>EduRecover</span>
+      </div>
 
       {/* Search */}
       <div className="dashboard-search flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 max-w-full focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition">

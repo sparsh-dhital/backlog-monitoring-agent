@@ -508,8 +508,6 @@ export default function PrototypePage({
           <DashboardTopbar
             role={role}
             onProfile={() => handleTabSelect("Profile")}
-            onOpenMenu={openMobileNav}
-            menuOpen={mobileNavOpen}
           />
         ) : (
           <header className="workspace-header">
@@ -665,7 +663,7 @@ export default function PrototypePage({
         {mode === "dashboard" && data && evaluation && recommendation && (
           <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
             {/* Header */}
-            <div className="on-brand relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
+            <div className="dash-case-hero on-brand relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full hero-glow" />
               </div>

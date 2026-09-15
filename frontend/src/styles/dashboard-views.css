@@ -228,13 +228,20 @@ html.dark .dash-chip.is-live {
 /* A deeper start to the brand gradient keeps white copy above 4.5:1. */
 html:not(.dark) .dashboard-shell .dash-hero.dashboard-hero,
 .dash-tab-hero,
+.dash-case-hero,
 .dash-profile-banner {
   background: linear-gradient(125deg, #1463c4 0%, #2f5fdc 55%, #4b93e3 100%) !important;
 }
 
+/* Dark heroes share one deep navy-to-indigo gradient; the old blue, purple
+   and maroon mix turned muddy at the edges. */
+html.dark .dashboard-shell .dash-hero.dashboard-hero,
 html.dark .dash-tab-hero,
+html.dark .dash-case-hero,
 html.dark .dash-profile-banner {
-  background: linear-gradient(to bottom right, #1e3a8a, #4c1d95, #5f0f40) !important;
+  border-color: rgb(129 140 248 / 0.22) !important;
+  background: linear-gradient(125deg, #14224d 0%, #1e3a8a 40%, #312e81 75%, #3b1d7a 100%) !important;
+  box-shadow: 0 24px 48px -30px rgb(30 27 75 / 0.9) !important;
 }
 
 .dash-hero-glow {
@@ -1780,4 +1787,146 @@ html.dark .dash-switch {
   .dash-hero-live i {
     animation: none;
   }
+}
+
+/* ─── Dark theme refinements ─── */
+
+html.dark .dash-hero-glow {
+  background:
+    radial-gradient(circle at 88% 8%, rgb(129 140 248 / 0.3), transparent 42%),
+    radial-gradient(circle at 6% 115%, rgb(56 189 248 / 0.16), transparent 46%);
+}
+
+html.dark .dash-hero-chip,
+html.dark .dash-hero-live,
+html.dark .dash-tab-stat {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.08);
+}
+
+html.dark .dash-glance {
+  border-color: rgb(255 255 255 / 0.12);
+  background: rgb(2 6 23 / 0.32);
+}
+
+html.dark .dash-glance-icon {
+  background: rgb(255 255 255 / 0.1);
+}
+
+html.dark .dash-glance-bar .is-critical {
+  background: #fb7185;
+}
+
+html.dark .dash-glance-bar .is-review {
+  background: #fbbf24;
+}
+
+html.dark .dash-eyebrow {
+  color: #93b4fb;
+}
+
+html.dark .dash-panel-head .dash-eyebrow {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .dash-panel-icon,
+html.dark .dash-detail-icon,
+html.dark .dash-empty-icon,
+html.dark .dash-action-index,
+html.dark .dash-journey-dot,
+html.dark .dash-avatar.is-neutral {
+  color: #c7d2fe;
+  background: rgb(79 70 229 / 0.2);
+}
+
+html.dark .dash-student-card,
+html.dark .dash-list-row,
+html.dark .dash-action-list button,
+html.dark .dash-detail,
+html.dark .dash-journey-step button {
+  border-color: rgb(51 65 93 / 0.5);
+  background: rgb(8 13 25 / 0.45);
+}
+
+html.dark button.dash-list-row:hover,
+html.dark .dash-action-list button:hover,
+html.dark .dash-student-card:hover:not(:disabled),
+html.dark .dash-journey-step button:hover {
+  border-color: rgb(129 140 248 / 0.45);
+  background: rgb(49 46 129 / 0.28);
+}
+
+html.dark .dash-action-list button:hover {
+  color: #e0e7ff;
+}
+
+html.dark .dash-journey-step.is-active button {
+  border-color: transparent;
+  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  box-shadow: 0 14px 28px -14px rgb(79 70 229 / 0.7);
+}
+
+html.dark .dash-journey-step:not(:last-child)::after {
+  background: rgb(51 65 93 / 0.7);
+}
+
+html.dark .dash-table-head {
+  border-color: rgb(51 65 93 / 0.55);
+  background: rgb(8 13 25 / 0.5);
+}
+
+html.dark .dash-table-row {
+  border-color: rgb(51 65 93 / 0.35);
+}
+
+html.dark .dash-table-row.is-interactive:hover {
+  background: rgb(49 46 129 / 0.24);
+}
+
+html.dark .dash-chip,
+html.dark .dash-link,
+html.dark .dash-segment {
+  border-color: rgb(51 65 93 / 0.7);
+  background: rgb(8 13 25 / 0.55);
+}
+
+html.dark .dash-link {
+  color: #a5b4fc;
+}
+
+html.dark .dash-link:hover {
+  border-color: rgb(129 140 248 / 0.5);
+  background: rgb(49 46 129 / 0.32);
+}
+
+html.dark .dash-segment button.is-active {
+  color: #e0e7ff;
+  background: rgb(79 70 229 / 0.35);
+  box-shadow: none;
+}
+
+html.dark .dash-ring-base,
+html.dark .dash-ring-track {
+  stroke: rgb(51 65 93 / 0.7);
+}
+
+html.dark .dash-mini-bar-track,
+html.dark .dash-pattern-track {
+  background: rgb(8 13 25 / 0.6);
+}
+
+html.dark .dash-mini-bar-fill {
+  background: linear-gradient(180deg, #818cf8, #3b82f6);
+}
+
+html.dark .metric-card-icon {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+
+html.dark .dash-profile-avatar {
+  border-color: rgb(20 29 47);
+}
+
+html.dark .dash-switch span {
+  background: #e2e8f0;
 }

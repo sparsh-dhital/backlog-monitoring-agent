@@ -35,7 +35,12 @@ app.add_middleware(
         origin.strip()
         for origin in os.environ.get(
             "CORS_ORIGINS",
-            "http://localhost:5173,http://localhost:5174,http://localhost:5175",
+            # Local Vite ports under either loopback name; deployments set CORS_ORIGINS.
+            ",".join(
+                f"http://{host}:{port}"
+                for host in ("localhost", "127.0.0.1")
+                for port in range(5173, 5181)
+            ),
         ).split(",")
         if origin.strip()
     ],

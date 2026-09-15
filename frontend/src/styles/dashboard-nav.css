@@ -60,8 +60,7 @@
 }
 
 .dash-sidebar-toggle,
-.dash-sidebar-close,
-.dash-menu-button {
+.dash-sidebar-close {
   display: grid;
   width: 36px;
   height: 36px;
@@ -78,15 +77,13 @@
 }
 
 .dash-sidebar-toggle:hover,
-.dash-sidebar-close:hover,
-.dash-menu-button:hover {
+.dash-sidebar-close:hover {
   color: rgb(var(--app-text));
   background: rgb(var(--app-surface-hover));
 }
 
 .dash-sidebar-toggle:focus-visible,
 .dash-sidebar-close:focus-visible,
-.dash-menu-button:focus-visible,
 .dash-nav-item:focus-visible,
 .dash-bottom-nav button:focus-visible {
   outline: 2px solid rgb(var(--app-focus));
@@ -94,7 +91,7 @@
 }
 
 .dash-sidebar-close,
-.dash-menu-button,
+.dash-topbar-brand,
 .dash-scrim,
 .dash-bottom-nav {
   display: none;
@@ -363,9 +360,25 @@ html.dark .dash-nav-tooltip {
     display: none;
   }
 
-  .dash-sidebar-close,
-  .dash-menu-button {
+  .dash-sidebar-close {
     display: grid;
+  }
+
+  .dash-topbar-brand {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    color: rgb(var(--app-text));
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .dash-topbar-brand .brand-mark {
+    width: 30px;
+    height: 30px;
   }
 
   .dash-nav-item {
@@ -376,7 +389,7 @@ html.dark .dash-nav-tooltip {
     display: none;
   }
 
-  /* Menu button and actions share the first row; search wraps below.
+  /* Brand and actions share the first row; search wraps below.
      (Overrides a legacy column layout for narrow top bars.) */
   main.dashboard-shell .dashboard-topbar {
     flex-direction: row;
@@ -497,4 +510,50 @@ html.dark .dash-nav-tooltip {
     transition: none;
     animation: none;
   }
+}
+
+/* ─── Dark theme ───────────────────────────────────────────────────
+   Navigation sits a step below the content cards so the page leads. */
+html.dark .dash-sidebar {
+  border-right-color: rgb(30 41 62);
+  background: rgb(11 17 31);
+  box-shadow: none;
+}
+
+html.dark .dash-sidebar-head,
+html.dark .dash-sidebar-actions {
+  border-color: rgb(26 36 56);
+}
+
+html.dark .dash-nav-item:hover {
+  background: rgb(30 41 66 / 0.7);
+}
+
+html.dark .dash-nav-item.is-active {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 10px 24px -10px rgb(59 130 246 / 0.55);
+}
+
+html.dark .dashboard-topbar {
+  border-color: rgb(30 41 62) !important;
+  background: rgb(11 17 31 / 0.9) !important;
+}
+
+html.dark .dash-bottom-nav {
+  border-top-color: rgb(30 41 62);
+  background: rgb(11 17 31 / 0.97);
+  box-shadow: 0 -12px 28px rgb(0 0 0 / 0.35);
+}
+
+/* A soft indigo light at the top of the dark canvas. It sits behind the
+   scroller and never repaints while content scrolls. */
+html.dark .dashboard-shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(900px 520px at 78% -8%, rgb(67 56 202 / 0.16), transparent 62%),
+    radial-gradient(700px 480px at 12% 112%, rgb(14 116 144 / 0.08), transparent 60%);
+  content: "";
+  pointer-events: none;
 }
