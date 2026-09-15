@@ -1,0 +1,203 @@
+/* ─── Theme tokens ────────────────────────────────────────────────
+   One colour system for both themes.
+   --app-*  roles for hand-written CSS (surfaces, ink, borders, accent).
+   --c-*    RGB channels behind the themed Tailwind utilities
+            (tailwind.config.js). Light values are Tailwind's defaults,
+            nudged only where small text failed WCAG AA contrast.
+   Dark is a layered palette - canvas < surface < raised - not an
+   inversion of the light one.                                        */
+
+:root {
+  color-scheme: light;
+
+  --app-canvas: 237 245 255;
+  --app-surface: 255 255 255;
+  --app-surface-raised: 255 255 255;
+  --app-surface-inset: 242 248 253;
+  --app-surface-hover: 241 245 249;
+  --app-border: 219 234 254;
+  --app-border-subtle: 232 240 250;
+  --app-text: 23 32 51;
+  --app-text-secondary: 71 85 105;
+  --app-text-muted: 84 99 122;
+  --app-accent: 36 127 232;
+  --app-accent-strong: 66 100 232;
+  --app-accent-soft: 237 244 255;
+  --app-accent-ink: 47 99 220;
+  --app-shadow: 50 115 172;
+  --app-focus: 99 102 241;
+
+  --c-bg-white: 255 255 255;
+  --c-bg-slate-50: 248 250 252;
+  --c-bg-slate-100: 241 245 249;
+  --c-bg-slate-200: 226 232 240;
+  --c-bg-indigo-50: 238 242 255;
+  --c-bg-indigo-100: 224 231 255;
+  --c-bg-indigo-200: 199 210 254;
+  --c-bg-emerald-50: 236 253 245;
+  --c-bg-emerald-100: 209 250 229;
+  --c-bg-amber-50: 255 251 235;
+  --c-bg-amber-100: 254 243 199;
+  --c-bg-rose-50: 255 241 242;
+  --c-bg-rose-100: 255 228 230;
+  --c-bg-violet-100: 237 233 254;
+  --c-bg-blue-100: 219 234 254;
+
+  /* slate 400/500 and amber 700 are one step darker than Tailwind's
+     defaults: the defaults sit at 2.5:1 and 4.4:1 on these surfaces. */
+  --c-text-slate-300: 203 213 225;
+  --c-text-slate-400: 94 110 133;
+  --c-text-slate-500: 84 99 122;
+  --c-text-slate-600: 71 85 105;
+  --c-text-slate-700: 51 65 85;
+  --c-text-slate-800: 30 41 59;
+  --c-text-slate-900: 15 23 42;
+  --c-text-indigo-400: 129 140 248;
+  --c-text-indigo-500: 99 102 241;
+  --c-text-indigo-600: 79 70 229;
+  --c-text-indigo-700: 67 56 202;
+  --c-text-indigo-900: 49 46 129;
+  --c-text-emerald-600: 5 150 105;
+  --c-text-emerald-700: 4 120 87;
+  --c-text-emerald-800: 6 95 70;
+  --c-text-amber-600: 217 119 6;
+  --c-text-amber-700: 146 64 14;
+  --c-text-amber-800: 120 53 15;
+  --c-text-rose-500: 244 63 94;
+  --c-text-rose-600: 225 29 72;
+  --c-text-rose-700: 190 18 60;
+  --c-text-violet-700: 109 40 217;
+  --c-text-blue-700: 29 78 216;
+  --c-text-red-700: 185 28 28;
+
+  --c-border-white: 255 255 255;
+  --c-border-slate-100: 241 245 249;
+  --c-border-slate-200: 226 232 240;
+  --c-border-indigo-100: 224 231 255;
+  --c-border-indigo-200: 199 210 254;
+  --c-border-indigo-300: 165 180 252;
+  --c-border-emerald-100: 209 250 229;
+  --c-border-emerald-200: 167 243 208;
+  --c-border-amber-200: 253 230 138;
+  --c-border-rose-100: 255 228 230;
+  --c-border-rose-200: 254 205 211;
+
+  --c-ring-white: 255 255 255;
+  --c-ring-indigo-100: 224 231 255;
+
+  --c-stop-indigo-50: 238 242 255;
+  --c-stop-slate-50: 248 250 252;
+  --c-stop-fuchsia-50: 253 244 255;
+  --c-stop-emerald-600: 5 150 105;
+  --c-stop-teal-500: 20 184 166;
+  --c-stop-amber-600: 217 119 6;
+  --c-stop-orange-500: 249 115 22;
+  --c-stop-rose-600: 225 29 72;
+  --c-stop-red-500: 239 68 68;
+
+  --c-shadow-indigo-200: 199 210 254;
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --app-canvas: 10 16 29;
+  --app-surface: 17 26 43;
+  --app-surface-raised: 23 34 54;
+  --app-surface-inset: 22 32 51;
+  --app-surface-hover: 30 43 66;
+  --app-border: 38 50 74;
+  --app-border-subtle: 29 40 60;
+  --app-text: 232 238 247;
+  --app-text-secondary: 181 193 211;
+  --app-text-muted: 140 153 175;
+  --app-accent: 88 150 245;
+  --app-accent-strong: 99 102 241;
+  --app-accent-soft: 30 42 78;
+  --app-accent-ink: 147 187 252;
+  --app-shadow: 0 0 0;
+  --app-focus: 129 140 248;
+
+  --c-bg-white: 17 26 43;
+  --c-bg-slate-50: 22 32 51;
+  --c-bg-slate-100: 30 41 62;
+  --c-bg-slate-200: 44 57 82;
+  --c-bg-indigo-50: 30 36 72;
+  --c-bg-indigo-100: 37 44 90;
+  --c-bg-indigo-200: 49 57 116;
+  --c-bg-emerald-50: 16 44 45;
+  --c-bg-emerald-100: 18 58 55;
+  --c-bg-amber-50: 45 38 26;
+  --c-bg-amber-100: 62 48 24;
+  --c-bg-rose-50: 49 26 40;
+  --c-bg-rose-100: 66 30 49;
+  --c-bg-violet-100: 45 37 88;
+  --c-bg-blue-100: 26 46 86;
+
+  --c-text-slate-300: 100 113 135;
+  --c-text-slate-400: 132 146 168;
+  --c-text-slate-500: 150 163 184;
+  --c-text-slate-600: 181 193 211;
+  --c-text-slate-700: 205 214 227;
+  --c-text-slate-800: 228 234 243;
+  --c-text-slate-900: 241 245 249;
+  --c-text-indigo-400: 129 140 248;
+  --c-text-indigo-500: 140 152 250;
+  --c-text-indigo-600: 165 180 252;
+  --c-text-indigo-700: 186 199 253;
+  --c-text-indigo-900: 224 231 255;
+  --c-text-emerald-600: 52 211 153;
+  --c-text-emerald-700: 110 231 183;
+  --c-text-emerald-800: 167 243 208;
+  --c-text-amber-600: 251 191 36;
+  --c-text-amber-700: 252 211 77;
+  --c-text-amber-800: 253 230 138;
+  --c-text-rose-500: 251 113 133;
+  --c-text-rose-600: 251 113 133;
+  --c-text-rose-700: 253 164 175;
+  --c-text-violet-700: 196 181 253;
+  --c-text-blue-700: 147 197 253;
+  --c-text-red-700: 252 165 165;
+
+  --c-border-white: 38 50 74;
+  --c-border-slate-100: 30 41 60;
+  --c-border-slate-200: 42 55 80;
+  --c-border-indigo-100: 45 53 102;
+  --c-border-indigo-200: 56 65 130;
+  --c-border-indigo-300: 79 89 172;
+  --c-border-emerald-100: 22 72 64;
+  --c-border-emerald-200: 28 94 78;
+  --c-border-amber-200: 98 76 32;
+  --c-border-rose-100: 84 38 60;
+  --c-border-rose-200: 106 44 68;
+
+  --c-ring-white: 17 26 43;
+  --c-ring-indigo-100: 56 65 130;
+
+  --c-stop-indigo-50: 18 24 48;
+  --c-stop-slate-50: 10 16 29;
+  --c-stop-fuchsia-50: 26 18 42;
+  --c-stop-emerald-600: 52 211 153;
+  --c-stop-teal-500: 94 234 212;
+  --c-stop-amber-600: 251 191 36;
+  --c-stop-orange-500: 253 186 116;
+  --c-stop-rose-600: 251 113 133;
+  --c-stop-red-500: 252 165 165;
+
+  --c-shadow-indigo-200: 2 6 23;
+}
+
+/* Brand-coloured panels (gradients, active pills) keep light translucent
+   overlays and white rings in both themes. */
+.on-brand {
+  --c-bg-white: 255 255 255;
+  --c-border-white: 255 255 255;
+  --c-ring-white: 255 255 255;
+}
+
+/* Switching theme must not animate every colour on the page at once. */
+.theme-changing *,
+.theme-changing *::before,
+.theme-changing *::after {
+  transition: none !important;
+}

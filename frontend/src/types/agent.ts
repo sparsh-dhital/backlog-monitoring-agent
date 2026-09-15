@@ -1,3 +1,5 @@
+import type { UserRole } from "./roles";
+
 export interface BacklogDetail {
   id: string;
   course_code: string;
@@ -143,4 +145,37 @@ export interface ExamRegistrationFeed {
   eligible_count: number;
   fee_pending_count: number;
   total: number;
+}
+
+export type AssistantAction =
+  | { type: "navigate"; tab: string }
+  | { type: "open_student"; student_id: string }
+  | { type: "close_student" }
+  | { type: "theme"; mode: "dark" | "light" | "toggle" }
+  | { type: "scroll"; direction: "up" | "down" | "top" | "bottom" }
+  | { type: "switch_role"; role: UserRole }
+  | { type: "click"; label: string }
+  | { type: "export_report"; format: "json" | "csv" | "txt" }
+  | { type: "approve_intervention" }
+  | { type: "logout" };
+
+export interface AssistantTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
+export interface AssistantRequest {
+  utterance: string;
+  role: UserRole;
+  active_tab: string;
+  available_tabs: string[];
+  visible_controls: string[];
+  open_case: Record<string, unknown> | null;
+  dark_mode: boolean;
+  history: AssistantTurn[];
+}
+
+export interface AssistantReply {
+  reply: string;
+  actions: AssistantAction[];
 }

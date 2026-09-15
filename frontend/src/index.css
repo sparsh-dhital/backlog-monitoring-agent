@@ -3,6 +3,7 @@
 @import "@fontsource/manrope/600.css";
 @import "@fontsource/manrope/700.css";
 @import "@fontsource/manrope/800.css";
+@import "./styles/tokens.css";
 
 @tailwind base;
 @tailwind components;
@@ -18,9 +19,8 @@
 }
 
 html.dark {
-  color: #F1F5F9;
-  background: #0D1117;
-  color-scheme: dark;
+  color: rgb(var(--app-text));
+  background: rgb(var(--app-canvas));
 }
 
 * {
@@ -241,6 +241,10 @@ body {
   background: #e8ecf8;
 }
 
+html.dark .skeleton-shimmer {
+  background: rgb(var(--app-surface-hover));
+}
+
 .skeleton-shimmer::after {
   position: absolute;
   inset: 0;
@@ -248,6 +252,26 @@ body {
   transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, #ffffffa8, transparent);
   animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+html.dark .skeleton-shimmer::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+}
+
+/* Soft decorative glows on brand panels. A radial gradient paints once; the
+   blurred, blend-mode circles it replaces were repainted on every scroll. */
+.hero-glow {
+  background: radial-gradient(circle, rgb(255 255 255 / 0.55), transparent 68%);
+}
+
+.hero-glow-indigo {
+  background: radial-gradient(circle, rgb(165 180 252 / 0.6), transparent 68%);
+}
+
+/* Chart row hover wash follows the chart theme. */
+.viz-root .viz-bar-row:hover,
+.viz-root .viz-bar-row:focus-visible {
+  background: var(--viz-hover);
 }
 
 @keyframes skeleton-shimmer {
@@ -260,60 +284,57 @@ body {
   animation: dashboard-reveal 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Dashboard surfaces. Cards are near-opaque instead of frosted: a
+   backdrop-filter on every card forces the whole scroller to re-blur on each
+   scroll frame, which is what made the dashboard feel choppy. */
 .dashboard-shell {
-  background-color: #edf7ff !important;
+  --dashboard-grid-line: rgb(255 255 255 / 0.2);
+  --dashboard-wash: linear-gradient(135deg, #eaf5ff 0%, #f7fbff 52%, #edf5ff 100%);
+  --dashboard-card-bg: rgb(255 255 255 / 0.82);
+  --dashboard-card-border: rgb(255 255 255 / 0.85);
+  --dashboard-card-shadow: 0 12px 30px -18px rgb(50 115 172 / 0.25);
+  --dashboard-card-shadow-hover: 0 16px 28px -17px rgb(50 115 172 / 0.33);
+  --c-bg-slate-50: 242 248 253;
+  background-color: rgb(var(--app-canvas)) !important;
   background-image:
-    linear-gradient(90deg, #ffffff2b 1px, transparent 1px),
-    linear-gradient(#ffffff38 1px, transparent 1px),
-    linear-gradient(135deg, #eaf5ff 0%, #f7fbff 52%, #edf5ff 100%) !important;
+    linear-gradient(90deg, var(--dashboard-grid-line) 1px, transparent 1px),
+    linear-gradient(var(--dashboard-grid-line) 1px, transparent 1px),
+    var(--dashboard-wash) !important;
   background-size:
     48px 48px,
     48px 48px,
     auto;
 }
 
-.dashboard-sidebar {
-  background: #ffffffc9 !important;
-  border-color: #dbeafe !important;
-  box-shadow: 8px 0 28px #83b8e51c !important;
-  backdrop-filter: blur(22px);
-}
-
-.dashboard-sidebar .bg-indigo-600 {
-  background: linear-gradient(135deg, #247fe8, #4264e8) !important;
-  box-shadow: 0 9px 20px #3978e536 !important;
+html.dark .dashboard-shell {
+  --dashboard-grid-line: rgb(148 163 184 / 0.045);
+  --dashboard-wash: linear-gradient(135deg, #0a101d 0%, #0e1830 55%, #0b1120 100%);
+  --dashboard-card-bg: rgb(17 26 43 / 0.94);
+  --dashboard-card-border: rgb(38 50 74);
+  --dashboard-card-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.65);
+  --dashboard-card-shadow-hover: 0 16px 30px -18px rgb(0 0 0 / 0.75);
+  --c-bg-slate-50: 22 32 51;
 }
 
 .dashboard-topbar {
-  background: #f8fcffcc !important;
-  border-color: #dbeafe !important;
-  backdrop-filter: blur(18px);
+  background: rgb(var(--app-surface) / 0.92) !important;
+  border-color: rgb(var(--app-border)) !important;
 }
 
 .dashboard-search {
-  background: #ffffffb8 !important;
-  border-color: #d7e8f8 !important;
-  box-shadow:
-    inset 0 1px #ffffff,
-    0 5px 18px #75a7d512;
+  background: rgb(var(--app-surface-inset)) !important;
+  border-color: rgb(var(--app-border)) !important;
 }
 
-.dashboard-shell .bg-white\/60 {
-  background: #ffffffb8 !important;
-  border-color: #ffffffd4 !important;
-  box-shadow: 0 12px 30px -18px #3273ac40 !important;
-}
-
+.dashboard-shell .bg-white\/60,
 .dashboard-shell .dashboard-stat {
-  background: #ffffffc7 !important;
-  border-color: #ffffffdc !important;
-  box-shadow: 0 10px 24px -16px #3273ac45 !important;
+  background: var(--dashboard-card-bg) !important;
+  border-color: var(--dashboard-card-border) !important;
+  box-shadow: var(--dashboard-card-shadow) !important;
 }
 
-.dashboard-shell .dashboard-stat:hover,
-.dashboard-shell .bg-white\/60:hover {
-  box-shadow: 0 16px 28px -17px #3273ac55 !important;
-  transform: translateY(-2px);
+.dashboard-shell .dashboard-stat:hover {
+  box-shadow: var(--dashboard-card-shadow-hover) !important;
 }
 
 .dashboard-hero {
@@ -341,9 +362,6 @@ body {
   pointer-events: none;
 }
 
-.dashboard-shell .bg-slate-50 {
-  background-color: #f2f8fd !important;
-}
 
 @keyframes dashboard-reveal {
   from {
@@ -597,15 +615,135 @@ a {
   color: #fff;
 }
 
+/* Larger hit area for the sliders; the painted track stays 6px. */
+.sim-range {
+  height: 26px;
+  padding-block: 10px;
+  background-clip: content-box;
+}
+
 /* Result stat tiles */
 .sim-result-stat {
   padding: 16px 18px;
   border: 1px solid;
   border-radius: 16px;
-  backdrop-filter: blur(12px);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+/* Simulator, dark theme */
+html.dark .sim-param-value {
+  border-color: rgb(var(--app-border));
+  color: #a9c5ff;
+  background: rgb(var(--app-accent-soft));
+}
+
+html.dark .sim-range {
+  background: linear-gradient(
+    90deg,
+    #3b82f6 var(--sim-progress, 0%),
+    #26324a var(--sim-progress, 0%)
+  );
+  background-clip: content-box;
+}
+
+html.dark .sim-range::-webkit-slider-thumb {
+  border-color: #4d94ff;
+  background: #0f172a;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+
+html.dark .sim-range::-moz-range-thumb {
+  border-color: #4d94ff;
+  background: #0f172a;
+}
+
+html.dark .sim-switch-track {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-hover));
+}
+
+html.dark .sim-switch-thumb {
+  color: #64748b;
+  background: #e2e8f0;
+}
+
+html.dark .sim-switch-label,
+html.dark .sim-segment button {
+  color: rgb(var(--app-text-secondary));
+}
+
+html.dark .sim-segment {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-inset));
+}
+
+html.dark .sim-segment button.is-active {
+  color: #ffffff;
+}
+
+html.dark .sim-tone-indigo {
+  border-color: rgb(96 165 250 / 0.35);
+  color: #a9c5ff;
+  background: rgb(59 130 246 / 0.12);
+}
+
+html.dark .sim-tone-emerald {
+  border-color: rgb(16 185 129 / 0.35);
+  color: #6ee7b7;
+  background: rgb(16 185 129 / 0.12);
+}
+
+html.dark .sim-tone-amber {
+  border-color: rgb(245 158 11 / 0.35);
+  color: #fcd34d;
+  background: rgb(245 158 11 / 0.12);
+}
+
+html.dark .sim-tone-rose {
+  border-color: rgb(244 63 94 / 0.35);
+  color: #fda4af;
+  background: rgb(244 63 94 / 0.12);
+}
+
+html.dark .sim-verdict-emerald {
+  border-color: rgb(16 185 129 / 0.4);
+  color: #a7f3d0;
+  background: linear-gradient(135deg, rgb(16 185 129 / 0.18), rgb(16 185 129 / 0.06));
+}
+
+html.dark .sim-verdict-amber {
+  border-color: rgb(245 158 11 / 0.4);
+  color: #fde68a;
+  background: linear-gradient(135deg, rgb(245 158 11 / 0.18), rgb(245 158 11 / 0.06));
+}
+
+html.dark .sim-verdict-rose {
+  border-color: rgb(244 63 94 / 0.4);
+  color: #fecdd3;
+  background: linear-gradient(135deg, rgb(244 63 94 / 0.18), rgb(244 63 94 / 0.06));
+}
+
+html.dark .sim-verdict-icon {
+  background: rgb(255 255 255 / 0.08);
+}
+
+html.dark .sim-track-label {
+  color: rgb(var(--app-text-muted));
+}
+
+html.dark .sim-track {
+  background: rgb(var(--app-surface-hover));
+  box-shadow: none;
+}
+
+html.dark .sim-track-fill.is-base {
+  background: linear-gradient(90deg, #64748b, #94a3b8);
+}
+
+html.dark .sim-track-value {
+  color: rgb(var(--app-text-secondary));
 }
 
 .sim-result-stat:hover {
@@ -774,13 +912,45 @@ a {
 /* ─── Department charts ──────────────────────────────────────── */
 
 .viz-root {
-  /* Chart chrome & ink. Marks carry the data color; text never does. */
+  /* Chart chrome & ink. Marks carry the data color; text never does.
+     Ordinal ramp: blue 250/350/450/600 on light; 500/400/300/200 on dark,
+     where the anchor flips so the heaviest bucket stays most prominent.
+     Both validated (ordinal checks) against their card surfaces. The status
+     red is fixed across themes. */
   --viz-surface: #f9fcff;
   --viz-ink: #0b0b0b;
   --viz-ink-secondary: #52514e;
-  --viz-ink-muted: #898781;
+  --viz-ink-muted: #6f6d68;
   --viz-hairline: #dbe7f7;
   --viz-track: #e8eff9;
+  --viz-hover: rgb(42 120 214 / 0.06);
+  --viz-ramp-1: #86b6ef;
+  --viz-ramp-2: #5598e7;
+  --viz-ramp-3: #2a78d6;
+  --viz-ramp-4: #184f95;
+  --viz-series-1: #2a78d6;
+  --viz-critical: #d03b3b;
+  --viz-card-bg: rgb(255 255 255 / 0.82);
+  --viz-card-border: rgb(255 255 255 / 0.85);
+  --viz-card-shadow: 0 12px 30px -18px rgb(50 115 172 / 0.25);
+}
+
+html.dark .viz-root {
+  --viz-surface: #111a2b;
+  --viz-ink: #f1f5f9;
+  --viz-ink-secondary: #c3cddc;
+  --viz-ink-muted: #8c99af;
+  --viz-hairline: #26324a;
+  --viz-track: #1e293e;
+  --viz-hover: rgb(57 135 229 / 0.12);
+  --viz-ramp-1: #256abf;
+  --viz-ramp-2: #3987e5;
+  --viz-ramp-3: #6da7ec;
+  --viz-ramp-4: #9ec5f4;
+  --viz-series-1: #3987e5;
+  --viz-card-bg: rgb(17 26 43 / 0.94);
+  --viz-card-border: rgb(38 50 74);
+  --viz-card-shadow: 0 12px 30px -20px rgb(0 0 0 / 0.65);
 }
 
 .viz-grid {
@@ -791,14 +961,14 @@ a {
 
 .viz-card {
   display: flex;
+  min-width: 0;
   margin: 0;
   padding: 20px;
   flex-direction: column;
-  border: 1px solid #ffffffd4;
+  border: 1px solid var(--viz-card-border);
   border-radius: 16px;
-  background: #ffffffb8;
-  box-shadow: 0 12px 30px -18px #3273ac40;
-  backdrop-filter: blur(12px);
+  background: var(--viz-card-bg);
+  box-shadow: var(--viz-card-shadow);
 }
 
 .viz-card figcaption {
@@ -1025,7 +1195,7 @@ a {
 .viz-col:hover,
 .viz-col:focus-visible {
   outline: none;
-  background: #2a78d60f;
+  background: var(--viz-hover);
 }
 
 .viz-col-value {
@@ -1077,6 +1247,12 @@ a {
   white-space: nowrap;
 }
 
+html.dark .viz-tooltip {
+  border-color: rgb(var(--app-border));
+  background: rgb(var(--app-surface-raised));
+  box-shadow: 0 10px 24px -8px rgb(0 0 0 / 0.6);
+}
+
 .viz-tooltip strong {
   color: var(--viz-ink);
   font-size: 12px;
@@ -1100,10 +1276,10 @@ a {
 
 .viz-table {
   width: 100%;
-  border: 1px solid #ffffffd4;
+  border: 1px solid var(--viz-card-border);
   border-radius: 16px;
   border-collapse: collapse;
-  background: #ffffffb8;
+  background: var(--viz-card-bg);
   overflow: hidden;
 }
 

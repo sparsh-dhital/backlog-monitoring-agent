@@ -7,47 +7,53 @@ import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
-  Bell,
-  BriefcaseBusiness,
   Check,
   CircleAlert,
   CircleUserRound,
-  ClipboardCheck,
   Download,
-  Ellipsis,
   FileJson,
   FileSpreadsheet,
   FileText,
   Gauge,
-  HandHelping,
-  Home,
   Lightbulb,
-  LineChart,
-  ClipboardList,
   QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
   Settings,
   Users,
-  UsersRound,
   X,
 } from "lucide-react";
 import Brand from "../components/Brand";
 import type {
   ActivityEvent,
+  AssistantAction,
+  AssistantReply,
+  AssistantTurn,
   DashboardData,
   OrchestrationData,
 } from "../types/agent";
 import { userRoles, type UserRole } from "../types/roles";
 import { api } from "../api";
+import { useTheme } from "../theme-context";
+import {
+  clickControl,
+  interpretLocally,
+  scrollWorkspace,
+  visibleControlLabels,
+} from "../shared/voiceCommands";
 import { StatCard, StatusBadge } from "../components/WorkspacePrimitives";
 import { supabaseAuth } from "../supabaseClient";
-import ThemeToggle from "../components/ThemeToggle";
 import VoiceAssistant from "../components/VoiceAssistant";
 import BacklogManager from "../components/BacklogManager";
 import RecoverySimulator from "../components/RecoverySimulator";
 import StudentBacklogCharts from "../components/StudentBacklogCharts";
+import {
+  DashboardBottomNav,
+  DashboardSidebar,
+  DashboardTopbar,
+} from "../components/DashboardNav";
+import { dashboardNavigation } from "../shared/dashboardNavigation";
 import DepartmentCharts from "../components/DepartmentCharts";
 
 const dashboardByRole = {
@@ -112,451 +118,6 @@ const dashboardByRole = {
     ],
   },
 } as const;
-
-const dashboardNavigation = {
-  student: [
-    ["Dashboard", Home],
-    ["My backlogs", Archive],
-    ["Recovery simulator", Gauge],
-    ["Recovery plan", ClipboardList],
-    ["Exams", ClipboardCheck],
-    ["Progress", LineChart],
-    ["Notifications", Bell],
-  ],
-  mentor: [
-    ["Dashboard", Home],
-    ["Students", UsersRound],
-    ["Patterns", BarChart3],
-    ["Interventions", HandHelping],
-    ["Alerts", Bell],
-    ["Reports", FileText],
-  ],
-  hod: [
-    ["Dashboard", Home],
-    ["Students", UsersRound],
-    ["Backlogs", Archive],
-    ["Patterns", BarChart3],
-    ["Interventions", HandHelping],
-    ["Examinations", ClipboardCheck],
-    ["Alerts", Bell],
-    ["Reports", FileText],
-  ],
-  exam: [
-    ["Dashboard", Home],
-    ["Eligibility", ShieldCheck],
-    ["Registrations", ClipboardCheck],
-    ["Fee clearance", FileText],
-    ["Alerts", Bell],
-    ["Reports", LineChart],
-  ],
-  placement: [
-    ["Dashboard", Home],
-    ["Students", UsersRound],
-    ["Backlog constraints", Archive],
-    ["Readiness", BriefcaseBusiness],
-    ["Alerts", Bell],
-    ["Reports", LineChart],
-  ],
-} as const;
-
-function DashboardSidebar({
-  role,
-  activeTab,
-  onSelect,
-  onLogout,
-}: {
-  role: UserRole;
-  activeTab: string;
-  onSelect: (tab: string) => void;
-  onLogout: () => void;
-}) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const roleLabel = userRoles.find((item) => item.id === role)?.label;
-  const roleBadgeColors: Record<string, string> = {
-    hod: "bg-violet-100 text-violet-700",
-    mentor: "bg-blue-100 text-blue-700",
-    student: "bg-emerald-100 text-emerald-700",
-    exam: "bg-amber-100 text-amber-700",
-    placement: "bg-rose-100 text-rose-700",
-  };
-  const mobilePrimaryItems = dashboardNavigation[role].slice(0, 4);
-  const mobileMoreItems = dashboardNavigation[role].slice(4);
-
-  const selectMobileItem = (label: string) => {
-    setMoreOpen(false);
-    onSelect(label);
-  };
-
-  return (
-    <aside
-      className="dashboard-sidebar flex flex-col w-64 shrink-0 h-full bg-white border-r border-slate-100 shadow-[2px_0_12px_rgba(0,0,0,0.04)] z-20"
-      aria-label="Dashboard navigation"
-    >
-      {/* Brand & Role */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-        <Brand compact />
-        <div className="flex flex-col">
-          <span className="text-sm font-extrabold text-slate-800 tracking-tight">
-            EduRecover
-          </span>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 self-start ${roleBadgeColors[role] ?? "bg-slate-100 text-slate-600"}`}
-          >
-            {roleLabel}
-          </span>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <p className="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Workspace
-        </p>
-        <div className="flex flex-col gap-0.5">
-          {dashboardNavigation[role].map(([label, Icon]) => (
-            <button
-              key={label}
-              type="button"
-              aria-current={activeTab === label ? "page" : undefined}
-              onClick={() => onSelect(label)}
-              className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight transition-all duration-150 ${
-                activeTab === label
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Icon
-                size={17}
-                className={
-                  activeTab === label
-                    ? "text-indigo-200"
-                    : "text-slate-400 group-hover:text-slate-600"
-                }
-              />
-              <span className="flex-1 text-left">{label}</span>
-              {label === "Alerts" && (
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    activeTab === label
-                      ? "bg-white/20 text-white"
-                      : "bg-rose-100 text-rose-600"
-                  }`}
-                >
-                  3
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      {/* Bottom */}
-      <div className="dashboard-sidebar-actions px-3 py-3 border-t border-slate-100 flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onSelect("Settings")}
-          aria-current={activeTab === "Settings" ? "page" : undefined}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight transition-all duration-150 ${
-            activeTab === "Settings"
-              ? "bg-indigo-600 text-white"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-          }`}
-        >
-          <Settings
-            size={17}
-            className={
-              activeTab === "Settings" ? "text-indigo-200" : "text-slate-400"
-            }
-          />
-          <span>Settings</span>
-        </button>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold tracking-tight text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-all duration-150"
-        >
-          <ArrowLeft size={17} className="text-rose-600" />
-          <span>Logout</span>
-        </button>
-      </div>
-
-      <div
-        className="dashboard-mobile-nav"
-        aria-label="Mobile dashboard navigation"
-      >
-        {mobilePrimaryItems.map(([label, Icon]) => (
-          <button
-            key={label}
-            type="button"
-            aria-current={activeTab === label ? "page" : undefined}
-            onClick={() => selectMobileItem(label)}
-            className={activeTab === label ? "is-active" : ""}
-          >
-            <Icon size={19} />
-            <span>{label === "Dashboard" ? "Overview" : label}</span>
-            {label === "Alerts" && <b>3</b>}
-          </button>
-        ))}
-        <button
-          type="button"
-          aria-expanded={moreOpen}
-          aria-controls="mobile-dashboard-more"
-          onClick={() => setMoreOpen((current) => !current)}
-          className={
-            moreOpen ||
-            !mobilePrimaryItems.some(([label]) => label === activeTab)
-              ? "is-active"
-              : ""
-          }
-        >
-          {moreOpen ? <X size={19} /> : <Ellipsis size={19} />}
-          <span>More</span>
-        </button>
-        {moreOpen && (
-          <div className="dashboard-mobile-more" id="mobile-dashboard-more">
-            {mobileMoreItems.map(([label, Icon]) => (
-              <button
-                key={label}
-                type="button"
-                aria-current={activeTab === label ? "page" : undefined}
-                onClick={() => selectMobileItem(label)}
-                className={activeTab === label ? "is-active" : ""}
-              >
-                <Icon size={17} />
-                <span>{label}</span>
-                {label === "Alerts" && <b>3</b>}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setMoreOpen(false);
-                onSelect("Settings");
-              }}
-              className={activeTab === "Settings" ? "is-active" : ""}
-            >
-              <Settings size={17} />
-              <span>Settings</span>
-            </button>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            >
-              <ArrowLeft size={17} className="text-rose-600" />
-              <span>Log out</span>
-            </button>
-          </div>
-        )}
-      </div>
-    </aside>
-  );
-}
-
-function DashboardTopbar({
-  role,
-  onProfile,
-}: {
-  role: UserRole;
-  onProfile: () => void;
-}) {
-  const roleLabel = userRoles.find((item) => item.id === role)?.label;
-  const [profileName, setProfileName] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const loadProfile = async () => {
-      const [{ data: userData }, { data: sessionData }] = await Promise.all([
-        supabaseAuth.auth.getUser(),
-        supabaseAuth.auth.getSession(),
-      ]);
-      if (!active || !userData.user) return;
-      const user = userData.user;
-      const identityMetadata =
-        (user.identities?.find((identity) => identity.provider === "azure")
-          ?.identity_data as Record<string, unknown> | undefined) ?? {};
-      const metadata = {
-        ...identityMetadata,
-        ...(user.user_metadata ?? {}),
-      };
-      const constructedName =
-        metadata.given_name && metadata.family_name
-          ? `${metadata.given_name} ${metadata.family_name}`
-          : null;
-      let graphName: string | null = null;
-      const isAzureSession =
-        user.app_metadata?.provider === "azure" ||
-        user.identities?.some((identity) => identity.provider === "azure");
-      if (sessionData.session?.provider_token && isAzureSession) {
-        try {
-          const response = await fetch(
-            "https://graph.microsoft.com/v1.0/me?$select=displayName,givenName,surname",
-            {
-              headers: {
-                Authorization: `Bearer ${sessionData.session.provider_token}`,
-              },
-            },
-          );
-          if (response.ok) {
-            const graphProfile = (await response.json()) as {
-              displayName?: string;
-              givenName?: string;
-              surname?: string;
-            };
-            graphName =
-              graphProfile.displayName ||
-              (graphProfile.givenName && graphProfile.surname
-                ? `${graphProfile.givenName} ${graphProfile.surname}`
-                : null) ||
-              null;
-          }
-        } catch {
-          graphName = null;
-        }
-      }
-      const name =
-        graphName ||
-        metadata.full_name ||
-        metadata.name ||
-        constructedName ||
-        metadata.display_name ||
-        metadata.user_name ||
-        metadata.preferred_username ||
-        user.email?.split("@")[0].toUpperCase() ||
-        "Authenticated User";
-      setProfileName(String(name));
-      setProfileEmail(user.email || "");
-    };
-    void loadProfile();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return (
-    <header className="dashboard-topbar h-16 bg-white border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between px-8">
-      {/* Search */}
-      <div className="dashboard-search flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 h-10 w-80 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all">
-        <Search size={15} className="text-slate-400 shrink-0" />
-        <input
-          aria-label="Search dashboard"
-          className="bg-transparent border-none outline-none text-sm text-slate-700 w-full placeholder:text-slate-400"
-          placeholder="Search students, courses, or IDs..."
-        />
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-4">
-        <ThemeToggle />
-        {/* Notification bell */}
-        <div className="relative">
-          <button
-            type="button"
-            aria-label="Notifications"
-            aria-expanded={notificationsOpen}
-            onClick={() => setNotificationsOpen((open) => !open)}
-            className="relative p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all duration-150"
-          >
-            <Bell size={19} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
-          </button>
-          {notificationsOpen && (
-            <div className="dashboard-notifications absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div>
-                  <h2 className="text-sm font-bold text-slate-800">Alerts</h2>
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    Recent academic signals
-                  </p>
-                </div>
-                <span className="rounded-full bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-600">
-                  3 new
-                </span>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {[
-                  [
-                    "Attempt pressure",
-                    "14 students have one attempt remaining",
-                    "2h ago",
-                    "bg-rose-500",
-                  ],
-                  [
-                    "Duration risk",
-                    "6 students are nearing maximum duration",
-                    "5h ago",
-                    "bg-amber-500",
-                  ],
-                  [
-                    "Recovery milestone",
-                    "12 backlogs cleared this term",
-                    "Today",
-                    "bg-emerald-500",
-                  ],
-                ].map(([title, detail, time, tone]) => (
-                  <button
-                    type="button"
-                    key={title}
-                    onClick={() => setNotificationsOpen(false)}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                  >
-                    <span
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${tone}`}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-xs font-bold text-slate-700">
-                        {title}
-                      </span>
-                      <span className="mt-1 block text-[11px] leading-4 text-slate-500">
-                        {detail}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-[10px] text-slate-400">
-                      {time}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="border-t border-slate-100 px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => setNotificationsOpen(false)}
-                  className="w-full rounded-lg bg-slate-50 py-2 text-xs font-bold text-indigo-600 transition-colors hover:bg-indigo-50"
-                >
-                  Close alerts
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="w-px h-7 bg-slate-200" />
-
-        {/* Profile */}
-        <button
-          type="button"
-          onClick={onProfile}
-          aria-label="Open profile"
-          className="flex items-center gap-3 cursor-pointer group text-left"
-        >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:shadow-indigo-200 transition-all duration-200">
-            <CircleUserRound size={19} />
-          </div>
-          <div className="dashboard-profile-copy flex flex-col leading-tight">
-            <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
-              {profileName || roleLabel}
-            </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              {profileEmail || `${roleLabel} · EduRecover`}
-            </span>
-          </div>
-        </button>
-      </div>
-    </header>
-  );
-}
 
 function ProfileView({ role }: { role: UserRole }) {
   const roleLabel = userRoles.find((item) => item.id === role)?.label || role;
@@ -689,7 +250,7 @@ function RecoveryJourney({
 }) {
   return (
     <section
-      className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6"
+      className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6"
       aria-label="Academic recovery journey"
     >
       <div className="flex items-center justify-between mb-5">
@@ -718,9 +279,9 @@ function RecoveryJourney({
               if (role === stepRole) onSelectTab(tab);
               else onSwitchRole(stepRole);
             }}
-            className={`flex flex-col gap-2 p-4 rounded-xl border text-left transition-all duration-200 hover:-translate-y-0.5 ${
+            className={`flex flex-col gap-2 p-4 rounded-xl border text-left transition duration-200 hover:-translate-y-0.5 ${
               role === stepRole
-                ? "bg-indigo-600 border-indigo-500 shadow-lg shadow-indigo-200 text-white"
+                ? "on-brand bg-indigo-600 border-indigo-500 shadow-lg shadow-indigo-200 text-white"
                 : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-indigo-200 hover:shadow-md"
             }`}
           >
@@ -751,7 +312,7 @@ function RecoveryJourney({
               </p>
               <p
                 className={`text-xs mt-0.5 ${
-                  role === stepRole ? "text-indigo-200" : "text-slate-500"
+                  role === stepRole ? "text-indigo-100" : "text-slate-500"
                 }`}
               >
                 {detail}
@@ -771,6 +332,11 @@ function HodCommandCenter({
   onSelectStudent: (studentId: string) => void;
   dashboard: DashboardData;
 }) {
+  // Scale the mini charts to the busiest course, not a fixed ten students.
+  const maxPatternCount = Math.max(
+    1,
+    ...dashboard.course_patterns.map((pattern) => pattern.count),
+  );
   return (
     <section aria-label="Academic command center">
       {/* Section heading */}
@@ -792,7 +358,7 @@ function HodCommandCenter({
       {/* Top 3-column grid */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* Bar chart card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -811,12 +377,12 @@ function HodCommandCenter({
             {dashboard.course_patterns.slice(0, 6).map((pattern, index) => (
               <div
                 key={index}
-                className="flex flex-col items-center gap-1 flex-1"
+                className="flex flex-col items-center justify-end gap-1 flex-1 h-full min-w-0"
               >
                 <div
-                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all duration-500"
+                  className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-[width,height] duration-500"
                   style={{
-                    height: `${Math.min(100, pattern.count * 10)}%`,
+                    height: `${(pattern.count / maxPatternCount) * 100}%`,
                     minHeight: 8,
                   }}
                 />
@@ -829,7 +395,7 @@ function HodCommandCenter({
         </div>
 
         {/* Failure patterns card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -852,8 +418,8 @@ function HodCommandCenter({
                 </span>
                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-rose-400 to-orange-400 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, pattern.count * 10)}%` }}
+                    className="h-full bg-gradient-to-r from-rose-400 to-orange-400 rounded-full transition-[width,height] duration-500"
+                    style={{ width: `${(pattern.count / maxPatternCount) * 100}%` }}
                   />
                 </div>
                 <span className="text-xs font-bold text-slate-700 w-5 text-right">
@@ -865,7 +431,7 @@ function HodCommandCenter({
         </div>
 
         {/* Recoverability card */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -886,7 +452,7 @@ function HodCommandCenter({
                   cy="18"
                   r="15.9"
                   fill="none"
-                  stroke="#f1f5f9"
+                  style={{ stroke: "rgb(var(--c-bg-slate-100))" }}
                   strokeWidth="3"
                 />
                 <circle
@@ -950,7 +516,7 @@ function HodCommandCenter({
       {/* Bottom 2-column grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Priority queue */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -968,7 +534,7 @@ function HodCommandCenter({
                 key={item.student_id}
                 type="button"
                 onClick={() => onSelectStudent(item.student_id)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition-all duration-150 group text-left"
+                className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-rose-50 hover:border-rose-100 transition duration-150 group text-left"
               >
                 <span
                   className={`flex items-center justify-center w-8 h-8 rounded-lg ${
@@ -998,7 +564,7 @@ function HodCommandCenter({
         </div>
 
         {/* Alerts feed */}
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
+        <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -1489,10 +1055,10 @@ function DashboardTabView({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Gradient page header */}
-      <div className="px-8 pt-7 pb-5 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 relative overflow-hidden shrink-0">
+      <div className="on-brand px-8 pt-7 pb-5 bg-gradient-to-r from-indigo-600/90 to-purple-600/90 relative overflow-hidden shrink-0">
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/40 filter blur-2xl" />
-          <div className="absolute bottom-0 left-16 w-32 h-32 rounded-full bg-indigo-300/40 filter blur-2xl" />
+          <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full hero-glow" />
+          <div className="absolute bottom-0 left-16 w-32 h-32 rounded-full hero-glow hero-glow-indigo" />
         </div>
         <div className="relative z-10 flex items-start justify-between">
           <div>
@@ -1517,7 +1083,7 @@ function DashboardTabView({
             {summaryStats.map(([label, value]) => (
               <div
                 key={label}
-                className="group flex flex-col bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 rounded-xl px-4 py-2 backdrop-blur-md shadow-inner shadow-white/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 cursor-default"
+                className="group flex flex-col bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 rounded-xl px-4 py-2 shadow-inner shadow-white/10 transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/20 cursor-default"
               >
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-300/80 group-hover:bg-white transition-colors"></span>
@@ -1537,7 +1103,7 @@ function DashboardTabView({
       {/* Table */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {/* Table header */}
-        <div className="grid grid-cols-4 px-8 py-3 bg-white/60 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-10">
+        <div className="grid grid-cols-4 px-8 py-3 bg-white/60 border-b border-slate-100 sticky top-0 z-10">
           {["Signal", "Scope", "Context", "Status"].map((col) => (
             <span
               key={col}
@@ -1567,7 +1133,7 @@ function DashboardTabView({
               type="button"
               onClick={() => canOpenStudent && onSelectStudent(row[0])}
               disabled={!canOpenStudent}
-              className={`w-full grid grid-cols-4 items-center px-8 py-4 border-b border-slate-100/60 text-left transition-all duration-150 ${
+              className={`w-full grid grid-cols-4 items-center px-8 py-4 border-b border-slate-100/60 text-left transition duration-150 ${
                 canOpenStudent
                   ? "hover:bg-indigo-50/60 cursor-pointer group"
                   : "cursor-default hover:bg-slate-50/40"
@@ -1627,7 +1193,7 @@ function RoleHomeView({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* Current signal card */}
-      <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+      <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
           Current signal
         </p>
@@ -1645,7 +1211,7 @@ function RoleHomeView({
         {/* Progress bar */}
         <div className="w-full h-2 bg-white/50 rounded-full overflow-hidden shadow-inner shadow-black/5">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500 shadow-md shadow-indigo-500/20"
+            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-[width,height] duration-500 shadow-md shadow-indigo-500/20"
             style={{ width: role === "student" ? "78%" : "64%" }}
           />
         </div>
@@ -1655,7 +1221,7 @@ function RoleHomeView({
       </div>
 
       {/* Recommended actions card */}
-      <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+      <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
           Recommended actions
         </p>
@@ -1665,7 +1231,7 @@ function RoleHomeView({
               key={action}
               type="button"
               onClick={() => onSelectTab(tab)}
-              className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 text-left transition-all duration-150 group"
+              className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:bg-indigo-50 hover:border-indigo-100 text-left transition duration-150 group"
             >
               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 text-xs font-bold group-hover:bg-indigo-200 transition-colors shrink-0">
                 0{index + 1}
@@ -1754,6 +1320,19 @@ function TabSkeleton() {
   );
 }
 
+const SIDEBAR_KEY = "edurecover-sidebar";
+
+/** A saved choice wins; otherwise tablets start with the icon rail. */
+function readSidebarCollapsed() {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_KEY);
+    if (saved) return saved === "collapsed";
+  } catch {
+    // Storage unavailable.
+  }
+  return window.matchMedia("(max-width: 1023px)").matches;
+}
+
 export default function PrototypePage({
   role = "hod",
   mode = "dashboard",
@@ -1785,8 +1364,35 @@ export default function PrototypePage({
     mode === "dashboard",
   );
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [backlogVersion, setBacklogVersion] = useState(0);
+  const sidebarTouched = useRef(false);
+
+  const toggleSidebar = useCallback(() => {
+    sidebarTouched.current = true;
+    setSidebarCollapsed((current) => !current);
+  }, []);
+  const openMobileNav = useCallback(() => setMobileNavOpen(true), []);
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
+  const refreshBacklogCharts = useCallback(
+    () => setBacklogVersion((version) => version + 1),
+    [],
+  );
+
+  // Remember an explicit collapse/expand; the tablet default is not a choice.
+  useEffect(() => {
+    if (!sidebarTouched.current) return;
+    try {
+      localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? "collapsed" : "expanded");
+    } catch {
+      // Storage unavailable: the choice lasts for this visit.
+    }
+  }, [sidebarCollapsed]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const requestSequence = useRef(0);
+  const assistantHistory = useRef<AssistantTurn[]>([]);
+  const { darkMode, toggleDarkMode } = useTheme();
 
   useEffect(() => {
     if (mode !== "dashboard") return;
@@ -2021,41 +1627,144 @@ export default function PrototypePage({
   }[role];
   const handleTabSelect = (tab: string) => {
     setActiveTab(tab);
+    setMobileNavOpen(false);
     setData(null);
     setDispatchLogs([]);
     setError("");
   };
 
+  const availableTabs: string[] = [
+    ...dashboardNavigation[role].map(([label]) => label),
+    "Profile",
+    "Settings",
+  ];
+
+  // Carries out one step the assistant planned. Returns what to say instead
+  // when the step cannot be done from the current screen.
+  const runAssistantAction = (action: AssistantAction): string | null => {
+    switch (action.type) {
+      case "navigate":
+        if (!availableTabs.includes(action.tab)) {
+          return `${action.tab} isn't available in this view.`;
+        }
+        handleTabSelect(action.tab);
+        return null;
+      case "open_student": {
+        const target = String(action.student_id ?? "")
+          .replace(/\s+/g, "")
+          .toUpperCase();
+        if (!target) return "I didn't catch which student to open.";
+        if (
+          role === "student" &&
+          dashboardData?.student_id &&
+          target !== dashboardData.student_id
+        ) {
+          return "You can only open your own record.";
+        }
+        setStudentId(target);
+        void fetchOrchestration(target);
+        return null;
+      }
+      case "close_student":
+        if (!data) return "There's no student case open right now.";
+        setData(null);
+        return null;
+      case "theme":
+        if (action.mode === "toggle" || (action.mode === "dark") !== darkMode) {
+          toggleDarkMode();
+        }
+        return null;
+      case "scroll":
+        scrollWorkspace(action.direction);
+        return null;
+      case "switch_role":
+        if (!onSwitchRole) return "Switching roles isn't available here.";
+        if (!userRoles.some((item) => item.id === action.role)) {
+          return "I don't know that role.";
+        }
+        if (action.role !== role) onSwitchRole(action.role);
+        return null;
+      case "click":
+        return clickControl(String(action.label ?? ""))
+          ? null
+          : `I couldn't find ${action.label} on this screen.`;
+      case "export_report":
+        if (!data) return "Open a student case first, then I can export its report.";
+        exportData(action.format);
+        return null;
+      case "approve_intervention":
+        if (role !== "mentor" && role !== "hod") {
+          return "Only mentors and heads of department can approve interventions.";
+        }
+        if (!data) return "Open a student case first, then ask me to approve it.";
+        if (approved) return "This intervention is already approved.";
+        void handleApprove();
+        return null;
+      case "logout":
+        onBack();
+        return null;
+      default:
+        return null;
+    }
+  };
+
   const handleVoiceCommand = async (command: string) => {
-    const normalized = command.toLowerCase();
-    if (normalized.includes("backlog")) {
-      handleTabSelect(role === "student" ? "My backlogs" : "Backlogs");
-      return "Opening backlog records.";
+    const history = assistantHistory.current.slice(-8);
+    let plan: AssistantReply;
+    try {
+      plan = await api.assistant({
+        utterance: command,
+        role,
+        active_tab: activeTab,
+        available_tabs: availableTabs,
+        visible_controls: visibleControlLabels(),
+        open_case:
+          data && evaluation && recommendation
+            ? {
+                student_id: data.target_student_id,
+                promotion_status: evaluation.promotion_status,
+                attempt_pressure: evaluation.attempt_pressure,
+                active_backlog_count: evaluation.active_backlog_count,
+                max_allowed_backlogs: evaluation.max_allowed_backlogs,
+                backlogs: evaluation.backlog_details.map(
+                  ({ course_code, attempts_made, attempts_remaining, status }) => ({
+                    course_code,
+                    attempts_made,
+                    attempts_remaining,
+                    status,
+                  }),
+                ),
+                recoverability_segment: recommendation.recoverability_segment,
+                reasoning: recommendation.reasoning,
+                recommended_actions: recommendation.recommended_actions,
+                intervention_approved: approved,
+              }
+            : null,
+        dark_mode: darkMode,
+        history,
+      });
+    } catch {
+      // AI unreachable (offline, missing key, rate limit): still handle the
+      // simple requests locally instead of going silent.
+      plan = interpretLocally(command, availableTabs);
     }
-    if (normalized.includes("recover") || normalized.includes("plan")) {
-      handleTabSelect(role === "student" ? "Recovery plan" : "Interventions");
-      return "Opening recovery planning.";
-    }
-    if (normalized.includes("notification") || normalized.includes("alert")) {
-      handleTabSelect(role === "student" ? "Notifications" : "Alerts");
-      return "Opening notifications.";
-    }
-    if (normalized.includes("student") || normalized.includes("case")) {
-      handleTabSelect("Students");
-      return "Opening student records.";
-    }
-    if (normalized.includes("dashboard") || normalized.includes("home")) {
-      handleTabSelect("Dashboard");
-      return "Opening the dashboard.";
-    }
-    return "Try saying backlog, recovery plan, notifications, students, or dashboard.";
+    const problems = plan.actions
+      .map(runAssistantAction)
+      .filter((problem): problem is string => Boolean(problem));
+    const spoken = problems.length > 0 ? problems.join(" ") : plan.reply;
+    assistantHistory.current = [
+      ...history,
+      { role: "user", text: command },
+      { role: "assistant", text: spoken },
+    ];
+    return spoken;
   };
 
   return (
     <main
       className={
         mode === "dashboard"
-          ? "dashboard-shell flex h-screen overflow-hidden bg-slate-50/50 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/60 via-slate-50 to-fuchsia-50/60 font-sans relative isolate"
+          ? "dashboard-shell flex h-screen overflow-hidden font-sans relative isolate"
           : `workspace-page prototype-console`
       }
     >
@@ -2065,6 +1774,19 @@ export default function PrototypePage({
           activeTab={activeTab}
           onSelect={handleTabSelect}
           onLogout={onBack}
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={toggleSidebar}
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={closeMobileNav}
+        />
+      )}
+      {mode === "dashboard" && (
+        <DashboardBottomNav
+          role={role}
+          activeTab={activeTab}
+          onSelect={handleTabSelect}
+          onOpenMenu={openMobileNav}
+          menuOpen={mobileNavOpen}
         />
       )}
       {/* Main content area */}
@@ -2079,6 +1801,8 @@ export default function PrototypePage({
           <DashboardTopbar
             role={role}
             onProfile={() => handleTabSelect("Profile")}
+            onOpenMenu={openMobileNav}
+            menuOpen={mobileNavOpen}
           />
         ) : (
           <header className="workspace-header">
@@ -2156,7 +1880,7 @@ export default function PrototypePage({
           </header>
         )}
 
-        {mode === "dashboard" && activeTab === "Dashboard" && (
+        {mode === "dashboard" && activeTab === "Dashboard" && !data && (
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {dashboardLoading ? (
               <DashboardSkeleton />
@@ -2164,11 +1888,11 @@ export default function PrototypePage({
               <div className="dashboard-reveal">
                 {/* Hero overview card */}
                 <div className="px-8 pt-8 pb-6">
-                  <div className="dashboard-hero relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/90 via-purple-600/90 to-fuchsia-600/90 backdrop-blur-2xl border border-white/20 p-7 text-white shadow-[0_8px_32px_-12px_rgba(168,85,247,0.4)]">
+                  <div className="dashboard-hero on-brand relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/90 via-purple-600/90 to-fuchsia-600/90 border border-white/20 p-7 text-white shadow-[0_8px_32px_-12px_rgba(168,85,247,0.4)]">
                     {/* Background decoration */}
                     <div className="absolute inset-0 opacity-20">
-                      <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/40 mix-blend-overlay filter blur-xl" />
-                      <div className="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-indigo-300/40 mix-blend-overlay filter blur-xl" />
+                      <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full hero-glow" />
+                      <div className="absolute bottom-0 left-20 w-40 h-40 rounded-full hero-glow hero-glow-indigo" />
                     </div>
                     <div className="relative z-10 flex items-start justify-between gap-8">
                       <div className="max-w-xl">
@@ -2184,7 +1908,7 @@ export default function PrototypePage({
                         <button
                           type="button"
                           onClick={() => handleTabSelect(dashboardAction[1])}
-                          className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10 backdrop-blur-md"
+                          className="inline-flex items-center gap-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white px-5 py-3 rounded-xl text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-white/10"
                         >
                           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 shadow-inner shadow-white/20">
                             <Search size={14} className="text-indigo-100" />
@@ -2201,7 +1925,7 @@ export default function PrototypePage({
                         </button>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-inner shadow-white/10 text-xs font-semibold px-3 py-1.5 rounded-full">
+                        <span className="flex items-center gap-2 bg-white/10 border border-white/20 text-white shadow-inner shadow-white/10 text-xs font-semibold px-3 py-1.5 rounded-full">
                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                           Live data
                         </span>
@@ -2243,7 +1967,7 @@ export default function PrototypePage({
                   dashboardData &&
                   dashboardData.students.length > 0 && (
                     <div className="px-8 pb-6">
-                      <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+                      <div className="rounded-2xl bg-white/60 border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
                         <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-4">
                           Available Students (Demo)
                         </p>
@@ -2256,7 +1980,7 @@ export default function PrototypePage({
                                 setStudentId(student.student_id);
                                 void fetchOrchestration(student.student_id);
                               }}
-                              className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-100 hover:border-indigo-300 bg-indigo-50/60 hover:bg-indigo-100/80 transition-all duration-200 hover:shadow-md hover:shadow-indigo-200/40 hover:-translate-y-0.5"
+                              className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-100 hover:border-indigo-300 bg-indigo-50/60 hover:bg-indigo-100/80 transition duration-200 hover:shadow-md hover:shadow-indigo-200/40 hover:-translate-y-0.5"
                             >
                               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-200 text-indigo-700 font-bold text-xs shrink-0">
                                 {student.student_id.slice(-2)}
@@ -2349,8 +2073,8 @@ export default function PrototypePage({
             <div className="flex-1 overflow-y-auto scrollbar-thin">
               {studentId ? (
                 <div className="flex flex-col gap-6 px-8 py-8">
-                  <BacklogManager studentId={studentId} />
-                  <StudentBacklogCharts studentId={studentId} />
+                  <BacklogManager studentId={studentId} onChanged={refreshBacklogCharts} />
+                  <StudentBacklogCharts studentId={studentId} refreshKey={backlogVersion} />
                 </div>
               ) : (
                 <TabSkeleton />
@@ -2383,9 +2107,9 @@ export default function PrototypePage({
         {mode === "dashboard" && data && evaluation && recommendation && (
           <div className="flex-1 overflow-y-auto scrollbar-thin px-8 py-8">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
+            <div className="on-brand relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 mb-6 text-white shadow-lg shadow-indigo-500/20">
               <div className="absolute inset-0 opacity-20">
-                <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white/40 filter blur-2xl" />
+                <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full hero-glow" />
               </div>
               <div className="relative z-10 flex items-start justify-between">
                 <div>
@@ -2455,7 +2179,7 @@ export default function PrototypePage({
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
               {/* AI Reasoning */}
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+              <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">
                   Evidence review
                 </p>
@@ -2465,7 +2189,7 @@ export default function PrototypePage({
               </div>
 
               {/* Recommended Actions */}
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
+              <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] p-6">
                 <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">
                   Recommended Actions
                 </p>
@@ -2486,7 +2210,7 @@ export default function PrototypePage({
 
             {/* Backlog Details Table */}
             {evaluation.backlog_details.length > 0 && (
-              <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] overflow-hidden mb-5">
+              <div className="bg-white/60 rounded-2xl border border-white/60 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.05)] overflow-hidden mb-5">
                 <div className="px-6 py-4 border-b border-slate-100">
                   <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
                     Backlog Details
@@ -2560,7 +2284,7 @@ export default function PrototypePage({
                     type="button"
                     onClick={() => void handleApprove()}
                     disabled={approving}
-                    className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all duration-200 shrink-0 shadow-md shadow-amber-500/20"
+                    className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition duration-200 shrink-0 shadow-md shadow-amber-500/20"
                   >
                     {approving ? (
                       <RefreshCw size={14} className="animate-spin" />
@@ -2592,7 +2316,7 @@ export default function PrototypePage({
         )}
 
         {mode === "dashboard" && (
-          <VoiceAssistant onCommand={handleVoiceCommand} />
+          <VoiceAssistant role={role} onCommand={handleVoiceCommand} />
         )}
 
         {/* Prototype sections (outside the flex-1 div since they are the only content) */}
@@ -2892,10 +2616,10 @@ export default function PrototypePage({
                       {data.integration_feeds.agent_34_results.results.length >
                       0 ? (
                         data.integration_feeds.agent_34_results.results.map(
-                          (result) => (
+                          (result, resultIndex) => (
                             <div
                               className="feed-row"
-                              key={`${result.course_code}-${result.term}`}
+                              key={`${result.course_code}-${result.term}-${resultIndex}`}
                             >
                               <span>{result.course_code}</span>
                               <small>{result.term}</small>
@@ -2923,10 +2647,10 @@ export default function PrototypePage({
                       {data.integration_feeds.agent_30_supplementary
                         .supplementary_exams.length > 0 ? (
                         data.integration_feeds.agent_30_supplementary.supplementary_exams.map(
-                          (exam) => (
+                          (exam, examIndex) => (
                             <div
                               className="feed-row feed-stack"
-                              key={exam.course_code}
+                              key={`${exam.course_code}-${examIndex}`}
                             >
                               <span>{exam.course_code}</span>
                               <small>

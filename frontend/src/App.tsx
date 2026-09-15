@@ -10,7 +10,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import Lenis from "lenis";
 import { userRoles, type UserRole } from "./types/roles";
 import { supabaseAuth } from "./supabaseClient";
-import { ThemeProvider } from "./theme";
 import ThemeToggle from "./components/ThemeToggle";
 import "./App.css";
 
@@ -162,17 +161,10 @@ function ProtectedDashboard() {
 }
 
 export default function App() {
-  const [isBooting, setIsBooting] = useState(true);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIsBooting(false), 760);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  if (isBooting) return <SiteLoader />;
-
+  // ThemeProvider wraps the app in main.tsx; the loader shows only while a
+  // route chunk is actually loading.
   return (
-    <ThemeProvider>
+    <>
       <SmoothScroll />
       <SiteThemeToggle />
       <Suspense fallback={<SiteLoader />}>
@@ -184,6 +176,6 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </ThemeProvider>
+    </>
   );
 }

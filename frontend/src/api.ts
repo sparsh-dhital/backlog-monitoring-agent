@@ -1,4 +1,6 @@
 import type {
+  AssistantReply,
+  AssistantRequest,
   DashboardData,
   OrchestrationData,
   ActivityEvent,
@@ -24,7 +26,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
     throw new Error(
-      `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,
+      import.meta.env.DEV
+        ? `Unable to reach the backend at ${API_URL}. Run "npm run dev" from the project root to start the frontend and backend together.`
+        : `Unable to reach the backend at ${API_URL}. Start the API server or set VITE_API_URL to its public URL.`,
     );
   }
   const contentType = response.headers.get("content-type") || "";
@@ -66,6 +70,10 @@ export const api = {
     }
     return request<OrchestrationData>(path);
   },
+  evaluation: (studentId: string) =>
+    request<OrchestrationData["deterministic_evaluation"]>(
+      `/api/evaluate/${encodeURIComponent(studentId)}`,
+    ),
   activity: (studentId: string) =>
     request<{ events: ActivityEvent[] }>(
       `/api/dispatch/activity/${encodeURIComponent(studentId)}`,
@@ -111,6 +119,18 @@ export const api = {
       method: "DELETE",
     });
   },
+  transcribe: (audio: Blob) =>
+    request<{ text: string }>("/api/transcribe", {
+      method: "POST",
+      headers: { "Content-Type": audio.type || "audio/webm" },
+      body: audio,
+    }),
+  assistant: (payload: AssistantRequest) =>
+    request<AssistantReply>("/api/assistant", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
   approve: (studentId: string, mentorId: string) =>
     request<{ status: string }>(
       `/api/approve-intervention/${encodeURIComponent(studentId)}?mentor_id=${encodeURIComponent(mentorId)}`,
