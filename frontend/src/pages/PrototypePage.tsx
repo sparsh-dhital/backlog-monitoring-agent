@@ -42,6 +42,7 @@ import VoiceAssistant from "../components/VoiceAssistant";
 import BacklogManager from "../components/BacklogManager";
 import RecoverySimulator from "../components/RecoverySimulator";
 import StudentBacklogCharts from "../components/StudentBacklogCharts";
+import ThemeToggle from "../components/ThemeToggle";
 import {
   DashboardBottomNav,
   DashboardSidebar,
@@ -471,7 +472,7 @@ export default function PrototypePage({
     <main
       className={
         mode === "dashboard"
-          ? "dashboard-shell flex h-screen overflow-hidden font-sans relative isolate"
+          ? "dashboard-shell flex h-dvh overflow-hidden font-sans relative isolate"
           : `workspace-page prototype-console`
       }
     >
@@ -581,6 +582,7 @@ export default function PrototypePage({
                 )}
                 {loading ? "Reviewing" : "Review student record"}
               </button>
+              <ThemeToggle />
             </div>
           </header>
         )}

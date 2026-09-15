@@ -1,7 +1,7 @@
 /* Auth and demo role entry */
 .auth-page {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   /* The decorative atmosphere circles hang off the page edges. Clip them on
      both axes so they never extend the scroll area, without creating a
      scroll container (clip keeps the sticky nav working). */

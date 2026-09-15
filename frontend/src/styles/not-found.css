@@ -1,7 +1,7 @@
 .not-found-page {
   position: relative;
   display: grid;
-  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   color: #102754;
   background: linear-gradient(135deg, #f7f9ff, #edf1ff 55%, #fff7f5);

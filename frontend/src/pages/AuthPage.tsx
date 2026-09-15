@@ -25,6 +25,7 @@ import {
 } from "../shared/authSession";
 import { userRoles, type UserRole } from "../types/roles";
 import Brand from "../components/Brand";
+import ThemeToggle from "../components/ThemeToggle";
 import "../styles/auth.css";
 
 const roleIcons = {
@@ -48,7 +49,9 @@ export default function AuthPage({
   onBack: () => void;
   onContinue: (role: UserRole) => void;
 }) {
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(
+    () => (sessionStorage.getItem("edurecover-pending-role") as UserRole) || null
+  );
   const [authMessage, setAuthMessage] = useState(initialAuthMessage);
   const [authenticating, setAuthenticating] = useState(false);
   const [registrationNumber, setRegistrationNumber] = useState("");
@@ -299,6 +302,7 @@ export default function AuthPage({
           <Brand />
         </a>
         <span className="auth-nav-spacer" aria-hidden="true" />
+        <ThemeToggle />
       </header>
 
       <section className="auth-layout" id="auth-top">

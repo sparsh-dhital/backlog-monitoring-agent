@@ -15,7 +15,6 @@ import {
   isAllowedInstitutionEmail,
   readOtpSession,
 } from "./shared/authSession";
-import ThemeToggle from "./components/ThemeToggle";
 import "./App.css";
 
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -77,16 +76,6 @@ function SiteLoader() {
   );
 }
 
-function SiteThemeToggle() {
-  const { pathname } = useLocation();
-  if (pathname === "/" || pathname.startsWith("/dashboard/")) return null;
-  return (
-    <ThemeToggle
-      floating
-      className={`theme-toggle-floating${pathname === "/auth" ? " theme-toggle-auth" : ""}`}
-    />
-  );
-}
 
 function AuthRoute() {
   const navigate = useNavigate();
@@ -106,7 +95,14 @@ function LandingRoute() {
   const navigate = useNavigate();
   return (
     <LandingPage
-      onEnter={() => navigate("/auth")}
+      onEnter={(roleId?: string) => {
+        if (roleId) {
+          sessionStorage.setItem("edurecover-pending-role", roleId);
+        } else {
+          sessionStorage.removeItem("edurecover-pending-role");
+        }
+        navigate("/auth");
+      }}
       onPrototype={() => navigate("/prototype")}
     />
   );
@@ -185,7 +181,6 @@ export default function App() {
   return (
     <>
       <SmoothScroll />
-      <SiteThemeToggle />
       <Suspense fallback={<SiteLoader />}>
         <Routes>
           <Route path="/" element={<LandingRoute />} />

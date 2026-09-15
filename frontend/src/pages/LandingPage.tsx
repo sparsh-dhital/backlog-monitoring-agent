@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import {
   Activity,
   ArrowUpRight,
@@ -18,7 +18,6 @@ import {
   Mail,
   Radar,
   ScanSearch,
-  ShieldCheck,
   UserCheck,
 } from "lucide-react";
 import Brand from "../components/Brand";
@@ -53,63 +52,7 @@ const roles = [
   ["Placement Cell", "Understand placement constraints early.", "05"],
 ];
 
-const roleDetails = [
-  {
-    heading: "Know where you stand.",
-    body: "A student sees the courses that need attention, the attempts still available, and one sensible next step instead of a wall of warnings.",
-    items: [
-      "Active backlogs and attempts",
-      "Promotion and duration pressure",
-      "A recovery plan with a reason",
-    ],
-    metric: "3 active backlogs",
-    action: "Review my recovery plan",
-  },
-  {
-    heading: "Know who needs you.",
-    body: "Mentors get a short, useful queue: what changed, why it matters, and what to bring into the next conversation with a student.",
-    items: [
-      "Priority students with context",
-      "Repeated failure patterns",
-      "Pending meetings and actions",
-    ],
-    metric: "8 students need attention",
-    action: "Open my student queue",
-  },
-  {
-    heading: "See the academic picture.",
-    body: "HODs can move from a department trend to the individual case behind it, without losing the evidence or the decision trail.",
-    items: [
-      "Department backlog trends",
-      "Duration and promotion risk",
-      "Intervention effectiveness",
-    ],
-    metric: "9 critical cases",
-    action: "Open command center",
-  },
-  {
-    heading: "Keep every attempt compliant.",
-    body: "The examination cell sees eligibility, fees, attempts and registration status together, before a preventable issue reaches the exam window.",
-    items: [
-      "Supplementary eligibility",
-      "Attempt and fee status",
-      "Detained or debarred cases",
-    ],
-    metric: "84 eligible registrations",
-    action: "Review exam operations",
-  },
-  {
-    heading: "Understand placement constraints early.",
-    body: "The placement cell sees which students are close to ready and which backlog needs attention before it blocks an opportunity.",
-    items: [
-      "Active backlog constraints",
-      "Recovery progress",
-      "Students becoming placement-ready",
-    ],
-    metric: "12 ready after clearance",
-    action: "Open placement readiness",
-  },
-];
+
 
 const workflowIcons = [
   Radar,
@@ -127,11 +70,9 @@ export default function LandingPage({
   onEnter,
   onPrototype,
 }: {
-  onEnter: () => void;
+  onEnter: (roleId?: string) => void;
   onPrototype: () => void;
 }) {
-  const [activeWorkflow, setActiveWorkflow] = useState(0);
-  const [activeRole, setActiveRole] = useState(0);
   return (
     <main className="landing-page">
       <div
@@ -175,7 +116,7 @@ export default function LandingPage({
             Prototype
           </button>
           <ThemeToggle className="navbar-theme-toggle" />
-          <button className="primary-button small" onClick={onEnter}>
+          <button className="primary-button small" onClick={() => onEnter()}>
             Get started <ArrowUpRight size={15} />
           </button>
         </div>
@@ -195,7 +136,7 @@ export default function LandingPage({
             becomes a surprise at the end of term.
           </p>
           <div className="hero-actions">
-            <button className="primary-button" onClick={onEnter}>
+            <button className="primary-button" onClick={() => onEnter()}>
               Explore platform <ArrowUpRight size={16} />
             </button>
             <button className="secondary-button" onClick={onPrototype}>
@@ -324,43 +265,23 @@ export default function LandingPage({
             the first signal to the action that helps a student recover.
           </p>
         </div>
-        <div className="workflow-rail">
+        <div className="bento-grid">
           {workflowSteps.map(([number, title, description], index) => {
             const Icon = workflowIcons[index];
             return (
-              <button
-                className={`workflow-step ${activeWorkflow === index ? "active" : ""}`}
+              <div
+                className={`bento-tile bento-tile-${index}`}
                 key={number}
-                type="button"
-                aria-pressed={activeWorkflow === index}
-                onClick={() => setActiveWorkflow(index)}
-                onFocus={() => setActiveWorkflow(index)}
               >
-                <span className="step-number">{number}</span>
-                <span className="step-icon">
-                  <Icon size={23} strokeWidth={1.8} />
+                <span className="bento-num">{number}</span>
+                <span className="bento-icon">
+                  <Icon size={22} strokeWidth={1.75} />
                 </span>
-                <strong>{title}</strong>
-                <small>{description}</small>
-              </button>
+                <strong className="bento-title">{title}</strong>
+                <p className="bento-desc">{description}</p>
+              </div>
             );
           })}
-        </div>
-        <div className="workflow-detail" key={activeWorkflow}>
-          <div className="workflow-detail-icon">
-            <ShieldCheck size={20} />
-          </div>
-          <div>
-            <span>Now exploring · step {workflowSteps[activeWorkflow][0]}</span>
-            <strong>{workflowSteps[activeWorkflow][1]}</strong>
-            <p>
-              {workflowSteps[activeWorkflow][2]} EduRecover keeps the evidence
-              visible so the next decision is clear and accountable.
-            </p>
-          </div>
-          <button type="button" onClick={onEnter}>
-            Open workspace <ArrowUpRight size={15} />
-          </button>
         </div>
       </section>
 
@@ -380,14 +301,8 @@ export default function LandingPage({
             const Icon = roleIcons[index];
             return (
               <article
-                className={`role-card ${activeRole === index ? "selected" : ""}`}
+                className="role-card"
                 key={title}
-                tabIndex={0}
-                onClick={() => setActiveRole(index)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ")
-                    setActiveRole(index);
-                }}
               >
                 <span className="role-number">{number}</span>
                 <div className="role-icon">
@@ -398,7 +313,8 @@ export default function LandingPage({
                 <button
                   onClick={(event) => {
                     event.stopPropagation();
-                    onEnter();
+                    const roleIds = ["student", "mentor", "hod", "exam", "placement"];
+                    onEnter(roleIds[index]);
                   }}
                 >
                   See workspace <ArrowUpRight size={14} />
@@ -407,32 +323,7 @@ export default function LandingPage({
             );
           })}
         </div>
-        <div className="role-detail" key={activeRole}>
-          <div className="role-detail-intro">
-            <span className="workspace-kicker">
-              Selected perspective · {roles[activeRole][0]}
-            </span>
-            <h3>{roleDetails[activeRole].heading}</h3>
-            <p>{roleDetails[activeRole].body}</p>
-            <button className="primary-button small" onClick={onEnter}>
-              {roleDetails[activeRole].action} <ArrowUpRight size={14} />
-            </button>
-          </div>
-          <div className="role-detail-evidence">
-            <span>What this view keeps close</span>
-            {roleDetails[activeRole].items.map((item) => (
-              <div key={item}>
-                <Check size={14} />
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="role-detail-metric">
-            <span>At a glance</span>
-            <strong>{roleDetails[activeRole].metric}</strong>
-            <small>Updated from the latest academic signal</small>
-          </div>
-        </div>
+
       </section>
 
       <section className="human-section section-shell" id="platform">
@@ -445,7 +336,7 @@ export default function LandingPage({
             EduRecover makes the reasoning visible while keeping consequential
             academic decisions with the people responsible for students.
           </p>
-          <button className="secondary-button" onClick={onEnter}>
+          <button className="secondary-button trust-cta" onClick={() => onEnter()}>
             Explore the command center <ArrowUpRight size={16} />
           </button>
         </div>
@@ -459,10 +350,10 @@ export default function LandingPage({
               <strong>Detect · calculate · recommend</strong>
             </div>
           </div>
-          <div className="flow-connector">
-            <i />
-            <i />
-            <i />
+          <div className="flow-connector" aria-hidden="true">
+            <svg width="24" height="32" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2 L12 24 M6 18 L12 26 L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
           <div className="flow-node human-node">
             <span>
@@ -491,7 +382,7 @@ export default function LandingPage({
           </h2>
           <p>Notice earlier. Understand clearly. Support students well.</p>
         </div>
-        <button className="primary-button" onClick={onEnter}>
+        <button className="primary-button" onClick={() => onEnter()}>
           Get started <ArrowUpRight size={16} />
         </button>
       </section>

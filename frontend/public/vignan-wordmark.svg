@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 150" role="img" aria-labelledby="title desc">
+  <title id="title">Vignan's Foundation for Science, Technology and Research</title>
+  <desc id="desc">Vignan's university wordmark.</desc>
+  <rect width="840" height="150" fill="#fff"/>
+  <g transform="translate(32 34)">
+    <path d="M0 0h34l11 26L56 0h34L67 82H32z" fill="#1260a8"/>
+    <path d="M5 8h27l13 30L58 8h25L50 72H37z" fill="#e33132"/>
+    <path d="M19 98h57" stroke="#1260a8" stroke-width="5"/>
+    <text x="112" y="42" fill="#d62e2e" font-family="Georgia,serif" font-size="45" font-weight="700">VIGNAN'S</text>
+    <text x="114" y="78" fill="#1260a8" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="1.4">FOUNDATION FOR SCIENCE, TECHNOLOGY &amp; RESEARCH</text>
+    <text x="114" y="108" fill="#586579" font-family="Arial,sans-serif" font-size="14">Deemed to be University</text>
+  </g>
+</svg>
