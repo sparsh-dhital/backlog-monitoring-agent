@@ -14,6 +14,7 @@ import {
 import Brand from "./Brand";
 import ThemeToggle from "./ThemeToggle";
 import { supabaseAuth } from "../supabaseClient";
+import { readOtpSession } from "../shared/authSession";
 import { userRoles, type UserRole } from "../types/roles";
 import {
   dashboardNavigation,
@@ -272,7 +273,16 @@ export function DashboardTopbar({
         supabaseAuth.auth.getUser(),
         supabaseAuth.auth.getSession(),
       ]);
-      if (!active || !userData.user) return;
+      if (!active) return;
+      if (!userData.user) {
+        // Registration-number sessions carry no Supabase profile.
+        const otpSession = readOtpSession();
+        if (otpSession) {
+          setProfileName(otpSession.registrationNumber);
+          setProfileEmail("Signed in with registration number");
+        }
+        return;
+      }
       const user = userData.user;
       const identityMetadata =
         (user.identities?.find((identity) => identity.provider === "azure")

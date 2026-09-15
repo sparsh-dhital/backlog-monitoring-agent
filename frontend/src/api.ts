@@ -7,6 +7,7 @@ import type {
   BacklogRow,
 } from "./types/agent";
 import { supabaseAuth } from "./supabaseClient";
+import { readOtpSession } from "./shared/authSession";
 import type { UserRole } from "./types/roles";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -19,6 +20,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (session?.access_token) {
     headers.set("Authorization", `Bearer ${session.access_token}`);
+  } else {
+    const otpSession = readOtpSession();
+    if (otpSession) headers.set("Authorization", `Bearer ${otpSession.token}`);
   }
   const demoRole = sessionStorage.getItem("edurecover-demo-role");
   if (demoRole) headers.set("X-Demo-Role", demoRole);
@@ -48,14 +52,42 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+export type OtpRequestResult = {
+  sent: boolean;
+  /** Seconds until the code stops working. */
+  expires_in: number;
+  /** Seconds before another code can be requested. */
+  resend_in: number;
+};
+
+export type OtpVerifyResult = {
+  access_token: string;
+  token_type: "bearer";
+  /** Unix seconds. */
+  expires_at: number;
+  role: UserRole;
+  registration_number: string;
+  student_id: string | null;
+};
+
 export const api = {
-  registrationPhone: (registrationNumber: string, role: UserRole) =>
-    request<{ phone: string }>("/api/auth/registration-phone", {
+  requestOtp: (registrationNumber: string, role: UserRole) =>
+    request<OtpRequestResult>("/api/auth/request-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         registration_number: registrationNumber,
         role,
+      }),
+    }),
+  verifyOtp: (registrationNumber: string, role: UserRole, otp: string) =>
+    request<OtpVerifyResult>("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        registration_number: registrationNumber,
+        role,
+        otp,
       }),
     }),
   dashboard: () => request<DashboardData>("/api/dashboard"),

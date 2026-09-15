@@ -54,7 +54,9 @@ body {
   min-width: 0;
   font-size: 1rem;
   line-height: 1.5;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden would turn <body> into a second scroll container
+     beside the page's own, giving pages two vertical scrollbars. */
+  overflow-x: clip;
 }
 
 .site-loader {
